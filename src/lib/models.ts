@@ -1,6 +1,11 @@
 import type { DirectProvider } from './types';
 
-const ANTHROPIC_VERSION = '2024-06-01';
+const ANTHROPIC_VERSION = '2023-06-01';
+const ANTHROPIC_OAUTH_BETA = 'oauth-2025-04-20';
+
+function isAnthropicOAuthToken(key: string): boolean {
+  return key.startsWith('sk-ant-oat');
+}
 
 export interface ModelInfo {
   id: string;
@@ -50,20 +55,42 @@ async function fetchOpenAIModels(apiKey: string): Promise<ModelInfo[]> {
 }
 
 async function fetchAnthropicModels(apiKey: string): Promise<ModelInfo[]> {
-  const res = await fetch('https://api.anthropic.com/v1/models', {
-    headers: {
-      'x-api-key': apiKey,
-      'anthropic-version': ANTHROPIC_VERSION,
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-  });
+  // OAuth tokens use Bearer + beta header; regular keys use x-api-key
+  const headers: Record<string, string> = isAnthropicOAuthToken(apiKey)
+    ? {
+        'Authorization': `Bearer ${apiKey}`,
+        'anthropic-version': ANTHROPIC_VERSION,
+        'anthropic-beta': ANTHROPIC_OAUTH_BETA,
+      }
+    : {
+        'x-api-key': apiKey,
+        'anthropic-version': ANTHROPIC_VERSION,
+        'anthropic-dangerous-direct-browser-access': 'true',
+      };
 
-  if (!res.ok) throw new Error(`Failed to fetch models: ${res.status}`);
+  const res = await fetch('https://api.anthropic.com/v1/models', { headers });
+
+  if (!res.ok) {
+    // If model listing fails with OAuth token, return hardcoded list
+    // (the /v1/models endpoint may not support OAuth tokens yet)
+    if (isAnthropicOAuthToken(apiKey)) {
+      return getAnthropicFallbackModels();
+    }
+    throw new Error(`Failed to fetch models: ${res.status}`);
+  }
 
   const data = await res.json();
   return (data.data as { id: string; display_name: string }[])
     .map(m => ({ id: m.id, name: m.display_name || m.id }))
     .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function getAnthropicFallbackModels(): ModelInfo[] {
+  return [
+    { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4' },
+    { id: 'claude-haiku-4-5-20251001', name: 'Claude Haiku 4.5' },
+    { id: 'claude-opus-4-20250514', name: 'Claude Opus 4' },
+  ];
 }
 
 // Google: API key in header, NOT in URL query param (security)

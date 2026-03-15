@@ -12,7 +12,13 @@ export class TruncationError extends Error {
   }
 }
 
-const ANTHROPIC_VERSION = '2024-06-01';
+const ANTHROPIC_VERSION = '2023-06-01';
+const ANTHROPIC_OAUTH_BETA = 'oauth-2025-04-20';
+
+/** Detect Anthropic OAuth tokens (sk-ant-oat*) vs regular API keys */
+function isAnthropicOAuthToken(key: string): boolean {
+  return key.startsWith('sk-ant-oat');
+}
 
 function getBaseUrl(config: ProviderConfig): string {
   if (config.method === 'openrouter') {
@@ -46,6 +52,14 @@ function getAuthHeaders(config: ProviderConfig): Record<string, string> {
   }
   if (config.method === 'direct') {
     if (config.provider === 'anthropic') {
+      // OAuth tokens use Bearer auth + beta header; regular keys use x-api-key
+      if (isAnthropicOAuthToken(config.apiKey)) {
+        return {
+          'Authorization': `Bearer ${config.apiKey}`,
+          'anthropic-version': ANTHROPIC_VERSION,
+          'anthropic-beta': ANTHROPIC_OAUTH_BETA,
+        };
+      }
       return {
         'x-api-key': config.apiKey,
         'anthropic-version': ANTHROPIC_VERSION,
