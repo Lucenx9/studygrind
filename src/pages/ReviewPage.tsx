@@ -49,7 +49,7 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
       return (
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-5 text-center">
           <PartyPopper className="h-20 w-20 text-yellow-500 animate-celebrate" />
-          <h2 className="text-3xl font-bold">{t('review.allCaughtUp', lang)}</h2>
+          <h2 className="text-3xl font-bold tracking-tight">{t('review.allCaughtUp', lang)}</h2>
           <p className="text-muted-foreground text-base max-w-md">{t('review.allCaughtUpDesc', lang)}</p>
           <div className="flex gap-3">
             <Button variant="outline" onClick={() => onNavigate('study')}>{t('review.studyTopic', lang)}</Button>
@@ -105,19 +105,23 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
   if (!q) return null;
 
   return (
-    <div className="space-y-8">
-      <ProgressBar current={review.currentIndex} total={review.dueQuestions.length} results={review.results} />
-      {q.type === 'mcq' ? (
-        <McqQuestion key={q.id} question={q} onSubmit={(idx, c) => review.submitAnswer(idx, c)} disabled={review.phase === 'feedback'} language={lang} />
-      ) : (
-        <ClozeQuestion key={q.id} question={q} onSubmit={(a, c) => review.submitAnswer(a, c)} disabled={review.phase === 'feedback'} language={lang} />
-      )}
-      {review.phase === 'feedback' && review.isCorrect !== null && (
-        <div className="space-y-4">
-          <ExplanationCard explanation={q.explanation} isCorrect={review.isCorrect} language={lang} onOpenChat={settings.provider ? handleOpenChat : undefined} hasChatHistory={chat.hasHistory(q.id)} />
-          <RatingButtons onRate={review.rate} language={lang} intervals={q ? getIntervalPreview(q.fsrsCard) : undefined} />
-        </div>
-      )}
+    <div className="max-w-2xl mx-auto">
+      <div className="sticky top-0 z-10 bg-background pt-2 pb-3">
+        <ProgressBar current={review.currentIndex} total={review.dueQuestions.length} results={review.results} />
+      </div>
+      <div className="space-y-6 pt-4">
+        {q.type === 'mcq' ? (
+          <McqQuestion key={q.id} question={q} onSubmit={(idx, c) => review.submitAnswer(idx, c)} disabled={review.phase === 'feedback'} language={lang} />
+        ) : (
+          <ClozeQuestion key={q.id} question={q} onSubmit={(a, c) => review.submitAnswer(a, c)} disabled={review.phase === 'feedback'} language={lang} />
+        )}
+        {review.phase === 'feedback' && review.isCorrect !== null && (
+          <div className="space-y-4">
+            <ExplanationCard explanation={q.explanation} isCorrect={review.isCorrect} language={lang} onOpenChat={settings.provider ? handleOpenChat : undefined} hasChatHistory={chat.hasHistory(q.id)} />
+            <RatingButtons onRate={review.rate} language={lang} intervals={q ? getIntervalPreview(q.fsrsCard) : undefined} />
+          </div>
+        )}
+      </div>
       <ChatPanel isOpen={chat.isOpen} history={chat.history} loading={chat.loading} canSendMore={chat.canSendMore} language={lang} onSend={chat.sendMessage} onClose={chat.closeChat} />
     </div>
   );

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { t, type Language } from '@/lib/i18n';
 import { Mic, MicOff } from 'lucide-react';
+import { playCorrectSound, playWrongSound } from '@/lib/sounds';
 
 interface ClozeQuestionProps {
   question: ClozeQuestionType;
@@ -42,6 +43,8 @@ export function ClozeQuestion({ question, onSubmit, disabled, language = 'it' }:
     const correct = checkClozeAnswer(answer, question.acceptableAnswers);
     setIsCorrect(correct);
     setRevealed(true);
+    if (correct) playCorrectSound();
+    else playWrongSound();
     onSubmit(answer, correct);
   };
 

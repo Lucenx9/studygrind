@@ -105,7 +105,7 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <SettingsIcon className="h-6 w-6 text-primary" />
-        <h1 className="text-2xl font-bold">{t('settings.title', lang)}</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t('settings.title', lang)}</h1>
       </div>
 
       {/* OpenRouter */}

@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { McqQuestion as McqQuestionType } from '@/lib/types';
 import { OptionButton } from './OptionButton';
 import { Button } from '@/components/ui/button';
 import { t, type Language } from '@/lib/i18n';
+import { playCorrectSound, playWrongSound } from '@/lib/sounds';
 
 interface McqQuestionProps {
   question: McqQuestionType;
@@ -15,6 +16,28 @@ export function McqQuestion({ question, onSubmit, disabled, language = 'it' }: M
   const [selected, setSelected] = useState<number | null>(null);
   const [revealed, setRevealed] = useState(false);
 
+  // Keyboard shortcuts: A/B/C/D or 1/2/3/4 to select, Enter to submit
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (revealed || disabled) return;
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      const letterIdx = ['a', 'b', 'c', 'd'].indexOf(e.key.toLowerCase());
+      const numIdx = ['1', '2', '3', '4'].indexOf(e.key);
+      const idx = letterIdx >= 0 ? letterIdx : numIdx;
+
+      if (idx >= 0 && idx < question.options.length) {
+        e.preventDefault();
+        setSelected(idx);
+      } else if ((e.key === 'Enter' || e.key === ' ') && selected !== null) {
+        e.preventDefault();
+        handleSubmit();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  });
+
   const handleSelect = (idx: number) => {
     if (revealed || disabled) return;
     setSelected(idx);
@@ -22,8 +45,11 @@ export function McqQuestion({ question, onSubmit, disabled, language = 'it' }: M
 
   const handleSubmit = () => {
     if (selected === null) return;
+    const correct = selected === question.correct;
     setRevealed(true);
-    onSubmit(selected, selected === question.correct);
+    if (correct) playCorrectSound();
+    else playWrongSound();
+    onSubmit(selected, correct);
   };
 
   return (

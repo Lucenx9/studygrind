@@ -183,47 +183,81 @@ export function buildQuizPrompt(
   language: 'it' | 'en',
   customInstructions?: string,
 ): ChatMessage[] {
-  const langLabel = language === 'it' ? 'Italian' : 'English';
+  const mcqCount = Math.round(count * 0.7);
+  const clozeCount = count - mcqCount;
+
+  const langSpecific = language === 'it'
+    ? `- Write questions and options in Italian
+- Keep standard technical/scientific terms untranslated when common in Italian academia (e.g., "DNA", "feedback", "ATP")
+- For cloze acceptable_answers, include morphological variants: singular/plural, with/without article (e.g., ["mitocondrio", "mitocondri", "il mitocondrio"])`
+    : '- Write questions and options in English';
+
   const customLine = customInstructions
-    ? `\n- Additional instructions: ${customInstructions}`
+    ? `\nAdditional instructions: ${customInstructions}`
     : '';
 
   return [
     {
       role: 'system',
-      content: `You are an expert quiz generator for university students. Given study notes, generate questions that test understanding, not just recall.
+      content: `You are an expert educational assessment designer for university students. Generate questions ONLY from the provided source material — never invent facts.
 
-Rules:
-- Generate exactly ${count} questions based ONLY on the provided notes
-- Mix two question types:
-  - Type "mcq": Multiple choice with exactly 4 options (A, B, C, D). Exactly one correct answer. Distribute correct answers evenly across positions A/B/C/D.
-  - Type "cloze": A sentence from the notes with one key term replaced by "___". The student must type the missing term. Provide 2-3 acceptable answers (e.g. ["mitocondri", "mitocondrio"]).
-- Ratio: approximately 70% mcq, 30% cloze
-- Vary difficulty: some questions should test basic recall, others should test understanding, application, or comparison
-- After each question include a brief explanation (2-3 sentences) of WHY the correct answer is correct, adding context beyond what the notes say when useful
-- Questions should be in ${langLabel}${customLine}
-- Output valid JSON only, no markdown fences, no extra text
+TASK: Generate exactly ${count} questions (${mcqCount} MCQ + ${clozeCount} cloze) from the study notes.
 
-Output format:
+TYPE "mcq" (${mcqCount} questions):
+Multiple choice with exactly 4 options (A, B, C, D). One correct answer.
+
+Cognitive level distribution:
+- ~30% REMEMBER/UNDERSTAND: identify, describe, explain ("Which best describes...?")
+- ~40% APPLY/ANALYZE: apply to scenarios, compare, cause-effect ("If X is observed, which mechanism...?")
+- ~30% EVALUATE/SYNTHESIZE: judge, predict, combine concepts ("Given A and B, which conclusion...?")
+
+MCQ rules:
+- Stem must be a clear, complete question answerable without reading options
+- DISTRACTORS must be plausible (based on common misconceptions), clearly wrong to experts, similar in length/structure to the correct answer
+- No "all of the above", "none of the above", or negative stems ("Which is NOT...")
+- Each question tests ONE concept
+- Vary correct answer position across A, B, C, D
+
+TYPE "cloze" (${clozeCount} questions):
+A statement with ONE key concept replaced by "___".
+
+Cloze rules:
+- Blank the CONCEPTUALLY CRITICAL word — the one proving understanding of the relationship
+- Never blank articles, prepositions, or trivial words
+- Rewrite the sentence for clarity, don't copy verbatim from notes
+- Provide 2-4 acceptable answers covering spelling variants, singular/plural
+
+AVOID:
+- Questions that copy a sentence and ask "What is X?" — rephrase to test understanding
+- Questions answerable by common sense without the material
+- Distractors that are absurd or obviously unrelated
+- Grammatical clues revealing the correct answer
+- Inventing facts not in the source notes
+
+EXPLANATION: After each question, 2-3 sentences: why the correct answer is right, and why the most plausible distractor is wrong. Ground in the source notes.
+
+${langSpecific}${customLine}
+
+Output ONLY valid JSON array. No markdown fences, no commentary.
 [
   {
     "type": "mcq",
-    "question": "Which structure is responsible for...?",
+    "question": "Clear question stem?",
     "options": ["A) ...", "B) ...", "C) ...", "D) ..."],
     "correct": 0,
-    "explanation": "The correct answer is A because..."
+    "explanation": "A is correct because... B is wrong because..."
   },
   {
     "type": "cloze",
-    "question": "The ___ is the powerhouse of the cell.",
+    "question": "The ___ converts ADP into ATP via oxidative phosphorylation.",
     "acceptable_answers": ["mitochondria", "mitochondrion"],
-    "explanation": "Mitochondria produce ATP through..."
+    "explanation": "Mitochondria are where oxidative phosphorylation occurs..."
   }
 ]`,
     },
     {
       role: 'user',
-      content: `Here are my study notes:\n\n${notes}`,
+      content: `Generate questions ONLY from this material:\n\n${notes}`,
     },
   ];
 }

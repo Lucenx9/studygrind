@@ -23,12 +23,12 @@ export function OptionButton({ label, index, selected, correctIndex, disabled, o
       disabled={disabled}
       style={{ animationDelay: `${index * 60}ms` }}
       className={cn(
-        'animate-fade-in-up w-full rounded-2xl border-2 p-5 text-left transition-all flex items-center gap-3',
-        !isRevealed && !selected && 'border-border hover:border-primary/40 hover:bg-primary/5 hover:shadow-sm',
-        !isRevealed && selected && 'border-primary bg-primary/8 ring-2 ring-primary/25 shadow-sm',
-        isRevealed && isCorrect && 'border-green-500 bg-green-50 dark:bg-green-500/15 animate-correct-pulse',
-        isWrong && 'border-red-500 bg-red-50 dark:bg-red-500/15 animate-shake',
-        isRevealed && !isCorrect && !isWrong && 'border-border opacity-30',
+        'cursor-pointer animate-fade-in-up w-full rounded-2xl border p-5 text-left transition-colors duration-150 flex items-center gap-3 active:scale-[0.98]',
+        !isRevealed && !selected && 'border-border hover:border-primary/40 hover:bg-primary/5',
+        !isRevealed && selected && 'border-primary bg-primary/10 ring-2 ring-primary/30 shadow-sm',
+        isRevealed && isCorrect && 'border-green-500 bg-green-50 dark:bg-green-500/12 animate-correct-pulse',
+        isWrong && 'border-red-500 bg-red-50 dark:bg-red-500/12 animate-shake',
+        isRevealed && !isCorrect && !isWrong && 'border-border opacity-40',
         disabled && !isRevealed && 'cursor-not-allowed opacity-50',
       )}
     >

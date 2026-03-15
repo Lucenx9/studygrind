@@ -45,7 +45,7 @@ export function StudyPage({ settings }: StudyPageProps) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center">
         <BookOpen className="h-16 w-16 text-muted-foreground" />
-        <h2 className="text-2xl font-bold">{t('study.noTopicsYet', lang)}</h2>
+        <h2 className="text-2xl font-bold tracking-tight">{t('study.noTopicsYet', lang)}</h2>
         <p className="text-muted-foreground">{t('study.noTopicsDesc', lang)}</p>
       </div>
     );
@@ -55,7 +55,7 @@ export function StudyPage({ settings }: StudyPageProps) {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <BookOpen className="h-6 w-6 text-primary" />
-        <h1 className="text-2xl font-bold">{t('study.title', lang)}</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t('study.title', lang)}</h1>
       </div>
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
@@ -86,19 +86,23 @@ export function StudyPage({ settings }: StudyPageProps) {
       )}
 
       {(study.phase === 'question' || study.phase === 'feedback') && study.currentQuestion && (
-        <div className="space-y-6">
-          <ProgressBar current={study.currentIndex} total={study.questions.length} results={study.results} />
-          {study.currentQuestion.type === 'mcq' ? (
-            <McqQuestion key={study.currentQuestion.id} question={study.currentQuestion} onSubmit={(i, c) => study.submitAnswer(i, c)} disabled={study.phase === 'feedback'} language={lang} />
-          ) : (
-            <ClozeQuestion key={study.currentQuestion.id} question={study.currentQuestion} onSubmit={(a, c) => study.submitAnswer(a, c)} disabled={study.phase === 'feedback'} language={lang} />
-          )}
-          {study.phase === 'feedback' && study.isCorrect !== null && (
-            <div className="space-y-4">
-              <ExplanationCard explanation={study.currentQuestion.explanation} isCorrect={study.isCorrect} language={lang} onOpenChat={settings.provider ? handleOpenChat : undefined} hasChatHistory={chat.hasHistory(study.currentQuestion.id)} />
-              <RatingButtons onRate={study.rate} language={lang} intervals={study.currentQuestion ? getIntervalPreview(study.currentQuestion.fsrsCard) : undefined} />
-            </div>
-          )}
+        <div className="max-w-2xl mx-auto">
+          <div className="sticky top-0 z-10 bg-background pt-2 pb-3">
+            <ProgressBar current={study.currentIndex} total={study.questions.length} results={study.results} />
+          </div>
+          <div className="space-y-6 pt-4">
+            {study.currentQuestion.type === 'mcq' ? (
+              <McqQuestion key={study.currentQuestion.id} question={study.currentQuestion} onSubmit={(i, c) => study.submitAnswer(i, c)} disabled={study.phase === 'feedback'} language={lang} />
+            ) : (
+              <ClozeQuestion key={study.currentQuestion.id} question={study.currentQuestion} onSubmit={(a, c) => study.submitAnswer(a, c)} disabled={study.phase === 'feedback'} language={lang} />
+            )}
+            {study.phase === 'feedback' && study.isCorrect !== null && (
+              <div className="space-y-4">
+                <ExplanationCard explanation={study.currentQuestion.explanation} isCorrect={study.isCorrect} language={lang} onOpenChat={settings.provider ? handleOpenChat : undefined} hasChatHistory={chat.hasHistory(study.currentQuestion.id)} />
+                <RatingButtons onRate={study.rate} language={lang} intervals={study.currentQuestion ? getIntervalPreview(study.currentQuestion.fsrsCard) : undefined} />
+              </div>
+            )}
+          </div>
         </div>
       )}
 

@@ -102,7 +102,7 @@ export function UploadPage({ settings }: UploadPageProps) {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <Upload className="h-6 w-6 text-primary" />
-        <h1 className="text-2xl font-bold">{t('upload.title', lang)}</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t('upload.title', lang)}</h1>
       </div>
 
       {topics.length > 0 && (
