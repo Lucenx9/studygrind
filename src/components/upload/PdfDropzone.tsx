@@ -1,5 +1,4 @@
 import { useState, useRef, useCallback } from 'react';
-import { extractTextFromPdf } from '@/lib/pdf';
 import { FileUp, Loader2, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { t, type Language } from '@/lib/i18n';
@@ -27,6 +26,8 @@ export function PdfDropzone({ onExtracted, language }: PdfDropzoneProps) {
     setWarnings([]);
 
     try {
+      // Dynamic import: PDF.js is only loaded when user actually drops/selects a PDF
+      const { extractTextFromPdf } = await import('@/lib/pdf');
       const result = await extractTextFromPdf(file);
       setWarnings(result.warnings);
 

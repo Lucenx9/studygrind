@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,6 +29,7 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
   const [openRouterModels, setOpenRouterModels] = useState<ModelInfo[]>([]);
   const [openRouterLoading, setOpenRouterLoading] = useState(false);
   const [openRouterError, setOpenRouterError] = useState<string | null>(null);
+  const [openRouterSearch, setOpenRouterSearch] = useState('');
 
   // Direct API state
   const [directProvider, setDirectProvider] = useState<DirectProvider>(settings.provider?.method === 'direct' ? settings.provider.provider : 'openai');
@@ -37,8 +38,21 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
   const [directModels, setDirectModels] = useState<ModelInfo[]>([]);
   const [directLoading, setDirectLoading] = useState(false);
   const [directError, setDirectError] = useState<string | null>(null);
+  const [directSearch, setDirectSearch] = useState('');
 
   const [clearDialogOpen, setClearDialogOpen] = useState(false);
+
+  const filteredOpenRouterModels = useMemo(() => {
+    if (!openRouterSearch.trim()) return openRouterModels;
+    const q = openRouterSearch.toLowerCase();
+    return openRouterModels.filter(m => m.name.toLowerCase().includes(q) || m.id.toLowerCase().includes(q));
+  }, [openRouterModels, openRouterSearch]);
+
+  const filteredDirectModels = useMemo(() => {
+    if (!directSearch.trim()) return directModels;
+    const q = directSearch.toLowerCase();
+    return directModels.filter(m => m.name.toLowerCase().includes(q) || m.id.toLowerCase().includes(q));
+  }, [directModels, directSearch]);
   const activeMethod = settings.provider?.method ?? null;
 
   // Fetch OpenRouter models
@@ -117,18 +131,27 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
           <div className="space-y-2">
             <Label>{t('settings.model', lang)}</Label>
             {openRouterModels.length > 0 ? (
-              <Select value={openRouterModel} onValueChange={(v: string | null) => { if (v) setOpenRouterModel(v); }}>
-                <SelectTrigger><SelectValue placeholder={t('settings.selectModel', lang)} /></SelectTrigger>
-                <SelectContent className="max-h-[300px]">
-                  {openRouterModels.map(m => (
-                    <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <>
+                <Input
+                  value={openRouterSearch}
+                  onChange={e => setOpenRouterSearch(e.target.value)}
+                  placeholder={lang === 'it' ? 'Cerca modello...' : 'Search model...'}
+                  className="mb-2"
+                />
+                <Select value={openRouterModel} onValueChange={(v: string | null) => { if (v) { setOpenRouterModel(v); setOpenRouterSearch(''); } }}>
+                  <SelectTrigger><SelectValue placeholder={t('settings.selectModel', lang)} /></SelectTrigger>
+                  <SelectContent className="max-h-[300px]">
+                    {filteredOpenRouterModels.map(m => (
+                      <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                    ))}
+                    {filteredOpenRouterModels.length === 0 && (
+                      <div className="px-3 py-2 text-sm text-muted-foreground">{lang === 'it' ? 'Nessun risultato' : 'No results'}</div>
+                    )}
+                  </SelectContent>
+                </Select>
+              </>
             ) : (
-              <div className="flex items-center gap-2">
-                <Input value={openRouterModel} onChange={e => setOpenRouterModel(e.target.value)} placeholder="openai/gpt-4o-mini" />
-              </div>
+              <Input value={openRouterModel} onChange={e => setOpenRouterModel(e.target.value)} placeholder="openai/gpt-4o-mini" />
             )}
             {openRouterModels.length === 0 && openRouterKey.trim() && (
               <p className="text-xs text-muted-foreground">{t('settings.noModels', lang)}</p>
@@ -179,14 +202,22 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
           <div className="space-y-2">
             <Label>{t('settings.model', lang)}</Label>
             {directModels.length > 0 ? (
-              <Select value={directModel} onValueChange={(v: string | null) => { if (v) setDirectModel(v); }}>
-                <SelectTrigger><SelectValue placeholder={t('settings.selectModel', lang)} /></SelectTrigger>
-                <SelectContent className="max-h-[300px]">
-                  {directModels.map(m => (
-                    <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <>
+                <Input
+                  value={directSearch}
+                  onChange={e => setDirectSearch(e.target.value)}
+                  placeholder={lang === 'it' ? 'Cerca modello...' : 'Search model...'}
+                  className="mb-2"
+                />
+                <Select value={directModel} onValueChange={(v: string | null) => { if (v) { setDirectModel(v); setDirectSearch(''); } }}>
+                  <SelectTrigger><SelectValue placeholder={t('settings.selectModel', lang)} /></SelectTrigger>
+                  <SelectContent className="max-h-[300px]">
+                    {filteredDirectModels.map(m => (
+                      <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </>
             ) : (
               <Input value={directModel} onChange={e => setDirectModel(e.target.value)} placeholder="gpt-4o-mini" />
             )}
@@ -253,7 +284,7 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
       </Card>
 
       {/* Data management */}
-      <ExportImport />
+      <ExportImport language={lang} />
 
       {/* Danger zone */}
       <Card className="border-destructive/30">

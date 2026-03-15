@@ -12,6 +12,7 @@ import { useReview } from '@/hooks/useReview';
 import { useChat } from '@/hooks/useChat';
 import { GraduationCap, PartyPopper } from 'lucide-react';
 import { getTopics } from '@/lib/storage';
+import { getIntervalPreview } from '@/lib/fsrs';
 import { t } from '@/lib/i18n';
 import type { Settings } from '@/lib/types';
 
@@ -114,7 +115,7 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
       {review.phase === 'feedback' && review.isCorrect !== null && (
         <div className="space-y-4">
           <ExplanationCard explanation={q.explanation} isCorrect={review.isCorrect} language={lang} onOpenChat={settings.provider ? handleOpenChat : undefined} hasChatHistory={chat.hasHistory(q.id)} />
-          <RatingButtons onRate={review.rate} language={lang} />
+          <RatingButtons onRate={review.rate} language={lang} intervals={q ? getIntervalPreview(q.fsrsCard) : undefined} />
         </div>
       )}
       <ChatPanel isOpen={chat.isOpen} history={chat.history} loading={chat.loading} canSendMore={chat.canSendMore} language={lang} onSend={chat.sendMessage} onClose={chat.closeChat} />

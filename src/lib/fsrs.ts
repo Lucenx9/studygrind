@@ -47,5 +47,31 @@ export function getReviewForecast(questions: Question[], days: number): Map<stri
   return forecast;
 }
 
+// Preview next review intervals for each rating option (for UI display)
+export function getIntervalPreview(card: Card): { again: string; hard: string; good: string; easy: string } {
+  const now = new Date();
+  const result = scheduler.repeat(card, now);
+
+  function formatInterval(nextDue: Date): string {
+    const diffMs = nextDue.getTime() - now.getTime();
+    const diffMin = Math.round(diffMs / 60000);
+    if (diffMin < 1) return '<1m';
+    if (diffMin < 60) return `${diffMin}m`;
+    const diffHours = Math.round(diffMin / 60);
+    if (diffHours < 24) return `${diffHours}h`;
+    const diffDays = Math.round(diffHours / 24);
+    if (diffDays < 30) return `${diffDays}d`;
+    const diffMonths = Math.round(diffDays / 30);
+    return `${diffMonths}mo`;
+  }
+
+  return {
+    again: formatInterval(result[Rating.Again].card.due),
+    hard: formatInterval(result[Rating.Hard].card.due),
+    good: formatInterval(result[Rating.Good].card.due),
+    easy: formatInterval(result[Rating.Easy].card.due),
+  };
+}
+
 export { Rating, State };
 export type { Grade };

@@ -5,10 +5,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { buildExportData, downloadAsJson, parseImportFile, type ImportPreview } from '@/lib/export';
 import { saveTopic, saveQuestions, getTopics } from '@/lib/storage';
 import { useTopics } from '@/hooks/useTopics';
+import { t, type Language } from '@/lib/i18n';
 import { Download, Upload, FileJson, AlertTriangle } from 'lucide-react';
 import { v4 as uuid } from 'uuid';
 
-export function ExportImport() {
+interface ExportImportProps {
+  language: Language;
+}
+
+export function ExportImport({ language: lang }: ExportImportProps) {
   const { topics, refresh } = useTopics();
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [importPreview, setImportPreview] = useState<ImportPreview | null>(null);
@@ -34,11 +39,9 @@ export function ExportImport() {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
-
     setImportError(null);
     setImportPreview(null);
     setImportSuccess(false);
-
     try {
       const preview = await parseImportFile(file);
       setImportPreview(preview);
@@ -49,30 +52,25 @@ export function ExportImport() {
 
   const handleConfirmImport = (replaceDuplicates: boolean) => {
     if (!importPreview) return;
-
     const existingTopics = getTopics();
     const existingNames = new Map(existingTopics.map(t => [t.name, t.id]));
 
     for (const topic of importPreview.data.topics) {
       const existingId = existingNames.get(topic.name);
       if (existingId && !replaceDuplicates) {
-        // Keep both — give imported topic a new ID
         const newId = uuid();
         const renamedTopic = { ...topic, id: newId, name: `${topic.name} (imported)` };
         saveTopic(renamedTopic);
-        // Re-map questions to new topic ID
         const topicQuestions = importPreview.data.questions
           .filter(q => q.topicId === topic.id)
           .map(q => ({ ...q, topicId: newId, id: uuid() }));
         saveQuestions(topicQuestions);
       } else {
-        // Replace existing or add new
         saveTopic(topic);
         const topicQuestions = importPreview.data.questions.filter(q => q.topicId === topic.id);
         saveQuestions(topicQuestions);
       }
     }
-
     refresh();
     setImportPreview(null);
     setImportSuccess(true);
@@ -82,21 +80,19 @@ export function ExportImport() {
     <Card>
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
-          <FileJson className="h-4 w-4" /> Data Management
+          <FileJson className="h-4 w-4" /> {t('settings.dataManagement', lang)}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Export all */}
         <Button variant="outline" className="w-full gap-2" onClick={handleExportAll}>
-          <Download className="h-4 w-4" /> Export all data
+          <Download className="h-4 w-4" /> {t('settings.exportAll', lang)}
         </Button>
 
-        {/* Export single topic */}
         {topics.length > 0 && (
           <div className="flex gap-2">
             <Select onValueChange={(v: string | null) => setSelectedTopic(v)}>
               <SelectTrigger className="flex-1">
-                <SelectValue placeholder="Select topic to export" />
+                <SelectValue placeholder={t('settings.exportTopic', lang)} />
               </SelectTrigger>
               <SelectContent>
                 {topics.map(t => (
@@ -110,38 +106,21 @@ export function ExportImport() {
           </div>
         )}
 
-        {/* Import */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".json"
-          onChange={handleFileSelect}
-          className="hidden"
-        />
-        <Button
-          variant="outline"
-          className="w-full gap-2"
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <Upload className="h-4 w-4" /> Import data
+        <input ref={fileInputRef} type="file" accept=".json" onChange={handleFileSelect} className="hidden" />
+        <Button variant="outline" className="w-full gap-2" onClick={() => fileInputRef.current?.click()}>
+          <Upload className="h-4 w-4" /> {t('settings.importData', lang)}
         </Button>
 
-        {importError && (
-          <p className="text-sm text-destructive">{importError}</p>
-        )}
+        {importError && <p className="text-sm text-destructive">{importError}</p>}
+        {importSuccess && <p className="text-sm text-green-600 dark:text-green-400">{t('settings.importSuccess', lang)}</p>}
 
-        {importSuccess && (
-          <p className="text-sm text-green-600 dark:text-green-400">Data imported successfully!</p>
-        )}
-
-        {/* Import preview */}
         {importPreview && (
           <div className="rounded-lg border border-border p-4 space-y-3">
-            <p className="text-sm font-medium">Import preview</p>
+            <p className="text-sm font-medium">{t('settings.importPreview', lang)}</p>
             <div className="text-sm text-muted-foreground space-y-1">
-              <p>{importPreview.topicCount} topic(s)</p>
-              <p>{importPreview.questionCount} question(s)</p>
-              <p>{importPreview.sessionCount} session(s)</p>
+              <p>{importPreview.topicCount} {lang === 'it' ? 'argomenti' : 'topic(s)'}</p>
+              <p>{importPreview.questionCount} {lang === 'it' ? 'domande' : 'question(s)'}</p>
+              <p>{importPreview.sessionCount} {lang === 'it' ? 'sessioni' : 'session(s)'}</p>
             </div>
 
             {importPreview.duplicateTopics.length > 0 && (
@@ -149,14 +128,14 @@ export function ExportImport() {
                 <AlertTriangle className="h-4 w-4 shrink-0 text-yellow-600 dark:text-yellow-400 mt-0.5" />
                 <div>
                   <p className="text-yellow-700 dark:text-yellow-300">
-                    These topics already exist: {importPreview.duplicateTopics.join(', ')}
+                    {t('settings.topicsExist', lang)} {importPreview.duplicateTopics.join(', ')}
                   </p>
                   <div className="flex gap-2 mt-2">
                     <Button size="sm" variant="outline" onClick={() => handleConfirmImport(true)}>
-                      Replace existing
+                      {t('settings.replaceExisting', lang)}
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => handleConfirmImport(false)}>
-                      Keep both
+                      {t('settings.keepBoth', lang)}
                     </Button>
                   </div>
                 </div>
@@ -165,17 +144,12 @@ export function ExportImport() {
 
             {importPreview.duplicateTopics.length === 0 && (
               <Button className="w-full" onClick={() => handleConfirmImport(false)}>
-                Confirm import
+                {t('settings.confirmImport', lang)}
               </Button>
             )}
 
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full"
-              onClick={() => setImportPreview(null)}
-            >
-              Cancel
+            <Button variant="ghost" size="sm" className="w-full" onClick={() => setImportPreview(null)}>
+              {t('common.cancel', lang)}
             </Button>
           </div>
         )}

@@ -15,6 +15,7 @@ import { useTopics } from '@/hooks/useTopics';
 import { useChat } from '@/hooks/useChat';
 import { BookOpen } from 'lucide-react';
 import { getTopics } from '@/lib/storage';
+import { getIntervalPreview } from '@/lib/fsrs';
 import { t } from '@/lib/i18n';
 import type { Settings } from '@/lib/types';
 
@@ -95,7 +96,7 @@ export function StudyPage({ settings }: StudyPageProps) {
           {study.phase === 'feedback' && study.isCorrect !== null && (
             <div className="space-y-4">
               <ExplanationCard explanation={study.currentQuestion.explanation} isCorrect={study.isCorrect} language={lang} onOpenChat={settings.provider ? handleOpenChat : undefined} hasChatHistory={chat.hasHistory(study.currentQuestion.id)} />
-              <RatingButtons onRate={study.rate} language={lang} />
+              <RatingButtons onRate={study.rate} language={lang} intervals={study.currentQuestion ? getIntervalPreview(study.currentQuestion.fsrsCard) : undefined} />
             </div>
           )}
         </div>
