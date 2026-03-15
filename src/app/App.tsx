@@ -8,6 +8,7 @@ import { getDueQuestions } from '@/lib/fsrs';
 import { t, type Language } from '@/lib/i18n';
 import { getQuestions, getTopics } from '@/lib/storage';
 import { toast } from 'sonner';
+import { ReloadPrompt } from '@/components/ReloadPrompt';
 
 const ONBOARDING_KEY = 'studygrind_onboarding_done';
 const ReviewPage = lazy(async () => ({ default: (await import('@/pages/ReviewPage')).ReviewPage }));
@@ -102,6 +103,7 @@ export default function App() {
           </>
         )}
       </Suspense>
+      <ReloadPrompt />
     </Layout>
   );
 }

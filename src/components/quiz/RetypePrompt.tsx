@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { checkClozeAnswer } from '@/lib/quiz-parser';
 import { Check } from 'lucide-react';
@@ -14,6 +14,10 @@ interface RetypePromptProps {
 export function RetypePrompt({ correctAnswer, language, onComplete }: RetypePromptProps) {
   const [value, setValue] = useState('');
   const [matched, setMatched] = useState(false);
+  const headingRef = useRef<HTMLParagraphElement>(null);
+
+  // Focus heading first for screen reader context, then user tabs to input
+  useEffect(() => { headingRef.current?.focus(); }, []);
 
   const handleChange = (input: string) => {
     setValue(input);
@@ -36,7 +40,7 @@ export function RetypePrompt({ correctAnswer, language, onComplete }: RetypeProm
 
   return (
     <div className="animate-fade-in-up space-y-3 rounded-[24px] border border-primary/20 bg-primary/6 p-5">
-      <p className="text-sm font-medium text-primary">
+      <p ref={headingRef} tabIndex={-1} className="text-sm font-medium text-primary outline-none">
         {t('quiz.retypeToContinue', language)}
       </p>
       <div className="flex gap-2">
@@ -45,7 +49,7 @@ export function RetypePrompt({ correctAnswer, language, onComplete }: RetypeProm
           onChange={e => handleChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={correctAnswer}
-          autoFocus
+          aria-label={correctAnswer}
           className={cn(
             'min-h-12 transition-colors duration-200',
             matched && 'border-green-500 bg-green-50 dark:bg-green-500/12',

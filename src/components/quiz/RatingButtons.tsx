@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Rating } from '@/lib/fsrs';
 import type { Grade } from '@/lib/fsrs';
@@ -19,25 +19,21 @@ const RATINGS: { rating: Grade; labelKey: 'rating.again' | 'rating.hard' | 'rati
 
 export function RatingButtons({ onRate, language, intervals }: RatingButtonsProps) {
   const [submitted, setSubmitted] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  // Keyboard shortcuts 1-4 — guarded against input focus and double-fire
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (submitted) return;
-      // Use document.activeElement to catch ALL focused inputs (including RetypePrompt)
-      const focused = document.activeElement;
-      if (focused instanceof HTMLInputElement || focused instanceof HTMLTextAreaElement) return;
+  // Auto-focus container so keyboard shortcuts work immediately
+  useEffect(() => { containerRef.current?.focus(); }, []);
 
-      const idx = ['1', '2', '3', '4'].indexOf(e.key);
-      if (idx >= 0) {
-        e.preventDefault();
-        setSubmitted(true);
-        onRate(RATINGS[idx].rating);
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [onRate, submitted]);
+  // WCAG 2.1.4: shortcuts scoped to focused container, not global
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (submitted) return;
+    const idx = ['1', '2', '3', '4'].indexOf(e.key);
+    if (idx >= 0) {
+      e.preventDefault();
+      setSubmitted(true);
+      onRate(RATINGS[idx].rating);
+    }
+  };
 
   const handleClick = (rating: Grade) => {
     if (submitted) return;
@@ -46,7 +42,13 @@ export function RatingButtons({ onRate, language, intervals }: RatingButtonsProp
   };
 
   return (
-    <div className="animate-fade-in-up space-y-3">
+    <div
+      ref={containerRef}
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+      className="animate-fade-in-up space-y-3 outline-none"
+      aria-label={t('quiz.howWellDidYouKnow', language)}
+    >
       <p className="text-sm text-muted-foreground text-center">{t('quiz.howWellDidYouKnow', language)}</p>
       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
         {RATINGS.map(({ rating, labelKey, descKey, intervalKey, color, key }) => (

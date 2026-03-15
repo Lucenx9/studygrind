@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import type { McqQuestion as McqQuestionType } from '@/lib/types';
 import { OptionButton } from './OptionButton';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +17,10 @@ interface McqQuestionProps {
 export function McqQuestion({ question, onSubmit, disabled, language = 'it' }: McqQuestionProps) {
   const [selected, setSelected] = useState<number | null>(null);
   const [revealed, setRevealed] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-focus container on mount so keyboard shortcuts work immediately
+  useEffect(() => { containerRef.current?.focus(); }, []);
 
   const handleSubmit = useCallback(() => {
     if (selected === null || revealed || disabled) return;
@@ -27,26 +31,23 @@ export function McqQuestion({ question, onSubmit, disabled, language = 'it' }: M
     onSubmit(selected, correct);
   }, [onSubmit, question.correct, selected, revealed, disabled]);
 
-  // Keyboard shortcuts: A/B/C/D or 1/2/3/4 to select, Enter to submit
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (revealed || disabled) return;
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+  // WCAG 2.1.4: shortcuts scoped to focused container, not global
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (revealed || disabled) return;
+    const tag = (e.target as HTMLElement).tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
 
-      const letterIdx = ['a', 'b', 'c', 'd'].indexOf(e.key.toLowerCase());
-      const numIdx = ['1', '2', '3', '4'].indexOf(e.key);
-      const idx = letterIdx >= 0 ? letterIdx : numIdx;
+    const letterIdx = ['a', 'b', 'c', 'd'].indexOf(e.key.toLowerCase());
+    const numIdx = ['1', '2', '3', '4'].indexOf(e.key);
+    const idx = letterIdx >= 0 ? letterIdx : numIdx;
 
-      if (idx >= 0 && idx < question.options.length) {
-        e.preventDefault();
-        setSelected(idx);
-      } else if ((e.key === 'Enter' || e.key === ' ') && selected !== null) {
-        e.preventDefault();
-        handleSubmit();
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    if (idx >= 0 && idx < question.options.length) {
+      e.preventDefault();
+      setSelected(idx);
+    } else if ((e.key === 'Enter' || e.key === ' ') && selected !== null) {
+      e.preventDefault();
+      handleSubmit();
+    }
   }, [disabled, handleSubmit, question.options.length, revealed, selected]);
 
   const handleSelect = (idx: number) => {
@@ -55,7 +56,13 @@ export function McqQuestion({ question, onSubmit, disabled, language = 'it' }: M
   };
 
   return (
-    <div className="animate-slide-in-question space-y-5">
+    <div
+      ref={containerRef}
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+      className="animate-slide-in-question space-y-5 outline-none"
+      aria-label={t('quiz.multipleChoice', language)}
+    >
       <Card className="border-primary/15 bg-card/92">
         <CardContent className="space-y-4 px-6 py-6">
           <Badge variant="secondary" className="bg-primary/12 text-primary">
