@@ -98,14 +98,21 @@ export async function startOAuthFlow(
     }, 120000);
 
     const handler = async (event: MessageEvent) => {
-      // SECURITY: verify the message comes from our own origin
+      // SECURITY: verify the message comes from our own origin (strict equality)
       if (event.origin !== window.location.origin) return;
       if (event.data?.type !== 'oauth_callback') return;
+
+      // Validate expected payload schema — reject unexpected fields
+      const data = event.data;
+      if (typeof data !== 'object' || data === null) return;
+      if (data.code !== undefined && typeof data.code !== 'string') return;
+      if (data.state !== undefined && typeof data.state !== 'string') return;
+      if (data.error !== undefined && typeof data.error !== 'string') return;
 
       clearTimeout(timeout);
       window.removeEventListener('message', handler);
 
-      const { code, state: returnedState, error } = event.data;
+      const { code, state: returnedState, error } = data;
 
       if (error) {
         reject(new Error(`OAuth error: ${error}`));

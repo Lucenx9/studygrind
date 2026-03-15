@@ -38,7 +38,7 @@ export function ChatPanel({ isOpen, history, loading, canSendMore, language, onS
           isOpen ? 'translate-x-0' : 'translate-x-full',
         )}
       >
-        <div className="flex items-center justify-between border-b border-border/70 px-5 py-4">
+        <div className="flex items-center justify-between border-b border-border/70 px-5 py-4 pt-[max(1rem,env(safe-area-inset-top))]">
           <div className="flex items-center gap-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary/12 text-primary">
               <MessageCircle className="h-4 w-4" />

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { ClozeQuestion as ClozeQuestionType } from '@/lib/types';
 import { checkClozeAnswer } from '@/lib/quiz-parser';
 import { useVoiceInput } from '@/hooks/useVoiceInput';
@@ -23,11 +23,18 @@ export function ClozeQuestion({ question, onSubmit, disabled, language = 'it' }:
   const [revealed, setRevealed] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const voice = useVoiceInput(language);
+  const voiceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup voice auto-submit timer on unmount to prevent state updates on unmounted component
+  useEffect(() => {
+    return () => { if (voiceTimerRef.current) clearTimeout(voiceTimerRef.current); };
+  }, []);
 
   const handleVoiceResult = (transcript: string) => {
     if (revealed || disabled) return;
     setAnswer(transcript);
-    setTimeout(() => {
+    voiceTimerRef.current = setTimeout(() => {
+      voiceTimerRef.current = null;
       const correct = checkClozeAnswer(transcript, question.acceptableAnswers);
       setIsCorrect(correct);
       setRevealed(true);

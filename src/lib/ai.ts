@@ -5,6 +5,13 @@ interface ChatMessage {
   content: string;
 }
 
+export class TruncationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'TruncationError';
+  }
+}
+
 const ANTHROPIC_VERSION = '2024-06-01';
 
 function getBaseUrl(config: ProviderConfig): string {
@@ -104,6 +111,9 @@ async function callAnthropic(config: ProviderConfig, messages: ChatMessage[]): P
   if (!res.ok) throwApiError('Anthropic', res.status, await res.text());
   const data = await res.json();
   if (!data?.content?.[0]?.text) throw new Error('Anthropic returned an empty response');
+  if (data.stop_reason === 'max_tokens') {
+    throw new TruncationError('Anthropic response was truncated (max_tokens reached)');
+  }
   return data.content[0].text;
 }
 
@@ -132,6 +142,10 @@ async function callGoogle(config: ProviderConfig, messages: ChatMessage[]): Prom
   if (!res.ok) throwApiError('Google', res.status, await res.text());
   const data = await res.json();
   if (!data?.candidates?.[0]?.content?.parts?.[0]?.text) throw new Error('Google returned an empty response');
+  const finishReason = data.candidates[0].finishReason;
+  if (finishReason === 'MAX_TOKENS') {
+    throw new TruncationError('Google response was truncated (MAX_TOKENS reached)');
+  }
   return data.candidates[0].content.parts[0].text;
 }
 
@@ -149,6 +163,9 @@ async function callOpenAI(config: ProviderConfig, messages: ChatMessage[]): Prom
   if (!res.ok) throwApiError('API', res.status, await res.text());
   const data = await res.json();
   if (!data?.choices?.[0]?.message?.content) throw new Error('API returned an empty response');
+  if (data.choices[0].finish_reason === 'length') {
+    throw new TruncationError('API response was truncated (max_tokens reached)');
+  }
   return data.choices[0].message.content;
 }
 

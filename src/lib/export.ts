@@ -59,7 +59,9 @@ export function downloadAsJson(data: StudygrindExport, filename: string): void {
   a.href = url;
   a.download = filename;
   a.click();
-  URL.revokeObjectURL(url);
+  // Delay revocation — revoking immediately can race with async download initiation
+  // (Chromium bug #827932, Firefox bug #1282407)
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
 export interface ImportPreview {
@@ -150,7 +152,7 @@ function validateImport(data: unknown): asserts data is StudygrindExport {
     }
   }
 
-  // Validate questions with FSRS card structure
+  // Validate questions with FSRS card structure and semantic integrity
   for (const q of d.questions as Record<string, unknown>[]) {
     if (typeof q.id !== 'string' || typeof q.topicId !== 'string') {
       throw new Error('Invalid file: questions are missing required fields (id, topicId).');
@@ -162,8 +164,30 @@ function validateImport(data: unknown): asserts data is StudygrindExport {
     if (card.due === undefined || card.state === undefined) {
       throw new Error('Invalid file: FSRS card is missing required fields (due, state).');
     }
+    // Semantic validation: FSRS state must be 0-3
+    if (typeof card.state === 'number' && (card.state < 0 || card.state > 3)) {
+      throw new Error('Invalid file: FSRS card state out of range (expected 0-3).');
+    }
     if (typeof q.type !== 'string' || (q.type !== 'mcq' && q.type !== 'cloze')) {
       throw new Error('Invalid file: question type must be "mcq" or "cloze".');
+    }
+    // Semantic validation: MCQ correct index must be within options bounds
+    if (q.type === 'mcq') {
+      const options = q.options;
+      const correct = q.correct;
+      if (!Array.isArray(options) || options.length < 2) {
+        throw new Error('Invalid file: MCQ question must have at least 2 options.');
+      }
+      if (typeof correct !== 'number' || correct < 0 || correct >= options.length) {
+        throw new Error('Invalid file: MCQ correct answer index out of bounds.');
+      }
+    }
+    // Semantic validation: cloze must have non-empty acceptable answers
+    if (q.type === 'cloze') {
+      const answers = q.acceptableAnswers ?? q.acceptable_answers;
+      if (!Array.isArray(answers) || answers.length === 0) {
+        throw new Error('Invalid file: cloze question must have at least one acceptable answer.');
+      }
     }
   }
 }

@@ -179,7 +179,7 @@ function normalizeQuestion(candidate: unknown): QuestionRaw | null {
 
     const options = raw.options
       .filter((option): option is string => typeof option === 'string')
-      .map(option => option.replace(/^[A-D][.)]\s*/i, '').trim());
+      .map(option => option.replace(/^[\(\[]?[A-Da-d1-4][.):\]\)]\s*/i, '').trim());
     const correct =
       typeof raw.correct === 'number'
         ? raw.correct
@@ -247,7 +247,7 @@ function rebalanceCorrectPositions(questions: QuestionRaw[]): QuestionRaw[] {
     // Re-label A/B/C/D prefixes
     const relabeled = newOptions.map((opt, idx) => {
       const label = String.fromCharCode(65 + idx); // A, B, C, D
-      const stripped = opt.replace(/^[A-Da-d][.)]\s*/i, '').trim();
+      const stripped = opt.replace(/^[\(\[]?[A-Da-d1-4][.):\]\)]\s*/i, '').trim();
       return `${label}) ${stripped}`;
     });
 
@@ -326,8 +326,11 @@ export function checkClozeAnswer(userAnswer: string, acceptableAnswers: string[]
   return acceptableAnswers.some(ans => {
     const target = ans.trim().toLowerCase().replace(/\s+/g, ' ');
     if (cleaned === target) return true;
-    // Very short answers need exact matches; longer answers can tolerate small typos.
-    const maxDist = target.length <= 3 ? 0 : target.length <= 7 ? 1 : 2;
+    // Relative threshold: 20% of target length, with floor for short strings
+    // ≤3 chars: exact match only. 4-9 chars: max 1. 10+ chars: ~20%.
+    const maxDist = target.length <= 3 ? 0 : Math.max(1, Math.floor(target.length * 0.2));
+    // Also reject if user's input length differs too much from target
+    if (Math.abs(cleaned.length - target.length) > maxDist) return false;
     return levenshtein(cleaned, target) <= maxDist;
   });
 }

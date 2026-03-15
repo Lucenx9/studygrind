@@ -18,6 +18,14 @@
     <meta name="format-detection" content="telephone=no" />
   </head>
   <body>
+    <!-- Prevent dark mode FOUC: apply theme before React hydrates -->
+    <script>
+      try {
+        var s = localStorage.getItem('studygrind_settings');
+        if (s && JSON.parse(s).theme === 'dark') document.documentElement.classList.add('dark');
+        else if (!s) document.documentElement.classList.add('dark'); // default is dark
+      } catch (e) { document.documentElement.classList.add('dark'); }
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

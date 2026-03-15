@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useCallback } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -43,6 +43,16 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
   const [directSearch, setDirectSearch] = useState('');
 
   const [clearDialogOpen, setClearDialogOpen] = useState(false);
+
+  // Debounced slider: update UI immediately, persist after 500ms idle
+  const [localQpg, setLocalQpg] = useState(settings.questionsPerGeneration);
+  const sliderTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleSliderChange = useCallback((val: number | readonly number[]) => {
+    const v = Array.isArray(val) ? val[0] : val;
+    setLocalQpg(v);
+    if (sliderTimerRef.current) clearTimeout(sliderTimerRef.current);
+    sliderTimerRef.current = setTimeout(() => onUpdate({ questionsPerGeneration: v }), 500);
+  }, [onUpdate]);
 
   const filteredOpenRouterModels = useMemo(() => {
     if (!openRouterSearch.trim()) return openRouterModels;
@@ -340,9 +350,9 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label>{t('settings.questionsPerGen', lang)}</Label>
-              <span className="text-sm font-medium">{settings.questionsPerGeneration}</span>
+              <span className="text-sm font-medium">{localQpg}</span>
             </div>
-            <Slider value={[settings.questionsPerGeneration]} onValueChange={(val) => { const v = Array.isArray(val) ? val[0] : val; onUpdate({ questionsPerGeneration: v }); }} min={10} max={30} step={1} />
+            <Slider value={[localQpg]} onValueChange={handleSliderChange} min={10} max={30} step={1} />
           </div>
         </CardContent>
       </Card>

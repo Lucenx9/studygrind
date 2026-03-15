@@ -7,6 +7,7 @@ import { useSettings } from '@/hooks/useSettings';
 import { getDueQuestions } from '@/lib/fsrs';
 import { t, type Language } from '@/lib/i18n';
 import { getQuestions, getTopics } from '@/lib/storage';
+import { toast } from 'sonner';
 
 const ONBOARDING_KEY = 'studygrind_onboarding_done';
 const ReviewPage = lazy(async () => ({ default: (await import('@/pages/ReviewPage')).ReviewPage }));
@@ -60,8 +61,15 @@ export default function App() {
     window.addEventListener('studygrind:data-changed', updateDue);
     const interval = setInterval(updateDue, 60000);
 
+    // Show toast when localStorage writes fail (quota exceeded etc.)
+    const storageErrorHandler = () => {
+      toast.error('Storage full — data may not be saved. Export your data as backup.');
+    };
+    window.addEventListener('studygrind:storage-error', storageErrorHandler);
+
     return () => {
       window.removeEventListener('studygrind:data-changed', updateDue);
+      window.removeEventListener('studygrind:storage-error', storageErrorHandler);
       clearInterval(interval);
     };
   }, []);

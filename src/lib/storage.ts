@@ -39,6 +39,10 @@ function set<T>(key: string, value: T): boolean {
     return true;
   } catch (error) {
     console.error(STORAGE_ERROR, error);
+    // Fire a custom event so the UI can show a toast (imported by App.tsx)
+    window.dispatchEvent(new CustomEvent('studygrind:storage-error', {
+      detail: { message: STORAGE_ERROR },
+    }));
     return false;
   }
 }

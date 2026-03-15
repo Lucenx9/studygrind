@@ -25,7 +25,7 @@ export async function extractTextFromPdf(file: File): Promise<PdfExtractionResul
     throw new Error(`PDF too large (${Math.round(file.size / 1024 / 1024)}MB). Maximum is 50MB.`);
   }
   const arrayBuffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer, isEvalSupported: false }).promise;
 
   const totalPages = pdf.numPages;
   const extractedPages = Math.min(totalPages, MAX_PAGES);

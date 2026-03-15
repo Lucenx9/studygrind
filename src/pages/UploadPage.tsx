@@ -7,7 +7,7 @@ import { NotesEditor } from '@/components/upload/NotesEditor';
 import { PdfDropzone } from '@/components/upload/PdfDropzone';
 import { TopicForm } from '@/components/upload/TopicForm';
 import { QuestionPreview } from '@/components/upload/QuestionPreview';
-import { chatCompletion, buildQuizPrompt } from '@/lib/ai';
+import { chatCompletion, buildQuizPrompt, TruncationError } from '@/lib/ai';
 import { parseQuizResponse } from '@/lib/quiz-parser';
 import { saveQuestions, saveTopic, getQuestionsByTopic } from '@/lib/storage';
 import { useTopics } from '@/hooks/useTopics';
@@ -33,11 +33,15 @@ export function UploadPage({ settings }: UploadPageProps) {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lang = settings.language;
 
-  // Timer for generation progress
+  // Timer for generation progress — timestamp-based to avoid drift when tab is backgrounded
+  const generationStartRef = useRef<number>(0);
   useEffect(() => {
     if (generating) {
+      generationStartRef.current = Date.now();
       setElapsedSeconds(0);
-      timerRef.current = setInterval(() => setElapsedSeconds(s => s + 1), 1000);
+      timerRef.current = setInterval(() => {
+        setElapsedSeconds(Math.floor((Date.now() - generationStartRef.current) / 1000));
+      }, 1000);
     } else {
       if (timerRef.current) clearInterval(timerRef.current);
       timerRef.current = null;
@@ -67,11 +71,17 @@ export function UploadPage({ settings }: UploadPageProps) {
 
       let questions: Question[] | null = null;
       let lastError: Error | null = null;
+      let retryCount = settings.questionsPerGeneration;
 
       for (let attempt = 0; attempt < 2; attempt++) {
-        const messages = attempt === 0 ? baseMessages : buildRetryMessages(lastError?.message ?? 'Parse error');
+        // On truncation retry, halve the question count
+        const currentMessages = attempt === 0
+          ? baseMessages
+          : lastError instanceof TruncationError
+            ? (() => { retryCount = Math.max(5, Math.floor(retryCount / 2)); return buildQuizPrompt(notes, retryCount, lang, customInstructions || undefined); })()
+            : buildRetryMessages(lastError?.message ?? 'Parse error');
         try {
-          const response = await chatCompletion(settings.provider, messages);
+          const response = await chatCompletion(settings.provider, currentMessages);
           questions = parseQuizResponse(response, tempTopicId);
           break;
         } catch (err) {

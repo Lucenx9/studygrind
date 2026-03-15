@@ -1,5 +1,5 @@
-import { createEmptyCard, fsrs, generatorParameters, Rating, State } from 'ts-fsrs';
-import type { Card, Grade } from 'ts-fsrs';
+import { createEmptyCard, fsrs, generatorParameters, Rating, State, TypeConvert } from 'ts-fsrs';
+import type { Card, CardInput, Grade } from 'ts-fsrs';
 import type { Question } from './types';
 import { toDateKey } from './utils';
 
@@ -17,13 +17,32 @@ export function createNewCard(): Card {
 
 export function getDueQuestions(questions: Question[]): Question[] {
   const now = new Date();
-  return questions.filter(q => new Date(q.fsrsCard.due) <= now);
+  return questions.filter(q => {
+    const due = new Date(q.fsrsCard.due);
+    // Skip cards with corrupted dates instead of crashing
+    if (isNaN(due.getTime())) return true; // surface them for review so user notices
+    return due <= now;
+  });
+}
+
+/** Safely convert a potentially deserialized card (with string dates) to a proper Card */
+export function safeCard(card: CardInput | Card): Card {
+  return TypeConvert.card(card);
 }
 
 export function rateQuestion(card: Card, rating: Grade): Card {
   const now = new Date();
-  const result = scheduler.repeat(card, now);
-  return result[rating].card;
+  try {
+    // Ensure card has proper Date objects (handles deserialized JSON)
+    const safeC = safeCard(card);
+    const result = scheduler.repeat(safeC, now);
+    return result[rating].card;
+  } catch {
+    // If card is corrupted, reset to new and rate fresh
+    const fresh = createEmptyCard(now);
+    const result = scheduler.repeat(fresh, now);
+    return result[rating].card;
+  }
 }
 
 export function getReviewForecast(questions: Question[], days: number): Map<string, number> {
@@ -50,7 +69,7 @@ export function getReviewForecast(questions: Question[], days: number): Map<stri
 // Preview next review intervals for each rating option (for UI display)
 export function getIntervalPreview(card: Card): { again: string; hard: string; good: string; easy: string } {
   const now = new Date();
-  const result = scheduler.repeat(card, now);
+  const result = scheduler.repeat(safeCard(card), now);
 
   function formatInterval(nextDue: Date): string {
     const diffMs = nextDue.getTime() - now.getTime();
