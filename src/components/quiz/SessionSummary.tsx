@@ -18,18 +18,18 @@ function AccuracyRing({ value }: { value: number }) {
   const color = value >= 80 ? '#22c55e' : value >= 60 ? '#eab308' : '#ef4444';
 
   return (
-    <div className="relative w-28 h-28 mx-auto">
+    <div className="relative w-32 h-32 mx-auto">
       <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r={radius} fill="none" stroke="currentColor" strokeWidth="6" className="text-muted/50" />
+        <circle cx="50" cy="50" r={radius} fill="none" stroke="currentColor" strokeWidth="5" className="text-muted/30" />
         <circle
           cx="50" cy="50" r={radius} fill="none"
-          stroke={color} strokeWidth="6" strokeLinecap="round"
+          stroke={color} strokeWidth="5" strokeLinecap="round"
           strokeDasharray={circumference} strokeDashoffset={offset}
           style={{ transition: 'stroke-dashoffset 1s ease-out' }}
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-2xl font-bold">{value}%</span>
+        <span className="text-3xl font-bold">{value}%</span>
       </div>
     </div>
   );
@@ -47,44 +47,43 @@ export function SessionSummary({ totalQuestions, correctAnswers, durationSeconds
     : (language === 'it' ? 'Continua a esercitarti, stai migliorando!' : 'Keep practicing, you\'re improving!');
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="text-center space-y-3">
-        <Trophy className="h-14 w-14 mx-auto text-yellow-500 animate-celebrate" />
-        <h2 className="text-2xl font-bold animate-fade-in-up">{t('session.complete', language)}</h2>
-        <p className="text-muted-foreground animate-fade-in-up" style={{ animationDelay: '100ms' }}>{message}</p>
+        <Trophy className="h-16 w-16 mx-auto text-yellow-500 animate-celebrate" />
+        <h2 className="text-3xl font-bold tracking-tight animate-fade-in-up">{t('session.complete', language)}</h2>
+        <p className="text-muted-foreground text-base animate-fade-in-up" style={{ animationDelay: '100ms' }}>{message}</p>
       </div>
 
-      {/* Accuracy ring */}
       <div className="animate-fade-in-up" style={{ animationDelay: '200ms' }}>
         <AccuracyRing value={accuracy} />
       </div>
 
       <div className="grid grid-cols-2 gap-4 animate-fade-in-up" style={{ animationDelay: '300ms' }}>
-        <Card>
+        <Card className="rounded-2xl">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-muted-foreground flex items-center gap-1">
               <CheckCircle className="h-4 w-4 text-green-500" /> {t('session.correct', language)}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{correctAnswers}/{totalQuestions}</p>
+            <p className="text-3xl font-bold">{correctAnswers}/{totalQuestions}</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="rounded-2xl">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-muted-foreground flex items-center gap-1">
               <Clock className="h-4 w-4 text-blue-500" /> {t('session.time', language)}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{minutes}:{String(seconds).padStart(2, '0')}</p>
+            <p className="text-3xl font-bold">{minutes}:{String(seconds).padStart(2, '0')}</p>
           </CardContent>
         </Card>
       </div>
 
       <div className="animate-fade-in-up" style={{ animationDelay: '400ms' }}>
-        <Button onClick={onClose} className="w-full rounded-xl" size="lg">
+        <Button onClick={onClose} className="w-full rounded-2xl h-12 text-base font-semibold" size="lg">
           {t('session.done', language)}
         </Button>
       </div>

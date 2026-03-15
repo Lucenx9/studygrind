@@ -28,10 +28,10 @@ export function McqQuestion({ question, onSubmit, disabled, language = 'it' }: M
 
   return (
     <div className="animate-slide-in-question space-y-4">
-      <h2 className="text-xl font-semibold leading-relaxed border-l-3 border-primary pl-4">
+      <h2 className="text-xl font-semibold leading-relaxed border-l-4 border-primary pl-5">
         {question.question}
       </h2>
-      <div className="grid gap-3">
+      <div className="grid gap-3.5">
         {question.options.map((opt, idx) => (
           <OptionButton
             key={idx}
@@ -48,7 +48,7 @@ export function McqQuestion({ question, onSubmit, disabled, language = 'it' }: M
         <Button
           onClick={handleSubmit}
           disabled={selected === null || disabled}
-          className="w-full rounded-xl"
+          className="w-full rounded-2xl h-12 text-base font-semibold"
           size="lg"
         >
           {t('quiz.checkAnswer', language)}

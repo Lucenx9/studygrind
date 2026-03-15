@@ -47,10 +47,10 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
 
     if (review.dueQuestions.length === 0) {
       return (
-        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center">
-          <PartyPopper className="h-16 w-16 text-yellow-500" />
-          <h2 className="text-2xl font-bold">{t('review.allCaughtUp', lang)}</h2>
-          <p className="text-muted-foreground max-w-md">{t('review.allCaughtUpDesc', lang)}</p>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-5 text-center">
+          <PartyPopper className="h-20 w-20 text-yellow-500 animate-celebrate" />
+          <h2 className="text-3xl font-bold">{t('review.allCaughtUp', lang)}</h2>
+          <p className="text-muted-foreground text-base max-w-md">{t('review.allCaughtUpDesc', lang)}</p>
           <div className="flex gap-3">
             <Button variant="outline" onClick={() => onNavigate('study')}>{t('review.studyTopic', lang)}</Button>
             <Button onClick={() => onNavigate('upload')}>{t('review.uploadNotes', lang)}</Button>
@@ -60,28 +60,28 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
     }
 
     return (
-      <div className="space-y-6">
+      <div className="space-y-8">
         <div className="flex items-center gap-3">
           <GraduationCap className="h-6 w-6 text-primary" />
           <h1 className="text-2xl font-bold">{t('review.title', lang)}</h1>
         </div>
-        <Card>
-          <CardContent className="pt-6 text-center space-y-4">
-            <p className="text-4xl font-bold">{review.dueQuestions.length}</p>
+        <Card className="rounded-2xl">
+          <CardContent className="pt-8 pb-8 text-center space-y-4">
+            <p className="text-5xl font-bold text-primary">{review.dueQuestions.length}</p>
             <p className="text-muted-foreground">{t('review.dueToday', lang)}</p>
             {dueByTopic.size > 0 && (
               <div className="flex flex-wrap justify-center gap-2 pt-2">
                 {Array.from(dueByTopic.entries()).map(([topicId, count]) => {
                   const topic = topics.find(tp => tp.id === topicId);
                   return (
-                    <span key={topicId} className="rounded-full bg-secondary px-3 py-1 text-xs">
+                    <span key={topicId} className="rounded-full bg-primary/10 text-primary px-3 py-1.5 text-xs font-medium">
                       {topic?.name ?? t('common.unknown', lang)}: {count}
                     </span>
                   );
                 })}
               </div>
             )}
-            <Button onClick={review.startSession} size="lg" className="mt-4">{t('review.startReview', lang)}</Button>
+            <Button onClick={review.startSession} size="lg" className="mt-4 rounded-2xl h-12 text-base font-semibold">{t('review.startReview', lang)}</Button>
           </CardContent>
         </Card>
       </div>
@@ -105,7 +105,7 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
   if (!q) return null;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <ProgressBar current={review.currentIndex} total={review.dueQuestions.length} results={review.results} />
       {q.type === 'mcq' ? (
         <McqQuestion key={q.id} question={q} onSubmit={(idx, c) => review.submitAnswer(idx, c)} disabled={review.phase === 'feedback'} language={lang} />
