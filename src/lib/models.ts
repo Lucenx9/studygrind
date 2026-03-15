@@ -61,6 +61,7 @@ async function fetchAnthropicModels(apiKey: string): Promise<ModelInfo[]> {
         'Authorization': `Bearer ${apiKey}`,
         'anthropic-version': ANTHROPIC_VERSION,
         'anthropic-beta': ANTHROPIC_OAUTH_BETA,
+        'anthropic-dangerous-direct-browser-access': 'true',
       }
     : {
         'x-api-key': apiKey,

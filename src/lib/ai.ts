@@ -53,11 +53,13 @@ function getAuthHeaders(config: ProviderConfig): Record<string, string> {
   if (config.method === 'direct') {
     if (config.provider === 'anthropic') {
       // OAuth tokens use Bearer auth + beta header; regular keys use x-api-key
+      // Both need anthropic-dangerous-direct-browser-access for CORS
       if (isAnthropicOAuthToken(config.apiKey)) {
         return {
           'Authorization': `Bearer ${config.apiKey}`,
           'anthropic-version': ANTHROPIC_VERSION,
           'anthropic-beta': ANTHROPIC_OAUTH_BETA,
+          'anthropic-dangerous-direct-browser-access': 'true',
         };
       }
       return {
