@@ -127,3 +127,67 @@
     @apply font-sans;
     }
 }
+
+/* StudyGrind animations */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+
+@keyframes correctPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+@keyframes slideInQuestion {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes bounceDot {
+  0%, 80%, 100% { transform: scale(0.4); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes celebrateTrophy {
+  0% { transform: scale(0.5) rotate(-10deg); opacity: 0; }
+  50% { transform: scale(1.1) rotate(5deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.3s ease-out both;
+}
+
+.animate-shake {
+  animation: shake 0.4s ease-in-out;
+}
+
+.animate-correct-pulse {
+  animation: correctPulse 0.4s ease-out;
+}
+
+.animate-slide-in-question {
+  animation: slideInQuestion 0.3s ease-out both;
+}
+
+.animate-celebrate {
+  animation: celebrateTrophy 0.6s ease-out both;
+}
+
+.bounce-dot {
+  animation: bounceDot 1.4s ease-in-out infinite both;
+}
+
+.bounce-dot:nth-child(1) { animation-delay: 0s; }
+.bounce-dot:nth-child(2) { animation-delay: 0.16s; }
+.bounce-dot:nth-child(3) { animation-delay: 0.32s; }
