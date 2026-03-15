@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import type { ClozeQuestion as ClozeQuestionType } from '@/lib/types';
 import { checkClozeAnswer } from '@/lib/quiz-parser';
 import { useVoiceInput } from '@/hooks/useVoiceInput';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { t, type Language } from '@/lib/i18n';
 import { Mic, MicOff } from 'lucide-react';
@@ -64,9 +66,16 @@ export function ClozeQuestion({ question, onSubmit, disabled, language = 'it' }:
   };
 
   return (
-    <div className="animate-slide-in-question space-y-4">
-      <h2 className="text-xl font-semibold leading-relaxed border-l-3 border-primary pl-4">{question.question}</h2>
-      <div className="flex gap-2">
+    <div className="animate-slide-in-question space-y-5">
+      <Card className="border-primary/15 bg-card/92">
+        <CardContent className="space-y-4 px-6 py-6">
+          <Badge variant="secondary" className="bg-primary/12 text-primary">
+            {t('quiz.fillBlank', language)}
+          </Badge>
+          <h2 className="text-2xl font-semibold leading-snug tracking-[-0.025em] sm:text-[2rem]">{question.question}</h2>
+        </CardContent>
+      </Card>
+      <div className="flex flex-col gap-3 sm:flex-row">
         <Input
           value={answer}
           onChange={e => setAnswer(e.target.value)}
@@ -74,6 +83,7 @@ export function ClozeQuestion({ question, onSubmit, disabled, language = 'it' }:
           placeholder={voice.state === 'listening' ? t('quiz.listening', language) : t('quiz.typeAnswer', language)}
           disabled={revealed || disabled}
           className={cn(
+            'min-h-12 flex-1',
             revealed && isCorrect && 'border-green-500 bg-green-500/10 ring-2 ring-green-500/30',
             revealed && !isCorrect && 'border-red-500 bg-red-500/10 ring-2 ring-red-500/30 animate-shake',
             voice.state === 'listening' && !revealed && 'border-red-400',
@@ -88,8 +98,8 @@ export function ClozeQuestion({ question, onSubmit, disabled, language = 'it' }:
             disabled={disabled}
             aria-label={
               voice.state === 'listening'
-                ? (language === 'it' ? 'Ferma input vocale' : 'Stop voice input')
-                : (language === 'it' ? 'Avvia input vocale' : 'Start voice input')
+                ? t('quiz.stopVoiceInput', language)
+                : t('quiz.startVoiceInput', language)
             }
             className={cn(
               'shrink-0',
@@ -104,13 +114,16 @@ export function ClozeQuestion({ question, onSubmit, disabled, language = 'it' }:
           </Button>
         )}
         {!revealed && (
-          <Button onClick={handleSubmit} disabled={!answer.trim() || disabled} className="shrink-0">
+          <Button onClick={handleSubmit} disabled={!answer.trim() || disabled} className="shrink-0 sm:min-w-32">
             {t('quiz.check', language)}
           </Button>
         )}
       </div>
+      {!revealed && (
+        <p className="text-xs text-muted-foreground">{t('quiz.pressEnter', language)}</p>
+      )}
       {revealed && !isCorrect && (
-        <div className="animate-fade-in-up inline-flex items-center gap-2 bg-green-500/10 rounded-lg px-3 py-2">
+        <div className="animate-fade-in-up inline-flex items-center gap-2 rounded-2xl bg-green-500/10 px-4 py-3">
           <span className="text-sm text-muted-foreground">{t('quiz.correctAnswer', language)}</span>
           <strong className="text-base text-green-600 dark:text-green-400">{question.acceptableAnswers[0]}</strong>
         </div>

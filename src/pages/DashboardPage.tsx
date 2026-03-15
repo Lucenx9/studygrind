@@ -29,79 +29,97 @@ export function DashboardPage({ language: lang, onNavigate }: DashboardPageProps
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center gap-3">
-        <BarChart3 className="h-6 w-6 text-primary" />
-        <h1 className="text-2xl font-bold tracking-tight">{t('dash.title', lang)}</h1>
+      <div className="space-y-4">
+        <div className="flex items-center gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/12 text-primary">
+            <BarChart3 className="h-6 w-6" />
+          </div>
+          <div className="space-y-1">
+            <h1 className="text-3xl font-semibold tracking-[-0.03em]">{t('dash.title', lang)}</h1>
+            <p className="max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">{t('dash.subtitle', lang)}</p>
+          </div>
+        </div>
       </div>
 
       {/* Actionable hero */}
       {onNavigate && dueCount > 0 && (
-        <Card className="rounded-2xl border-primary/20 bg-primary/5">
-          <CardContent className="flex items-center justify-between pt-5 pb-5">
-            <div>
-              <p className="text-lg font-semibold">
-                {dueCount} {lang === 'it' ? 'domande da ripassare' : 'questions due'}
-              </p>
+        <Card className="border-primary/20 bg-gradient-to-br from-primary/12 via-card/96 to-card/92">
+          <CardContent className="flex flex-col gap-5 px-6 py-6 sm:flex-row sm:items-end sm:justify-between">
+            <div className="space-y-2">
+              <p className="text-4xl font-semibold tracking-[-0.04em] text-primary">{dueCount}</p>
+              <p className="text-sm font-medium text-muted-foreground">{t('dash.questionsDue', lang)}</p>
               {dash.weakest.length > 0 && dash.weakest[0].accuracy < 0.6 && (
-                <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                <p className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
                   <AlertTriangle className="h-3.5 w-3.5 text-orange-500" />
-                  {lang === 'it' ? `${dash.weakest[0].topic.name} ha bisogno di attenzione` : `${dash.weakest[0].topic.name} needs attention`}
+                  {t('dash.topicNeedsAttention', lang).replace('{topic}', dash.weakest[0].topic.name)}
                 </p>
               )}
             </div>
-            <Button onClick={() => onNavigate('review')} className="rounded-2xl gap-2">
-              {lang === 'it' ? 'Inizia' : 'Start'} <ArrowRight className="h-4 w-4" />
+            <Button onClick={() => onNavigate('review')} size="lg" className="gap-2">
+              {t('dash.start', lang)} <ArrowRight className="h-4 w-4" />
             </Button>
           </CardContent>
         </Card>
       )}
 
       {onNavigate && dash.totalQuestions === 0 && (
-        <Card className="rounded-2xl border-primary/20 bg-primary/5">
-          <CardContent className="flex items-center justify-between pt-5 pb-5">
-            <div>
-              <p className="text-lg font-semibold">
-                {lang === 'it' ? 'Inizia il tuo percorso di studio' : 'Start your learning journey'}
-              </p>
-              <p className="text-sm text-muted-foreground mt-1">
-                {lang === 'it' ? 'Carica i tuoi appunti per generare le prime domande' : 'Upload your notes to generate your first questions'}
-              </p>
+        <Card className="border-primary/20 bg-gradient-to-br from-primary/12 via-card/96 to-card/92">
+          <CardContent className="flex flex-col gap-5 px-6 py-6 sm:flex-row sm:items-end sm:justify-between">
+            <div className="space-y-2">
+              <p className="text-2xl font-semibold tracking-[-0.03em]">{t('dash.startJourney', lang)}</p>
+              <p className="text-sm text-muted-foreground">{t('dash.startJourneyDesc', lang)}</p>
             </div>
-            <Button onClick={() => onNavigate('upload')} className="rounded-2xl gap-2">
-              <Upload className="h-4 w-4" /> {lang === 'it' ? 'Carica' : 'Upload'}
+            <Button onClick={() => onNavigate('upload')} size="lg" className="gap-2">
+              <Upload className="h-4 w-4" /> {t('dash.uploadCta', lang)}
             </Button>
           </CardContent>
         </Card>
       )}
 
       {/* Stat cards */}
-      <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
-        <Card className="rounded-2xl">
-          <CardContent className="pt-5 pb-5 text-center">
-            <Target className="h-6 w-6 mx-auto mb-2 text-blue-500" />
-            <p className="text-3xl font-bold">{dash.todayReviewed}</p>
-            <p className="text-xs text-muted-foreground mt-1">{t('dash.reviewedToday', lang)}</p>
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <Card>
+          <CardContent className="space-y-4 px-5 py-5">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-500">
+              <Target className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-3xl font-semibold tracking-[-0.03em]">{dash.todayReviewed}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{t('dash.reviewedToday', lang)}</p>
+            </div>
           </CardContent>
         </Card>
-        <Card className="rounded-2xl">
-          <CardContent className="pt-5 pb-5 text-center">
-            <Target className="h-6 w-6 mx-auto mb-2 text-green-500" />
-            <p className="text-3xl font-bold">{Math.round(dash.todayAccuracy * 100)}%</p>
-            <p className="text-xs text-muted-foreground mt-1">{t('dash.accuracy', lang)}</p>
+        <Card>
+          <CardContent className="space-y-4 px-5 py-5">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-green-500/10 text-green-500">
+              <Target className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-3xl font-semibold tracking-[-0.03em]">{Math.round(dash.todayAccuracy * 100)}%</p>
+              <p className="mt-1 text-xs text-muted-foreground">{t('dash.accuracy', lang)}</p>
+            </div>
           </CardContent>
         </Card>
-        <Card className="rounded-2xl">
-          <CardContent className="pt-5 pb-5 text-center">
-            <Clock className="h-6 w-6 mx-auto mb-2 text-purple-500" />
-            <p className="text-3xl font-bold">{Math.round(dash.todayDuration / 60)}m</p>
-            <p className="text-xs text-muted-foreground mt-1">{t('dash.timeSpent', lang)}</p>
+        <Card>
+          <CardContent className="space-y-4 px-5 py-5">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-500">
+              <Clock className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-3xl font-semibold tracking-[-0.03em]">{Math.round(dash.todayDuration / 60)}m</p>
+              <p className="mt-1 text-xs text-muted-foreground">{t('dash.timeSpent', lang)}</p>
+            </div>
           </CardContent>
         </Card>
-        <Card className="rounded-2xl">
-          <CardContent className="pt-5 pb-5 text-center">
-            <Flame className="h-6 w-6 mx-auto mb-2 text-orange-500" />
-            <p className="text-3xl font-bold">{dash.streak}</p>
-            <p className="text-xs text-muted-foreground mt-1">{t('dash.dayStreak', lang)}</p>
+        <Card>
+          <CardContent className="space-y-4 px-5 py-5">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-orange-500/10 text-orange-500">
+              <Flame className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-3xl font-semibold tracking-[-0.03em]">{dash.streak}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{t('dash.dayStreak', lang)}</p>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -131,7 +149,7 @@ export function DashboardPage({ language: lang, onNavigate }: DashboardPageProps
                 <CardContent className="pt-5 space-y-3">
                   <div className="flex items-center justify-between">
                     <p className="font-medium truncate">{topic.name}</p>
-                    <Badge variant="secondary">{total} Qs</Badge>
+                    <Badge variant="secondary">{total} {t('dash.questionsShort', lang)}</Badge>
                   </div>
                   {/* State bar - thicker */}
                   <div className="flex h-3 rounded-full overflow-hidden bg-secondary">
@@ -208,7 +226,10 @@ export function DashboardPage({ language: lang, onNavigate }: DashboardPageProps
       {/* Activity heatmap */}
       {dash.activities.length > 0 && (
         <Card className="rounded-2xl">
-          <CardHeader><CardTitle className="text-base">{t('dash.studyActivity', lang)}</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base">{t('dash.studyActivity', lang)}</CardTitle>
+            <p className="text-sm text-muted-foreground">{t('dash.last90Days', lang)}</p>
+          </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               {(() => {
@@ -256,7 +277,7 @@ export function DashboardPage({ language: lang, onNavigate }: DashboardPageProps
                             <div
                               key={date}
                               className={`h-3.5 w-3.5 rounded-[3px] ${colors[intensity]}`}
-                              title={`${date}: ${count} ${lang === 'it' ? 'domande' : 'questions'}`}
+                              title={`${date}: ${count} ${t('dash.questionsWord', lang)}`}
                             />
                           );
                         })}
@@ -271,10 +292,12 @@ export function DashboardPage({ language: lang, onNavigate }: DashboardPageProps
       )}
 
       {dash.totalQuestions === 0 && (
-        <div className="text-center py-16 text-muted-foreground">
-          <BarChart3 className="h-16 w-16 mx-auto mb-4 opacity-20" />
-          <p className="text-lg">{t('dash.noData', lang)}</p>
-        </div>
+        <Card className="border-dashed text-center">
+          <CardContent className="px-6 py-10 text-muted-foreground">
+            <BarChart3 className="mx-auto mb-4 h-16 w-16 opacity-20" />
+            <p className="text-lg">{t('dash.noData', lang)}</p>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

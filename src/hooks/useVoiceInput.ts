@@ -2,9 +2,41 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 
 type VoiceState = 'idle' | 'listening' | 'processing';
 
-// Extend Window for webkit prefix
+interface SpeechRecognitionAlternative {
+  transcript: string;
+}
+
+interface SpeechRecognitionResult {
+  0: SpeechRecognitionAlternative;
+  isFinal: boolean;
+}
+
+interface SpeechRecognitionResultList {
+  length: number;
+  [index: number]: SpeechRecognitionResult;
+}
+
 interface SpeechRecognitionEvent {
   results: SpeechRecognitionResultList;
+}
+
+interface BrowserSpeechRecognition {
+  lang: string;
+  interimResults: boolean;
+  maxAlternatives: number;
+  continuous: boolean;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition?: new () => BrowserSpeechRecognition;
+    webkitSpeechRecognition?: new () => BrowserSpeechRecognition;
+  }
 }
 
 export function useVoiceInput(language: 'it' | 'en') {
@@ -84,11 +116,8 @@ export function useVoiceInput(language: 'it' | 'en') {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function createRecognition(): any | null {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const W = window as any;
-  const SpeechRecognition = W.SpeechRecognition || W.webkitSpeechRecognition;
+function createRecognition(): BrowserSpeechRecognition | null {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) return null;
   return new SpeechRecognition();
 }

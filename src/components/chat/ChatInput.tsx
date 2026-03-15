@@ -34,19 +34,19 @@ export function ChatInput({ onSend, disabled, placeholder }: ChatInputProps) {
   };
 
   return (
-    <div className="flex gap-2 items-end border-t border-border p-3 bg-background">
+    <div className="flex items-end gap-3 border-t border-border/70 bg-background/80 px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] backdrop-blur-xl">
       <Textarea
         ref={textareaRef}
         value={value}
         onChange={e => setValue(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder={placeholder ?? 'Type your response...'}
+        placeholder={placeholder ?? ''}
         disabled={disabled}
-        className="min-h-[40px] max-h-[120px] resize-none text-sm"
+        className="min-h-[52px] max-h-[140px] resize-none text-sm"
         rows={1}
       />
       <Button
-        size="icon"
+        size="icon-sm"
         onClick={handleSubmit}
         disabled={!value.trim() || disabled}
         className="shrink-0"

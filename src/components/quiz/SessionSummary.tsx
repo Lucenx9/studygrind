@@ -43,10 +43,10 @@ export function SessionSummary({ totalQuestions, correctAnswers, durationSeconds
   const seconds = durationSeconds % 60;
 
   const message = accuracy >= 90
-    ? (language === 'it' ? 'Eccezionale!' : 'Outstanding!')
+    ? t('session.outstanding', language)
     : accuracy >= 70
-    ? (language === 'it' ? 'Ottimo lavoro, continua così!' : 'Good work, keep it up!')
-    : (language === 'it' ? 'Continua a esercitarti, stai migliorando!' : 'Keep practicing, you\'re improving!');
+    ? t('session.goodWork', language)
+    : t('session.keepPracticing', language);
 
   // Fire confetti on mount — intensity scales with accuracy
   useEffect(() => {
@@ -73,32 +73,43 @@ export function SessionSummary({ totalQuestions, correctAnswers, durationSeconds
         <AccuracyRing value={accuracy} />
       </div>
 
-      <div className="grid grid-cols-2 gap-4 animate-fade-in-up" style={{ animationDelay: '300ms' }}>
-        <Card className="rounded-2xl">
+      <div className="grid gap-4 animate-fade-in-up sm:grid-cols-3" style={{ animationDelay: '300ms' }}>
+        <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground flex items-center gap-1">
+            <CardTitle className="flex items-center gap-1 text-sm text-muted-foreground">
               <CheckCircle className="h-4 w-4 text-green-500" /> {t('session.correct', language)}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{correctAnswers}/{totalQuestions}</p>
+            <p className="text-3xl font-semibold tracking-[-0.03em]">{correctAnswers}/{totalQuestions}</p>
           </CardContent>
         </Card>
 
-        <Card className="rounded-2xl">
+        <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground flex items-center gap-1">
+            <CardTitle className="flex items-center gap-1 text-sm text-muted-foreground">
+              <CheckCircle className="h-4 w-4 text-primary" /> {t('session.accuracy', language)}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-semibold tracking-[-0.03em]">{accuracy}%</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-1 text-sm text-muted-foreground">
               <Clock className="h-4 w-4 text-blue-500" /> {t('session.time', language)}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{minutes}:{String(seconds).padStart(2, '0')}</p>
+            <p className="text-3xl font-semibold tracking-[-0.03em]">{minutes}:{String(seconds).padStart(2, '0')}</p>
           </CardContent>
         </Card>
       </div>
 
       <div className="animate-fade-in-up" style={{ animationDelay: '400ms' }}>
-        <Button onClick={onClose} className="w-full rounded-2xl h-12 text-base font-semibold" size="lg">
+        <Button onClick={onClose} className="w-full" size="lg">
           {t('session.done', language)}
         </Button>
       </div>

@@ -32,22 +32,29 @@ export function RatingButtons({ onRate, language, intervals }: RatingButtonsProp
   }, [onRate]);
 
   return (
-    <div className="animate-fade-in-up space-y-3">
+    <div className="animate-fade-in-up space-y-4">
       <p className="text-sm text-muted-foreground text-center">{t('quiz.howWellDidYouKnow', language)}</p>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-xl mx-auto">
+      <div className="mx-auto grid max-w-4xl grid-cols-2 gap-3 sm:grid-cols-4">
         {RATINGS.map(({ rating, labelKey, descKey, intervalKey, color, key }) => (
           <Button
             key={rating}
             variant="outline"
             onClick={() => onRate(rating)}
-            className={`flex flex-col h-auto py-5 rounded-2xl active:scale-95 transition-transform duration-100 ${color}`}
+            className={`h-auto min-h-[108px] items-stretch rounded-[22px] p-4 text-left active:scale-95 ${color}`}
           >
-            <span className="font-semibold text-base">{t(labelKey, language)}</span>
-            <span className="text-xs opacity-60">{t(descKey, language)}</span>
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-1">
+                <span className="block text-base font-semibold">{t(labelKey, language)}</span>
+                <span className="block text-xs opacity-65">{t(descKey, language)}</span>
+              </div>
+              <kbd className="rounded-md bg-black/5 px-1.5 py-0.5 text-[10px] font-mono opacity-40 dark:bg-white/5">{key}</kbd>
+            </div>
             {intervals && (
-              <span className="text-[11px] opacity-50 font-mono mt-1">{intervals[intervalKey]}</span>
+              <div className="mt-4 flex items-center justify-between text-[11px] opacity-70">
+                <span>{t('quiz.nextReview', language)}</span>
+                <span className="font-mono">{intervals[intervalKey]}</span>
+              </div>
             )}
-            <kbd className="mt-1 text-[10px] opacity-30 bg-black/5 dark:bg-white/5 rounded-md px-1.5 py-0.5 font-mono">{key}</kbd>
           </Button>
         ))}
       </div>

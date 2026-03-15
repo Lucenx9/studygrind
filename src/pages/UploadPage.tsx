@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { NotesEditor } from '@/components/upload/NotesEditor';
 import { PdfDropzone } from '@/components/upload/PdfDropzone';
 import { TopicForm } from '@/components/upload/TopicForm';
@@ -12,7 +13,7 @@ import { saveQuestions, saveTopic, getQuestionsByTopic } from '@/lib/storage';
 import { useTopics } from '@/hooks/useTopics';
 import { t } from '@/lib/i18n';
 import type { Settings, Question, Topic } from '@/lib/types';
-import { Upload, Loader2, Trash2, BookOpen } from 'lucide-react';
+import { Upload, Loader2, Trash2, BookOpen, Sparkles, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface UploadPageProps {
@@ -55,7 +56,7 @@ export function UploadPage({ settings }: UploadPageProps) {
 
   const handleGenerate = async () => {
     if (!settings.provider) { setError(t('upload.configureProvider', lang)); return; }
-    if (!notes.trim() || !topicName.trim()) { setError(lang === 'it' ? 'Inserisci nome argomento e appunti.' : 'Enter both a topic name and notes.'); return; }
+    if (!notes.trim() || !topicName.trim()) { setError(t('upload.missingFields', lang)); return; }
 
     setGenerating(true); setError(null); setGeneratedQuestions(null);
 
@@ -79,7 +80,7 @@ export function UploadPage({ settings }: UploadPageProps) {
       }
 
       if (!questions) throw lastError ?? new Error('Failed');
-      if (questions.length === 0) { setError(lang === 'it' ? 'Nessuna domanda generata. Prova con appunti diversi.' : 'No valid questions generated.'); return; }
+      if (questions.length === 0) { setError(t('upload.noValidQuestions', lang)); return; }
       setGeneratedQuestions(questions);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed');
@@ -94,40 +95,56 @@ export function UploadPage({ settings }: UploadPageProps) {
     const topic: Topic = { id: pendingTopicId, name: topicName, notes, customInstructions: customInstructions || undefined, createdAt: new Date().toISOString(), questionCount: selected.length };
     const topicSaved = saveTopic(topic);
     const questionsSaved = saveQuestions(selected);
-    if (!topicSaved || !questionsSaved) { setError(lang === 'it' ? 'Errore nel salvataggio locale.' : 'Storage error.'); return; }
+    if (!topicSaved || !questionsSaved) { setError(t('upload.storageError', lang)); return; }
     refresh();
-    toast.success(lang === 'it' ? `${selected.length} domande salvate in "${topicName}"` : `${selected.length} questions saved to "${topicName}"`);
+    toast.success(t('upload.savedToTopic', lang).replace('{n}', String(selected.length)).replace('{topic}', topicName));
     setNotes(''); setTopicName(''); setCustomInstructions(''); setGeneratedQuestions(null); setPendingTopicId(null);
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Upload className="h-6 w-6 text-primary" />
-        <h1 className="text-2xl font-bold tracking-tight">{t('upload.title', lang)}</h1>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex items-center gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/12 text-primary">
+            <Upload className="h-6 w-6" />
+          </div>
+          <div className="space-y-1">
+            <h1 className="text-3xl font-semibold tracking-[-0.03em]">{t('upload.title', lang)}</h1>
+            <p className="max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">{t('upload.subtitle', lang)}</p>
+          </div>
+        </div>
+        <Badge variant={settings.provider ? 'default' : 'secondary'} className="w-fit gap-1 self-start sm:self-auto">
+          <Sparkles className="h-3.5 w-3.5" />
+          {settings.provider ? t('upload.aiReady', lang) : t('upload.aiNeeded', lang)}
+        </Badge>
       </div>
 
       {topics.length > 0 && (
-        <div className="space-y-3">
-          <h2 className="text-sm font-medium text-muted-foreground">{t('upload.yourTopics', lang)}</h2>
-          <div className="grid gap-3 sm:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">{t('upload.manageTopics', lang)}</CardTitle>
+            <CardDescription>{t('upload.yourTopics', lang)}</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-3 sm:grid-cols-2">
             {topics.map(topic => {
               const qCount = getQuestionsByTopic(topic.id).length;
               return (
-                <Card key={topic.id}>
-                  <CardContent className="flex items-center justify-between pt-4">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <BookOpen className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <Card key={topic.id} size="sm" className="border-border/60 bg-background/55">
+                  <CardContent className="flex items-center justify-between gap-4 px-4 py-4">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                        <BookOpen className="h-4 w-4" />
+                      </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{topic.name}</p>
+                        <p className="truncate text-sm font-semibold">{topic.name}</p>
                         <p className="text-xs text-muted-foreground">{qCount} {t('upload.questions', lang)}</p>
                       </div>
                     </div>
                     <Button
                       variant="ghost"
-                      size="icon"
-                      onClick={() => { removeTopic(topic.id); toast(lang === 'it' ? 'Argomento eliminato' : 'Topic deleted'); }}
-                      aria-label={lang === 'it' ? `Elimina ${topic.name}` : `Delete ${topic.name}`}
+                      size="icon-sm"
+                      onClick={() => { removeTopic(topic.id); toast(t('upload.topicDeleted', lang)); }}
+                      aria-label={t('upload.deleteTopic', lang).replace('{topic}', topic.name)}
                       className="shrink-0 text-destructive hover:text-destructive"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -136,29 +153,37 @@ export function UploadPage({ settings }: UploadPageProps) {
                 </Card>
               );
             })}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
 
       {!generatedQuestions ? (
         <Card>
-          <CardHeader><CardTitle className="text-lg">{t('upload.newTopic', lang)}</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-lg">{t('upload.newTopic', lang)}</CardTitle>
+            <CardDescription>{t('upload.newTopicDesc', lang)}</CardDescription>
+          </CardHeader>
           <CardContent className="space-y-6">
             <TopicForm topicName={topicName} onTopicNameChange={setTopicName} customInstructions={customInstructions} onCustomInstructionsChange={setCustomInstructions} language={lang} />
             <PdfDropzone onExtracted={(text) => setNotes(prev => prev ? `${prev}\n\n${text}` : text)} language={lang} />
             <NotesEditor value={notes} onChange={setNotes} language={lang} />
             {error && (
-              <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                {error}
-              </div>
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>{t('common.attention', lang)}</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             )}
             <Button onClick={handleGenerate} disabled={generating || !notes.trim() || !topicName.trim() || !settings.provider} className="w-full" size="lg">
               {generating ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('upload.generating', lang)} {elapsedSeconds}s</>) : t('upload.generateQuestions', lang)}
             </Button>
+            <p className="text-center text-xs text-muted-foreground">{t('upload.generationHelp', lang)}</p>
             {!settings.provider && (
-              <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-700 dark:text-yellow-300 text-center">
-                {t('upload.configureProvider', lang)}
-              </div>
+              <Alert>
+                <Sparkles className="h-4 w-4 text-primary" />
+                <AlertTitle>{t('upload.aiNeeded', lang)}</AlertTitle>
+                <AlertDescription>{t('upload.configureProvider', lang)}</AlertDescription>
+              </Alert>
             )}
           </CardContent>
         </Card>
@@ -168,6 +193,7 @@ export function UploadPage({ settings }: UploadPageProps) {
             <CardTitle className="text-lg flex items-center gap-2">
               {t('upload.generatedQuestions', lang)} <Badge>{generatedQuestions.length}</Badge>
             </CardTitle>
+            <CardDescription>{t('upload.curateQuestionsDesc', lang)}</CardDescription>
           </CardHeader>
           <CardContent>
             {error && <p className="mb-3 text-sm text-destructive">{error}</p>}

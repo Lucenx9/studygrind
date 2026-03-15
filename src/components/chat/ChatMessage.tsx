@@ -13,10 +13,10 @@ export function ChatMessage({ message }: ChatMessageProps) {
     <div className={cn('flex', isUser ? 'justify-end' : 'justify-start')}>
       <div
         className={cn(
-          'max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed',
+          'max-w-[88%] rounded-[22px] border px-4 py-3 text-sm leading-7 shadow-[0_14px_34px_-30px_rgba(15,23,42,0.8)]',
           isUser
-            ? 'bg-primary text-primary-foreground rounded-br-md'
-            : 'bg-secondary text-secondary-foreground rounded-bl-md',
+            ? 'rounded-br-md border-primary bg-primary text-primary-foreground'
+            : 'rounded-bl-md border-border/70 bg-secondary/80 text-secondary-foreground',
         )}
       >
         {!isUser && message.isQuestion && (

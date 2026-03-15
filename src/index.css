@@ -119,13 +119,29 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    }
+  }
   body {
-    @apply bg-background text-foreground antialiased;
-    }
+    @apply min-h-dvh bg-background text-foreground antialiased;
+    background-image:
+      radial-gradient(circle at top center, oklch(0.75 0.16 262 / 0.12), transparent 32%),
+      radial-gradient(circle at 100% 0%, oklch(0.95 0.035 252 / 0.65), transparent 28%);
+    background-attachment: fixed;
+  }
   html {
-    @apply font-sans;
-    }
+    @apply min-h-full font-sans scroll-smooth;
+  }
+  #root {
+    @apply min-h-dvh;
+  }
+  ::selection {
+    background: oklch(0.62 0.18 262 / 24%);
+  }
+}
+
+.dark body {
+  background-image:
+    radial-gradient(circle at top center, oklch(0.64 0.16 262 / 0.16), transparent 34%),
+    radial-gradient(circle at 100% 0%, oklch(0.28 0.03 252 / 0.75), transparent 28%);
 }
 
 /* StudyGrind animations */
@@ -212,6 +228,13 @@ button, [role="button"] {
   -webkit-user-select: none;
   user-select: none;
   touch-action: manipulation;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
 }
 
 * {

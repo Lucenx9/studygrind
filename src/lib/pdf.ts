@@ -7,11 +7,15 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorkerUrl;
 const MAX_PAGES = 50;
 const MIN_CHARS_PER_PAGE = 20; // Below this, likely a scanned/image page
 
+export type PdfExtractionWarning =
+  | { type: 'page-limit'; maxPages: number; totalPages: number }
+  | { type: 'scanned' };
+
 export interface PdfExtractionResult {
   text: string;
   totalPages: number;
   extractedPages: number;
-  warnings: string[];
+  warnings: PdfExtractionWarning[];
 }
 
 export async function extractTextFromPdf(file: File): Promise<PdfExtractionResult> {
@@ -20,12 +24,10 @@ export async function extractTextFromPdf(file: File): Promise<PdfExtractionResul
 
   const totalPages = pdf.numPages;
   const extractedPages = Math.min(totalPages, MAX_PAGES);
-  const warnings: string[] = [];
+  const warnings: PdfExtractionWarning[] = [];
 
   if (totalPages > MAX_PAGES) {
-    warnings.push(
-      `Only the first ${MAX_PAGES} pages were extracted to keep generation costs low (PDF has ${totalPages} pages).`
-    );
+    warnings.push({ type: 'page-limit', maxPages: MAX_PAGES, totalPages });
   }
 
   const textParts: string[] = [];
@@ -50,9 +52,7 @@ export async function extractTextFromPdf(file: File): Promise<PdfExtractionResul
 
   // If most pages have very little text, it's likely a scanned PDF
   if (extractedPages > 0 && lowTextPages / extractedPages > 0.5) {
-    warnings.push(
-      'This PDF appears to be scanned/image-based. Text extraction may not work well. Try copy-pasting your notes instead.'
-    );
+    warnings.push({ type: 'scanned' });
   }
 
   return {

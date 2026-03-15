@@ -14,9 +14,9 @@ interface ExplanationCardProps {
 
 export function ExplanationCard({ explanation, isCorrect, language, onOpenChat, hasChatHistory }: ExplanationCardProps) {
   return (
-    <Card className={`animate-fade-in-up overflow-hidden rounded-2xl ${isCorrect ? 'border-green-500/30' : 'border-red-500/30'}`}>
+    <Card className={`animate-fade-in-up overflow-hidden ${isCorrect ? 'border-green-500/30' : 'border-red-500/30'}`}>
       {/* Status banner */}
-      <div className={`flex items-center gap-2 px-5 py-3.5 ${
+      <div className={`flex items-center gap-2 px-5 py-4 ${
         isCorrect
           ? 'bg-green-50 dark:bg-green-500/15 border-b border-green-500/20'
           : 'bg-red-50 dark:bg-red-500/15 border-b border-red-500/20'
@@ -33,21 +33,23 @@ export function ExplanationCard({ explanation, isCorrect, language, onOpenChat, 
         </span>
       </div>
 
-      <CardContent className="space-y-3 pt-4">
-        <p className="text-[15px] leading-relaxed text-foreground/80">{explanation}</p>
+      <CardContent className="space-y-4 px-5 py-5">
+        <p className="text-[15px] leading-7 text-foreground/85">{explanation}</p>
 
         {onOpenChat && (
           <Button
             variant={isCorrect ? 'ghost' : 'default'}
             size="sm"
-            className={`w-full gap-2 rounded-2xl ${
+            className={`w-full justify-between gap-3 ${
               !isCorrect ? 'bg-primary hover:bg-primary/90 text-primary-foreground' : ''
             }`}
             onClick={onOpenChat}
           >
-            {isCorrect ? <MessageCircle className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
-            {isCorrect ? t('chat.exploreDeeper', language) : t('chat.helpMeThink', language)}
-            {hasChatHistory && <Badge variant="secondary" className="ml-1 text-xs">chat</Badge>}
+            <span className="flex items-center gap-2">
+              {isCorrect ? <MessageCircle className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
+              {isCorrect ? t('chat.exploreDeeper', language) : t('chat.helpMeThink', language)}
+            </span>
+            {hasChatHistory && <Badge variant="secondary" className="text-xs">{t('chat.resume', language)}</Badge>}
           </Button>
         )}
       </CardContent>

@@ -24,7 +24,7 @@ export function ChatPanel({ isOpen, history, loading, canSendMore, language, onS
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [history?.messages.length]);
+  }, [history?.messages.length, loading]);
 
   return (
     <>
@@ -34,34 +34,38 @@ export function ChatPanel({ isOpen, history, loading, canSendMore, language, onS
 
       <div
         className={cn(
-          'fixed right-0 top-0 z-50 flex h-full w-full flex-col bg-card/95 backdrop-blur-sm border-l border-border shadow-xl transition-transform duration-300 md:w-[400px]',
+          'fixed right-0 top-0 z-50 flex h-full w-full max-w-full flex-col border-l border-border/70 bg-card/95 shadow-[0_24px_60px_-32px_rgba(15,23,42,0.85)] backdrop-blur-xl transition-transform duration-300 md:w-[420px]',
           isOpen ? 'translate-x-0' : 'translate-x-full',
         )}
       >
-        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+        <div className="flex items-center justify-between border-b border-border/70 px-5 py-4">
           <div className="flex items-center gap-2">
-            <MessageCircle className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium">{t('chat.socraticTutor', language)}</span>
-            {history && (
-              <span className="text-xs text-muted-foreground">
-                {t('chat.level', language)} {history.socraticLevel}/3
-              </span>
-            )}
+            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary/12 text-primary">
+              <MessageCircle className="h-4 w-4" />
+            </div>
+            <div>
+              <span className="text-sm font-semibold">{t('chat.socraticTutor', language)}</span>
+              {history && (
+                <div className="text-xs text-muted-foreground">
+                  {t('chat.level', language)} {history.socraticLevel}/3
+                </div>
+              )}
+            </div>
           </div>
           <Button
             variant="ghost"
-            size="icon"
+            size="icon-sm"
             onClick={onClose}
-            aria-label={language === 'it' ? 'Chiudi chat' : 'Close chat'}
+            aria-label={t('chat.close', language)}
           >
             <X className="h-4 w-4" />
           </Button>
         </div>
 
-        <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
+        <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
           {(!history || history.messages.length === 0) && (
-            <div className="text-center text-sm text-muted-foreground py-8">
-              <MessageCircle className="h-8 w-8 mx-auto mb-3 opacity-30" />
+            <div className="rounded-[24px] border border-border/70 bg-background/55 px-5 py-8 text-center text-sm text-muted-foreground">
+              <MessageCircle className="mx-auto mb-3 h-8 w-8 opacity-30" />
               <p>{t('chat.tellMe', language)}</p>
               <p className="text-xs mt-1">{t('chat.illGuide', language)}</p>
             </div>
@@ -73,7 +77,7 @@ export function ChatPanel({ isOpen, history, loading, canSendMore, language, onS
 
           {loading && (
             <div className="flex justify-start">
-              <div className="rounded-2xl rounded-bl-md bg-secondary px-4 py-3 flex gap-1">
+              <div className="flex gap-1 rounded-[22px] rounded-bl-md bg-secondary px-4 py-3">
                 <span className="w-2 h-2 rounded-full bg-muted-foreground/50 bounce-dot" />
                 <span className="w-2 h-2 rounded-full bg-muted-foreground/50 bounce-dot" />
                 <span className="w-2 h-2 rounded-full bg-muted-foreground/50 bounce-dot" />
@@ -89,7 +93,7 @@ export function ChatPanel({ isOpen, history, loading, canSendMore, language, onS
             placeholder={t('chat.whatConfused', language)}
           />
         ) : (
-          <div className="border-t border-border p-3 text-center text-xs text-muted-foreground">
+          <div className="border-t border-border/70 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] text-center text-xs text-muted-foreground">
             {t('chat.limitReached', language)}
           </div>
         )}

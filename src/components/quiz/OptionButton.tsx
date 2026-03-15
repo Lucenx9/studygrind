@@ -19,21 +19,23 @@ export function OptionButton({ label, index, selected, correctIndex, disabled, o
 
   return (
     <button
+      type="button"
       onClick={onClick}
       disabled={disabled}
+      aria-pressed={selected}
       style={{ animationDelay: `${index * 60}ms` }}
       className={cn(
-        'cursor-pointer animate-fade-in-up w-full rounded-2xl border p-5 text-left transition-colors duration-150 flex items-center gap-3 active:scale-[0.98]',
-        !isRevealed && !selected && 'border-border hover:border-primary/40 hover:bg-primary/5',
-        !isRevealed && selected && 'border-primary bg-primary/10 ring-2 ring-primary/30 shadow-sm',
+        'cursor-pointer animate-fade-in-up flex w-full items-center gap-4 rounded-[22px] border p-4 text-left transition-[border-color,background-color,transform,opacity,box-shadow] duration-200 active:scale-[0.99] sm:p-5',
+        !isRevealed && !selected && 'border-border/70 bg-card/65 hover:-translate-y-px hover:border-primary/35 hover:bg-primary/6 hover:shadow-[0_16px_30px_-26px_rgba(79,128,255,0.8)]',
+        !isRevealed && selected && 'border-primary bg-primary/10 ring-2 ring-primary/25 shadow-[0_16px_30px_-24px_rgba(79,128,255,0.6)]',
         isRevealed && isCorrect && 'border-green-500 bg-green-50 dark:bg-green-500/12 animate-correct-pulse',
         isWrong && 'border-red-500 bg-red-50 dark:bg-red-500/12 animate-shake',
-        isRevealed && !isCorrect && !isWrong && 'border-border opacity-40',
+        isRevealed && !isCorrect && !isWrong && 'border-border/70 bg-card/55 opacity-45',
         disabled && !isRevealed && 'cursor-not-allowed opacity-50',
       )}
     >
       <span className={cn(
-        'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold transition-colors',
+        'flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-sm font-semibold transition-colors',
         !isRevealed && !selected && 'bg-secondary text-muted-foreground',
         !isRevealed && selected && 'bg-primary text-primary-foreground',
         isRevealed && isCorrect && 'bg-green-500 text-white',
@@ -45,7 +47,7 @@ export function OptionButton({ label, index, selected, correctIndex, disabled, o
          LETTERS[index]}
       </span>
 
-      <span className="flex-1 text-[15px] leading-snug">{label}</span>
+      <span className="flex-1 text-[15px] leading-relaxed sm:text-base">{label}</span>
     </button>
   );
 }

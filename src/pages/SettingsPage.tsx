@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,7 +14,7 @@ import { clearAllData } from '@/lib/storage';
 import { fetchOpenRouterModels, fetchDirectModels, type ModelInfo } from '@/lib/models';
 import { t } from '@/lib/i18n';
 import type { Settings, ProviderConfig, DirectProvider } from '@/lib/types';
-import { Settings as SettingsIcon, Key, Globe, Palette, Trash2, Check, Loader2, RefreshCw } from 'lucide-react';
+import { Settings as SettingsIcon, Key, Globe, Palette, Trash2, Check, Loader2, RefreshCw, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface SettingsPageProps {
@@ -65,8 +66,8 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
       const models = await fetchOpenRouterModels(openRouterKey.trim());
       setOpenRouterModels(models);
       if (models.length > 0 && !openRouterModel) setOpenRouterModel(models[0].id);
-    } catch (err) {
-      setOpenRouterError(err instanceof Error ? err.message : 'Failed');
+    } catch {
+      setOpenRouterError(t('settings.modelFetchError', lang));
     } finally {
       setOpenRouterLoading(false);
     }
@@ -81,8 +82,8 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
       const models = await fetchDirectModels(directProvider, directKey.trim());
       setDirectModels(models);
       if (models.length > 0 && !directModel) setDirectModel(models[0].id);
-    } catch (err) {
-      setDirectError(err instanceof Error ? err.message : 'Failed');
+    } catch {
+      setDirectError(t('settings.modelFetchError', lang));
     } finally {
       setDirectLoading(false);
     }
@@ -92,23 +93,30 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
     if (!openRouterKey.trim() || !openRouterModel) return;
     const config: ProviderConfig = { method: 'openrouter', apiKey: openRouterKey.trim(), model: openRouterModel };
     onUpdate({ provider: config });
-    toast.success(lang === 'it' ? 'OpenRouter connesso' : 'OpenRouter connected');
+    toast.success(t('settings.openrouterConnectedToast', lang));
   };
 
   const saveDirect = () => {
     if (!directKey.trim() || !directModel) return;
     const config: ProviderConfig = { method: 'direct', provider: directProvider, apiKey: directKey.trim(), model: directModel };
     onUpdate({ provider: config });
-    toast.success(lang === 'it' ? 'Provider connesso' : 'Provider connected');
+    toast.success(t('settings.providerConnectedToast', lang));
   };
 
   const handleClearAll = () => { clearAllData(); setClearDialogOpen(false); window.location.reload(); };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <SettingsIcon className="h-6 w-6 text-primary" />
-        <h1 className="text-2xl font-bold tracking-tight">{t('settings.title', lang)}</h1>
+      <div className="space-y-4">
+        <div className="flex items-center gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/12 text-primary">
+            <SettingsIcon className="h-6 w-6" />
+          </div>
+          <div className="space-y-1">
+            <h1 className="text-3xl font-semibold tracking-[-0.03em]">{t('settings.title', lang)}</h1>
+            <p className="max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">{t('settings.subtitle', lang)}</p>
+          </div>
+        </div>
       </div>
 
       {/* OpenRouter */}
@@ -120,12 +128,20 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
           </CardTitle>
           <CardDescription>{t('settings.openrouterDesc', lang)}</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent>
+          <form
+            className="space-y-4"
+            onSubmit={(event) => {
+              event.preventDefault();
+              saveOpenRouter();
+            }}
+          >
           <div className="space-y-2">
             <Label>{t('settings.apiKey', lang)}</Label>
             <div className="flex gap-2">
               <Input type="password" value={openRouterKey} onChange={e => setOpenRouterKey(e.target.value)} placeholder="sk-or-..." className="flex-1" />
               <Button
+                type="button"
                 variant="outline"
                 size="icon"
                 onClick={handleFetchOpenRouterModels}
@@ -137,7 +153,13 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
               </Button>
             </div>
           </div>
-          {openRouterError && <p className="text-sm text-destructive">{openRouterError}</p>}
+          {openRouterError && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>{t('settings.modelsUnavailable', lang)}</AlertTitle>
+              <AlertDescription>{openRouterError}</AlertDescription>
+            </Alert>
+          )}
           <div className="space-y-2">
             <Label>{t('settings.model', lang)}</Label>
             {openRouterModels.length > 0 ? (
@@ -145,7 +167,7 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
                 <Input
                   value={openRouterSearch}
                   onChange={e => setOpenRouterSearch(e.target.value)}
-                  placeholder={lang === 'it' ? 'Cerca modello...' : 'Search model...'}
+                  placeholder={t('settings.searchModel', lang)}
                   className="mb-2"
                 />
                 <Select value={openRouterModel} onValueChange={(v: string | null) => { if (v) { setOpenRouterModel(v); setOpenRouterSearch(''); } }}>
@@ -155,7 +177,7 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
                       <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
                     ))}
                     {filteredOpenRouterModels.length === 0 && (
-                      <div className="px-3 py-2 text-sm text-muted-foreground">{lang === 'it' ? 'Nessun risultato' : 'No results'}</div>
+                      <div className="px-3 py-2 text-sm text-muted-foreground">{t('settings.noResults', lang)}</div>
                     )}
                   </SelectContent>
                 </Select>
@@ -167,9 +189,10 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
               <p className="text-xs text-muted-foreground">{t('settings.noModels', lang)}</p>
             )}
           </div>
-          <Button onClick={saveOpenRouter} disabled={!openRouterKey.trim() || !openRouterModel}>
+          <Button type="submit" disabled={!openRouterKey.trim() || !openRouterModel}>
             {activeMethod === 'openrouter' ? t('settings.update', lang) : t('settings.connect', lang)}
           </Button>
+          </form>
         </CardContent>
       </Card>
 
@@ -182,7 +205,14 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
           </CardTitle>
           <CardDescription>{t('settings.directKeyDesc', lang)}</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent>
+          <form
+            className="space-y-4"
+            onSubmit={(event) => {
+              event.preventDefault();
+              saveDirect();
+            }}
+          >
           <div className="space-y-2">
             <Label>{t('settings.provider', lang)}</Label>
             <Select value={directProvider} onValueChange={(v: string | null) => {
@@ -204,6 +234,7 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
             <div className="flex gap-2">
               <Input type="password" value={directKey} onChange={e => setDirectKey(e.target.value)} placeholder="sk-..." className="flex-1" />
               <Button
+                type="button"
                 variant="outline"
                 size="icon"
                 onClick={handleFetchDirectModels}
@@ -215,7 +246,13 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
               </Button>
             </div>
           </div>
-          {directError && <p className="text-sm text-destructive">{directError}</p>}
+          {directError && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>{t('settings.modelsUnavailable', lang)}</AlertTitle>
+              <AlertDescription>{directError}</AlertDescription>
+            </Alert>
+          )}
           <div className="space-y-2">
             <Label>{t('settings.model', lang)}</Label>
             {directModels.length > 0 ? (
@@ -223,7 +260,7 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
                 <Input
                   value={directSearch}
                   onChange={e => setDirectSearch(e.target.value)}
-                  placeholder={lang === 'it' ? 'Cerca modello...' : 'Search model...'}
+                  placeholder={t('settings.searchModel', lang)}
                   className="mb-2"
                 />
                 <Select value={directModel} onValueChange={(v: string | null) => { if (v) { setDirectModel(v); setDirectSearch(''); } }}>
@@ -239,9 +276,10 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
               <Input value={directModel} onChange={e => setDirectModel(e.target.value)} placeholder="gpt-4o-mini" />
             )}
           </div>
-          <Button onClick={saveDirect} disabled={!directKey.trim() || !directModel}>
+          <Button type="submit" disabled={!directKey.trim() || !directModel}>
             {activeMethod === 'direct' ? t('settings.update', lang) : t('settings.connect', lang)}
           </Button>
+          </form>
         </CardContent>
       </Card>
 
@@ -270,7 +308,7 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
           <div className="flex items-center justify-between">
             <div>
               <Label>{t('settings.language', lang)}</Label>
-              <p className="text-xs text-muted-foreground">{t('settings.languageDesc', lang)}</p>
+              <p className="text-xs text-muted-foreground">{t('settings.languageDescLong', lang)}</p>
             </div>
             <Select value={settings.language} onValueChange={(v: string | null) => { if (v) onUpdate({ language: v as 'it' | 'en' }); }}>
               <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
@@ -282,7 +320,10 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
           </div>
 
           <div className="flex items-center justify-between">
-            <Label className="flex items-center gap-2"><Palette className="h-4 w-4" /> {t('settings.theme', lang)}</Label>
+            <div>
+              <Label className="flex items-center gap-2"><Palette className="h-4 w-4" /> {t('settings.theme', lang)}</Label>
+              <p className="text-xs text-muted-foreground">{t('settings.themeDesc', lang)}</p>
+            </div>
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">{t('settings.dark', lang)}</span>
               <Switch checked={settings.theme === 'light'} onCheckedChange={checked => onUpdate({ theme: checked ? 'light' : 'dark' })} />
@@ -305,7 +346,8 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
 
       {/* Danger zone */}
       <Card className="border-destructive/30">
-        <CardContent className="pt-6">
+        <CardContent className="space-y-4 pt-6">
+          <p className="text-sm leading-6 text-muted-foreground">{t('settings.dangerDesc', lang)}</p>
           <Button variant="destructive" className="w-full gap-2" onClick={() => setClearDialogOpen(true)}>
             <Trash2 className="h-4 w-4" /> {t('settings.clearAllData', lang)}
           </Button>

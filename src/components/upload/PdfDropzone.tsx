@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 import { FileUp, Loader2, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { t, type Language } from '@/lib/i18n';
+import type { PdfExtractionWarning } from '@/lib/pdf';
 
 interface PdfDropzoneProps {
   onExtracted: (text: string) => void;
@@ -11,13 +12,13 @@ interface PdfDropzoneProps {
 export function PdfDropzone({ onExtracted, language }: PdfDropzoneProps) {
   const [dragging, setDragging] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [warnings, setWarnings] = useState<string[]>([]);
+  const [warnings, setWarnings] = useState<PdfExtractionWarning[]>([]);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = useCallback(async (file: File) => {
     if (file.type !== 'application/pdf') {
-      setError('PDF only.');
+      setError(t('pdf.only', language));
       return;
     }
 
@@ -32,17 +33,17 @@ export function PdfDropzone({ onExtracted, language }: PdfDropzoneProps) {
       setWarnings(result.warnings);
 
       if (!result.text.trim()) {
-        setError('No text extracted.');
+        setError(t('pdf.noText', language));
         return;
       }
 
       onExtracted(result.text);
     } catch {
-      setError('Failed to read PDF.');
+      setError(t('pdf.failedRead', language));
     } finally {
       setLoading(false);
     }
-  }, [onExtracted]);
+  }, [language, onExtracted]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -83,8 +84,8 @@ export function PdfDropzone({ onExtracted, language }: PdfDropzoneProps) {
         onKeyDown={handleKeyDown}
         aria-label={t('pdf.dropHere', language)}
         className={cn(
-          'flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-6 cursor-pointer transition-colors',
-          dragging ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50 hover:bg-accent/50',
+          'flex cursor-pointer flex-col items-center justify-center gap-3 rounded-[24px] border-2 border-dashed p-6 text-center transition-[border-color,background-color,transform] duration-200',
+          dragging ? 'border-primary bg-primary/6' : 'border-border/70 bg-background/55 hover:border-primary/40 hover:bg-accent/45',
           loading && 'pointer-events-none opacity-60',
         )}
       >
@@ -96,9 +97,11 @@ export function PdfDropzone({ onExtracted, language }: PdfDropzoneProps) {
           </>
         ) : (
           <>
-            <FileUp className="h-8 w-8 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">{t('pdf.dropHere', language)}</p>
-            <p className="text-xs text-muted-foreground">{t('pdf.extractedBelow', language)}</p>
+            <div className="flex h-14 w-14 items-center justify-center rounded-[22px] bg-primary/10 text-primary">
+              <FileUp className="h-7 w-7" />
+            </div>
+            <p className="text-sm font-medium text-foreground">{t('pdf.dropHere', language)}</p>
+            <p className="text-xs leading-6 text-muted-foreground">{t('pdf.extractedBelow', language)}</p>
           </>
         )}
       </div>
@@ -106,9 +109,13 @@ export function PdfDropzone({ onExtracted, language }: PdfDropzoneProps) {
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       {warnings.map((warning, i) => (
-        <div key={i} className="flex items-start gap-2 rounded-md bg-yellow-500/10 p-3 text-sm">
+        <div key={i} className="flex items-start gap-2 rounded-2xl bg-yellow-500/10 p-3 text-sm">
           <AlertTriangle className="h-4 w-4 shrink-0 text-yellow-600 dark:text-yellow-400 mt-0.5" />
-          <p className="text-yellow-700 dark:text-yellow-300">{warning}</p>
+          <p className="text-yellow-700 dark:text-yellow-300">
+            {warning.type === 'page-limit'
+              ? t('pdf.pagesLimited', language).replace('{max}', String(warning.maxPages)).replace('{total}', String(warning.totalPages))
+              : t('pdf.scannedWarning', language)}
+          </p>
         </div>
       ))}
     </div>

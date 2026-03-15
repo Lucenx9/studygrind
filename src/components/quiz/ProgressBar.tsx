@@ -8,8 +8,8 @@ export function ProgressBar({ current, total, results }: ProgressBarProps) {
   const currentStep = total > 0 ? Math.min(current + 1, total) : 0;
 
   return (
-    <div className="flex items-center gap-3 mb-8">
-      <div className="flex flex-1 gap-1">
+    <div className="flex items-center gap-4">
+      <div className="flex min-w-0 flex-1 gap-1.5">
         {Array.from({ length: total }, (_, i) => {
           const result = results?.[i];
           const isCurrent = i === current;
@@ -19,20 +19,20 @@ export function ProgressBar({ current, total, results }: ProgressBarProps) {
           if (result === 'correct') color = 'bg-green-500';
           else if (result === 'wrong') color = 'bg-red-400';
           else if (isCurrent) color = 'bg-primary';
-          else if (isPast) color = 'bg-primary/40';
+          else if (isPast) color = 'bg-primary/35';
 
           return (
             <div
               key={i}
-              className={`h-2.5 flex-1 rounded-full transition-colors duration-300 ${color}`}
+              className={`h-3 flex-1 rounded-full transition-[background-color,transform] duration-300 ${color}`}
             />
           );
         })}
       </div>
-      <span className="text-sm font-medium whitespace-nowrap">
-        <span className="font-bold text-primary">{currentStep}</span>
+      <div className="rounded-full border border-border/70 bg-background/80 px-3 py-1.5 text-sm font-semibold shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]">
+        <span className="text-primary">{currentStep}</span>
         <span className="text-muted-foreground"> / {total}</span>
-      </span>
+      </div>
     </div>
   );
 }

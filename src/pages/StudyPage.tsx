@@ -22,9 +22,10 @@ import type { Settings } from '@/lib/types';
 
 interface StudyPageProps {
   settings: Settings;
+  onNavigate?: (page: 'upload') => void;
 }
 
-export function StudyPage({ settings }: StudyPageProps) {
+export function StudyPage({ settings, onNavigate }: StudyPageProps) {
   const { topics } = useTopics();
   const study = useStudy();
   const chat = useChat(settings);
@@ -59,61 +60,101 @@ export function StudyPage({ settings }: StudyPageProps) {
 
   if (topics.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center">
-        <BookOpen className="h-16 w-16 text-muted-foreground" />
-        <h2 className="text-2xl font-bold tracking-tight">{t('study.noTopicsYet', lang)}</h2>
-        <p className="text-muted-foreground">{t('study.noTopicsDesc', lang)}</p>
+      <div className="flex min-h-[68vh] items-center justify-center">
+        <Card className="w-full max-w-2xl text-center">
+          <CardContent className="flex flex-col items-center gap-5 px-6 py-10 sm:px-10">
+            <div className="flex h-20 w-20 items-center justify-center rounded-[28px] bg-primary/10 text-primary">
+              <BookOpen className="h-10 w-10" />
+            </div>
+            <div className="space-y-3">
+              <h2 className="text-3xl font-semibold tracking-[-0.03em]">{t('study.noTopicsYet', lang)}</h2>
+              <p className="mx-auto max-w-xl text-sm leading-7 text-muted-foreground sm:text-base">{t('study.noTopicsDesc', lang)}</p>
+            </div>
+            {onNavigate && (
+              <Button size="lg" onClick={() => onNavigate('upload')}>
+                {t('study.uploadNotes', lang)}
+              </Button>
+            )}
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <BookOpen className="h-6 w-6 text-primary" />
-        <h1 className="text-2xl font-bold tracking-tight">{t('study.title', lang)}</h1>
-      </div>
-
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-        <Select
-          value={selectedTopicId || undefined}
-          onValueChange={(v: string | null) => {
-            if (!v) return;
-            setSelectedTopicId(v);
-            loadTopic(v);
-          }}
-        >
-          <SelectTrigger className="w-full sm:w-[300px]">
-            <SelectValue placeholder={t('study.selectTopic', lang)} />
-          </SelectTrigger>
-          <SelectContent>
-            {topics.map(tp => (
-              <SelectItem key={tp.id} value={tp.id}>{tp.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <div className="flex items-center gap-2">
-          <Switch id="count-review" checked={study.countTowardsReview} onCheckedChange={study.setCountTowardsReview} />
-          <Label htmlFor="count-review" className="text-sm">{t('study.countTowardsReview', lang)}</Label>
+      <div className="space-y-4">
+        <div className="flex items-center gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/12 text-primary">
+            <BookOpen className="h-6 w-6" />
+          </div>
+          <div className="space-y-1">
+            <h1 className="text-3xl font-semibold tracking-[-0.03em]">{t('study.title', lang)}</h1>
+            <p className="max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">{t('study.subtitle', lang)}</p>
+          </div>
         </div>
       </div>
 
-      {study.phase === 'idle' && study.questions.length > 0 && (
-        <Card>
-          <CardContent className="pt-6 text-center space-y-4">
-            <p className="text-4xl font-bold">{study.questions.length}</p>
-            <p className="text-muted-foreground">{t('study.questionsInTopic', lang)}</p>
-            <Button onClick={study.start} size="lg">{t('study.startStudying', lang)}</Button>
-          </CardContent>
-        </Card>
-      )}
+      <Card>
+        <CardContent className="space-y-6 px-6 py-6">
+          <div className="space-y-1">
+            <h2 className="text-lg font-semibold tracking-[-0.02em]">{t('study.practiceSetup', lang)}</h2>
+            <p className="text-sm leading-6 text-muted-foreground">{t('study.topicQueueDesc', lang)}</p>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+            <div className="space-y-2">
+              <Label htmlFor="study-topic">{t('study.selectTopic', lang)}</Label>
+              <Select
+                value={selectedTopicId || undefined}
+                onValueChange={(v: string | null) => {
+                  if (!v) return;
+                  setSelectedTopicId(v);
+                  loadTopic(v);
+                }}
+              >
+                <SelectTrigger id="study-topic" className="w-full">
+                  <SelectValue placeholder={t('study.selectTopic', lang)} />
+                </SelectTrigger>
+                <SelectContent>
+                  {topics.map(tp => (
+                    <SelectItem key={tp.id} value={tp.id}>{tp.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="rounded-[22px] border border-border/70 bg-background/55 p-4">
+              <div className="flex items-start gap-3">
+                <Switch id="count-review" checked={study.countTowardsReview} onCheckedChange={study.setCountTowardsReview} className="mt-0.5" />
+                <div className="space-y-1">
+                  <Label htmlFor="count-review">{t('study.countTowardsReview', lang)}</Label>
+                  <p className="text-sm leading-6 text-muted-foreground">{t('study.countTowardsReviewDesc', lang)}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {study.phase === 'idle' && study.questions.length > 0 && (
+            <div className="flex flex-col gap-4 rounded-[22px] border border-primary/15 bg-primary/8 px-5 py-5 sm:flex-row sm:items-end sm:justify-between">
+              <div className="space-y-2">
+                <p className="text-4xl font-semibold tracking-[-0.04em] text-primary">{study.questions.length}</p>
+                <p className="text-sm font-medium text-muted-foreground">{t('study.questionsInTopic', lang)}</p>
+              </div>
+              <Button onClick={study.start} size="lg" className="w-full sm:w-auto">
+                {t('study.startStudying', lang)}
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {(study.phase === 'question' || study.phase === 'feedback') && study.currentQuestion && (
-        <div className="max-w-2xl mx-auto">
-          <div className="sticky top-0 z-10 bg-background pt-2 pb-3">
+        <div className="mx-auto max-w-3xl">
+          <div className="sticky top-0 z-20 mb-6 rounded-[24px] border border-border/70 bg-background/80 px-4 py-4 shadow-[0_18px_45px_-36px_rgba(15,23,42,0.75)] backdrop-blur-xl">
             <ProgressBar current={study.currentIndex} total={study.questions.length} results={study.results} />
           </div>
-          <div className="space-y-6 pt-4">
+          <div className="space-y-5">
             {study.currentQuestion.type === 'mcq' ? (
               <McqQuestion key={study.currentQuestion.id} question={study.currentQuestion} onSubmit={(i, c) => study.submitAnswer(i, c)} disabled={study.phase === 'feedback'} language={lang} />
             ) : (

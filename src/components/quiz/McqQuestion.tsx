@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { McqQuestion as McqQuestionType } from '@/lib/types';
 import { OptionButton } from './OptionButton';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { t, type Language } from '@/lib/i18n';
 import { playCorrectSound, playWrongSound } from '@/lib/sounds';
 
@@ -53,10 +55,17 @@ export function McqQuestion({ question, onSubmit, disabled, language = 'it' }: M
   };
 
   return (
-    <div className="animate-slide-in-question space-y-4">
-      <h2 className="text-xl font-semibold leading-relaxed border-l-4 border-primary pl-5">
-        {question.question}
-      </h2>
+    <div className="animate-slide-in-question space-y-5">
+      <Card className="border-primary/15 bg-card/92">
+        <CardContent className="space-y-4 px-6 py-6">
+          <Badge variant="secondary" className="bg-primary/12 text-primary">
+            {t('quiz.multipleChoice', language)}
+          </Badge>
+          <h2 className="text-2xl font-semibold leading-snug tracking-[-0.025em] sm:text-[2rem]">
+            {question.question}
+          </h2>
+        </CardContent>
+      </Card>
       <div className="grid gap-3.5">
         {question.options.map((opt, idx) => (
           <OptionButton
@@ -74,7 +83,7 @@ export function McqQuestion({ question, onSubmit, disabled, language = 'it' }: M
         <Button
           onClick={handleSubmit}
           disabled={selected === null || disabled}
-          className="w-full rounded-2xl h-12 text-base font-semibold"
+          className="w-full"
           size="lg"
         >
           {t('quiz.checkAnswer', language)}

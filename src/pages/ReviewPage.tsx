@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ProgressBar } from '@/components/quiz/ProgressBar';
@@ -70,41 +71,72 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
 
     if (review.dueQuestions.length === 0) {
       return (
-        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-5 text-center">
-          <PartyPopper className="h-20 w-20 text-yellow-500 animate-celebrate" />
-          <h2 className="text-3xl font-bold tracking-tight">{t('review.allCaughtUp', lang)}</h2>
-          <p className="text-muted-foreground text-base max-w-md">{t('review.allCaughtUpDesc', lang)}</p>
-          <div className="flex gap-3">
-            <Button variant="outline" onClick={() => onNavigate('study')}>{t('review.studyTopic', lang)}</Button>
-            <Button onClick={() => onNavigate('upload')}>{t('review.uploadNotes', lang)}</Button>
-          </div>
+        <div className="flex min-h-[68vh] items-center justify-center">
+          <Card className="w-full max-w-2xl border-primary/15 bg-card/92 text-center">
+            <CardContent className="flex flex-col items-center gap-5 px-6 py-10 sm:px-10">
+              <div className="flex h-20 w-20 items-center justify-center rounded-[28px] bg-yellow-500/12 text-yellow-500">
+                <PartyPopper className="h-11 w-11 animate-celebrate" />
+              </div>
+              <div className="space-y-3">
+                <h2 className="text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">{t('review.allCaughtUp', lang)}</h2>
+                <p className="mx-auto max-w-xl text-sm leading-7 text-muted-foreground sm:text-base">{t('review.allCaughtUpDesc', lang)}</p>
+              </div>
+              <div className="grid w-full gap-3 sm:max-w-md sm:grid-cols-2">
+                <Button variant="outline" size="lg" onClick={() => onNavigate('study')}>
+                  {t('review.studyTopic', lang)}
+                </Button>
+                <Button size="lg" onClick={() => onNavigate('upload')}>
+                  {t('review.uploadNotes', lang)}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       );
     }
 
     return (
       <div className="space-y-8">
-        <div className="flex items-center gap-3">
-          <GraduationCap className="h-6 w-6 text-primary" />
-          <h1 className="text-2xl font-bold">{t('review.title', lang)}</h1>
+        <div className="space-y-4">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/12 text-primary">
+              <GraduationCap className="h-6 w-6" />
+            </div>
+            <div className="space-y-1">
+              <h1 className="text-3xl font-semibold tracking-[-0.03em]">{t('review.title', lang)}</h1>
+              <p className="max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">{t('review.subtitle', lang)}</p>
+            </div>
+          </div>
         </div>
-        <Card className="rounded-2xl">
-          <CardContent className="pt-8 pb-8 text-center space-y-4">
-            <p className="text-5xl font-bold text-primary">{review.dueQuestions.length}</p>
-            <p className="text-muted-foreground">{t('review.dueToday', lang)}</p>
+        <Card className="border-primary/20 bg-gradient-to-br from-primary/12 via-card/95 to-card/90">
+          <CardContent className="space-y-6 px-6 py-6 sm:px-7 sm:py-7">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+              <div className="space-y-4">
+                <Badge variant="secondary" className="bg-primary/12 text-primary">
+                  {t('review.queueReady', lang)}
+                </Badge>
+                <div className="space-y-2">
+                  <p className="text-5xl font-semibold tracking-[-0.05em] text-primary sm:text-6xl">{review.dueQuestions.length}</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t('review.dueToday', lang)}</p>
+                  <p className="max-w-2xl text-sm leading-6 text-muted-foreground">{t('review.queueHint', lang)}</p>
+                </div>
+              </div>
+              <Button onClick={review.startSession} size="lg" className="w-full sm:w-auto">
+                {t('review.startReview', lang)}
+              </Button>
+            </div>
             {dueByTopic.size > 0 && (
-              <div className="flex flex-wrap justify-center gap-2 pt-2">
+              <div className="flex flex-wrap gap-2 pt-1">
                 {Array.from(dueByTopic.entries()).map(([topicId, count]) => {
                   const topic = topics.find(tp => tp.id === topicId);
                   return (
-                    <span key={topicId} className="rounded-full bg-primary/10 text-primary px-3 py-1.5 text-xs font-medium">
+                    <span key={topicId} className="rounded-full border border-primary/10 bg-background/75 px-3 py-1.5 text-xs font-medium text-foreground shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)]">
                       {topic?.name ?? t('common.unknown', lang)}: {count}
                     </span>
                   );
                 })}
               </div>
             )}
-            <Button onClick={review.startSession} size="lg" className="mt-4 rounded-2xl h-12 text-base font-semibold">{t('review.startReview', lang)}</Button>
           </CardContent>
         </Card>
       </div>
@@ -128,25 +160,27 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
   if (!q) return null;
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="sticky top-0 z-10 bg-background pt-2 pb-3">
+    <div className="mx-auto max-w-3xl">
+      <div className="sticky top-0 z-20 mb-6 rounded-[24px] border border-border/70 bg-background/80 px-4 py-4 shadow-[0_18px_45px_-36px_rgba(15,23,42,0.75)] backdrop-blur-xl">
         <div className="flex items-center gap-2">
           {review.canUndo && review.phase === 'question' && (
-            <button
+            <Button
+              variant="outline"
+              size="icon-sm"
               onClick={review.undo}
-              aria-label={lang === 'it' ? 'Annulla ultima valutazione' : 'Undo last rating'}
-              className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
-              title={lang === 'it' ? 'Annulla (Ctrl+Z)' : 'Undo (Ctrl+Z)'}
+              aria-label={t('review.undo', lang)}
+              title={t('review.undoShortcut', lang)}
+              className="shrink-0"
             >
               <Undo2 className="h-4 w-4" />
-            </button>
+            </Button>
           )}
           <div className="flex-1">
             <ProgressBar current={review.currentIndex} total={review.dueQuestions.length} results={review.results} />
           </div>
         </div>
       </div>
-      <div className="space-y-6 pt-4">
+      <div className="space-y-5">
         {q.type === 'mcq' ? (
           <McqQuestion key={q.id} question={q} onSubmit={(idx, c) => review.submitAnswer(idx, c)} disabled={review.phase === 'feedback'} language={lang} />
         ) : (

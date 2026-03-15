@@ -1,17 +1,38 @@
-import { useState, useEffect } from 'react';
+import { lazy, Suspense, useState, useEffect } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import type { Page } from '@/components/layout/Sidebar';
-import { ReviewPage } from '@/pages/ReviewPage';
-import { StudyPage } from '@/pages/StudyPage';
-import { UploadPage } from '@/pages/UploadPage';
-import { DashboardPage } from '@/pages/DashboardPage';
-import { SettingsPage } from '@/pages/SettingsPage';
-import { WelcomeWizard } from '@/components/onboarding/WelcomeWizard';
+import { Card, CardContent } from '@/components/ui/card';
+import { Loader2 } from 'lucide-react';
 import { useSettings } from '@/hooks/useSettings';
 import { getDueQuestions } from '@/lib/fsrs';
+import { t, type Language } from '@/lib/i18n';
 import { getQuestions, getTopics } from '@/lib/storage';
 
 const ONBOARDING_KEY = 'studygrind_onboarding_done';
+const ReviewPage = lazy(async () => ({ default: (await import('@/pages/ReviewPage')).ReviewPage }));
+const StudyPage = lazy(async () => ({ default: (await import('@/pages/StudyPage')).StudyPage }));
+const UploadPage = lazy(async () => ({ default: (await import('@/pages/UploadPage')).UploadPage }));
+const DashboardPage = lazy(async () => ({ default: (await import('@/pages/DashboardPage')).DashboardPage }));
+const SettingsPage = lazy(async () => ({ default: (await import('@/pages/SettingsPage')).SettingsPage }));
+const WelcomeWizard = lazy(async () => ({ default: (await import('@/components/onboarding/WelcomeWizard')).WelcomeWizard }));
+
+function PageFallback({ language }: { language: Language }) {
+  return (
+    <div className="flex min-h-[60vh] items-center justify-center">
+      <Card className="w-full max-w-md border-border/70 bg-card/88">
+        <CardContent className="flex flex-col items-center gap-4 px-6 py-8 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/12 text-primary">
+            <Loader2 className="h-5 w-5 animate-spin" />
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-medium">{t('common.loadingWorkspace', language)}</p>
+            <p className="text-xs text-muted-foreground">{t('common.preparingStudyFlow', language)}</p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 export default function App() {
   const [page, setPage] = useState<Page>('review');
@@ -45,7 +66,7 @@ export default function App() {
     };
   }, []);
 
-  const navigate = (p: Page | 'upload' | 'study') => setPage(p as Page);
+  const navigate = (p: Page) => setPage(p);
 
   const dismissOnboarding = () => {
     localStorage.setItem(ONBOARDING_KEY, '1');
@@ -54,23 +75,25 @@ export default function App() {
 
   return (
     <Layout currentPage={page} onNavigate={setPage} dueCount={dueCount} language={settings.language}>
-      {showOnboarding ? (
-        <WelcomeWizard
-          language={settings.language}
-          hasProvider={settings.provider !== null}
-          onGoToSettings={() => setPage('settings')}
-          onGoToUpload={() => setPage('upload')}
-          onDismiss={dismissOnboarding}
-        />
-      ) : (
-        <>
-          {page === 'review' && <ReviewPage onNavigate={navigate} settings={settings} />}
-          {page === 'study' && <StudyPage settings={settings} />}
-          {page === 'upload' && <UploadPage settings={settings} />}
-          {page === 'dashboard' && <DashboardPage language={settings.language} onNavigate={navigate} />}
-          {page === 'settings' && <SettingsPage settings={settings} onUpdate={updateSettings} />}
-        </>
-      )}
+      <Suspense fallback={<PageFallback language={settings.language} />}>
+        {showOnboarding ? (
+          <WelcomeWizard
+            language={settings.language}
+            hasProvider={settings.provider !== null}
+            onGoToSettings={() => setPage('settings')}
+            onGoToUpload={() => setPage('upload')}
+            onDismiss={dismissOnboarding}
+          />
+        ) : (
+          <>
+            {page === 'review' && <ReviewPage onNavigate={navigate} settings={settings} />}
+            {page === 'study' && <StudyPage settings={settings} onNavigate={navigate} />}
+            {page === 'upload' && <UploadPage settings={settings} />}
+            {page === 'dashboard' && <DashboardPage language={settings.language} onNavigate={navigate} />}
+            {page === 'settings' && <SettingsPage settings={settings} onUpdate={updateSettings} />}
+          </>
+        )}
+      </Suspense>
     </Layout>
   );
 }

@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import type { ChatMessage, ChatHistory, Question, Settings } from '@/lib/types';
+import { t } from '@/lib/i18n';
 import { getChatHistory, saveChatHistory } from '@/lib/storage';
 import { chatCompletion } from '@/lib/ai';
 
@@ -154,9 +155,10 @@ export function useChat(settings: Settings) {
       setHistory(finalHistory);
       saveChatHistory(finalHistory);
     } catch (err) {
+      const fallbackMessage = t('chat.replyError', settings.language);
       const errorMsg: ChatMessage = {
         role: 'assistant',
-        content: `Error: ${err instanceof Error ? err.message : 'Failed to get response'}`,
+        content: err instanceof Error && err.message ? `${fallbackMessage}\n\n${err.message}` : fallbackMessage,
         timestamp: new Date().toISOString(),
       };
       const errorHistory: ChatHistory = {

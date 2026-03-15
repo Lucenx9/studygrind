@@ -47,10 +47,19 @@ export function QuestionPreview({ questions, language, onSave }: QuestionPreview
         {questions.map((q, i) => (
           <Card
             key={q.id}
-            className={`cursor-pointer transition-opacity ${selected.has(q.id) ? '' : 'opacity-40'}`}
+            role="checkbox"
+            tabIndex={0}
+            aria-checked={selected.has(q.id)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                toggle(q.id);
+              }
+            }}
+            className={`cursor-pointer transition-[opacity,border-color,background-color,box-shadow] ${selected.has(q.id) ? 'border-primary/30 bg-primary/6 shadow-[0_18px_36px_-30px_rgba(79,128,255,0.6)]' : 'opacity-65'}`}
             onClick={() => toggle(q.id)}
           >
-            <CardContent className="flex items-start gap-3 pt-4">
+            <CardContent className="flex items-start gap-3 px-4 py-4">
               <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border ${
                 selected.has(q.id) ? 'bg-primary border-primary' : 'border-border'
               }`}>
@@ -60,7 +69,7 @@ export function QuestionPreview({ questions, language, onSave }: QuestionPreview
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-xs text-muted-foreground">#{i + 1}</span>
                   <Badge variant={q.type === 'mcq' ? 'default' : 'secondary'}>
-                    {q.type === 'mcq' ? 'MCQ' : 'Cloze'}
+                    {q.type === 'mcq' ? t('upload.typeMcq', language) : t('upload.typeCloze', language)}
                   </Badge>
                 </div>
                 <p className="text-sm">{q.question}</p>

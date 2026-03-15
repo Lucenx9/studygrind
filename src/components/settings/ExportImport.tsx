@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -38,7 +39,7 @@ export function ExportImport({ language: lang }: ExportImportProps) {
     const data = buildExportData();
     const date = toDateKey(new Date());
     downloadAsJson(data, `studygrind-export-${date}.json`);
-    toast.success(lang === 'it' ? 'Dati esportati' : 'Data exported');
+    toast.success(t('settings.dataExported', lang));
   };
 
   const handleExportTopic = () => {
@@ -60,7 +61,7 @@ export function ExportImport({ language: lang }: ExportImportProps) {
       const preview = await parseImportFile(file);
       setImportPreview(preview);
     } catch (err) {
-      setImportError(err instanceof Error ? err.message : 'Failed to read file.');
+      setImportError(err instanceof Error ? err.message : t('settings.importReadError', lang));
     }
   };
 
@@ -176,7 +177,7 @@ export function ExportImport({ language: lang }: ExportImportProps) {
     ok = mergeActivities(importPreview.data.dailyActivity) && ok;
 
     if (!ok) {
-      setImportError(lang === 'it' ? 'Errore durante l\'importazione locale.' : 'Storage error while importing data.');
+      setImportError(t('settings.importStorageError', lang));
       return;
     }
 
@@ -213,7 +214,7 @@ export function ExportImport({ language: lang }: ExportImportProps) {
               variant="outline"
               onClick={handleExportTopic}
               disabled={!selectedTopic}
-              aria-label={lang === 'it' ? 'Esporta argomento selezionato' : 'Export selected topic'}
+              aria-label={t('settings.exportSelectedTopic', lang)}
             >
               <Download className="h-4 w-4" />
             </Button>
@@ -225,16 +226,22 @@ export function ExportImport({ language: lang }: ExportImportProps) {
           <Upload className="h-4 w-4" /> {t('settings.importData', lang)}
         </Button>
 
-        {importError && <p className="text-sm text-destructive">{importError}</p>}
+        {importError && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>{t('common.attention', lang)}</AlertTitle>
+            <AlertDescription>{importError}</AlertDescription>
+          </Alert>
+        )}
         {importSuccess && <p className="text-sm text-green-600 dark:text-green-400">{t('settings.importSuccess', lang)}</p>}
 
         {importPreview && (
           <div className="rounded-lg border border-border p-4 space-y-3">
             <p className="text-sm font-medium">{t('settings.importPreview', lang)}</p>
             <div className="text-sm text-muted-foreground space-y-1">
-              <p>{importPreview.topicCount} {lang === 'it' ? 'argomenti' : 'topic(s)'}</p>
-              <p>{importPreview.questionCount} {lang === 'it' ? 'domande' : 'question(s)'}</p>
-              <p>{importPreview.sessionCount} {lang === 'it' ? 'sessioni' : 'session(s)'}</p>
+              <p>{t('settings.topicCountLabel', lang).replace('{n}', String(importPreview.topicCount))}</p>
+              <p>{t('settings.questionCountLabel', lang).replace('{n}', String(importPreview.questionCount))}</p>
+              <p>{t('settings.sessionCountLabel', lang).replace('{n}', String(importPreview.sessionCount))}</p>
             </div>
 
             {importPreview.duplicateTopics.length > 0 && (
