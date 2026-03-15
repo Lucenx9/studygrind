@@ -34,7 +34,7 @@ export function RatingButtons({ onRate, language, intervals }: RatingButtonsProp
   return (
     <div className="animate-fade-in-up space-y-4">
       <p className="text-sm text-muted-foreground text-center">{t('quiz.howWellDidYouKnow', language)}</p>
-      <div className="mx-auto grid max-w-4xl grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="mx-auto grid w-full grid-cols-2 gap-3 sm:grid-cols-4">
         {RATINGS.map(({ rating, labelKey, descKey, intervalKey, color, key }) => (
           <Button
             key={rating}

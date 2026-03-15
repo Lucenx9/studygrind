@@ -83,7 +83,7 @@ async function callAnthropic(
     headers: { ...headers, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: config.model,
-      max_tokens: 4096,
+      max_tokens: 16384,
       system: systemMsg?.content ?? '',
       messages: conversationMsgs.map(m => ({ role: m.role, content: m.content })),
     }),
@@ -115,7 +115,10 @@ async function callGoogle(
     parts: [{ text: m.content }],
   }));
 
-  const body: Record<string, unknown> = { contents };
+  const body: Record<string, unknown> = {
+    contents,
+    generationConfig: { maxOutputTokens: 16384 },
+  };
   if (systemMsg) {
     body.systemInstruction = { parts: [{ text: systemMsg.content }] };
   }
@@ -150,6 +153,7 @@ async function callOpenAI(
       model: config.model,
       messages,
       temperature: 0.7,
+      max_tokens: 16384,
     }),
   });
 
