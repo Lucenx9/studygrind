@@ -25,6 +25,8 @@ export function RetypePrompt({ correctAnswer, language, onComplete }: RetypeProm
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && value.trim()) {
+      e.preventDefault();
+      e.stopPropagation();
       if (checkClozeAnswer(value, [correctAnswer])) {
         setMatched(true);
         setTimeout(onComplete, 400);

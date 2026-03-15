@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Rating } from '@/lib/fsrs';
 import type { Grade } from '@/lib/fsrs';
@@ -18,18 +18,32 @@ const RATINGS: { rating: Grade; labelKey: 'rating.again' | 'rating.hard' | 'rati
 ];
 
 export function RatingButtons({ onRate, language, intervals }: RatingButtonsProps) {
+  const [submitted, setSubmitted] = useState(false);
+
+  // Keyboard shortcuts 1-4 — guarded against input focus and double-fire
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (submitted) return;
+      // Use document.activeElement to catch ALL focused inputs (including RetypePrompt)
+      const focused = document.activeElement;
+      if (focused instanceof HTMLInputElement || focused instanceof HTMLTextAreaElement) return;
+
       const idx = ['1', '2', '3', '4'].indexOf(e.key);
       if (idx >= 0) {
         e.preventDefault();
+        setSubmitted(true);
         onRate(RATINGS[idx].rating);
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [onRate]);
+  }, [onRate, submitted]);
+
+  const handleClick = (rating: Grade) => {
+    if (submitted) return;
+    setSubmitted(true);
+    onRate(rating);
+  };
 
   return (
     <div className="animate-fade-in-up space-y-3">
@@ -39,7 +53,8 @@ export function RatingButtons({ onRate, language, intervals }: RatingButtonsProp
           <Button
             key={rating}
             variant="outline"
-            onClick={() => onRate(rating)}
+            onClick={() => handleClick(rating)}
+            disabled={submitted}
             className={`flex flex-col h-auto min-h-[80px] rounded-2xl px-3 py-3 active:scale-95 transition-transform duration-100 ${color}`}
           >
             <div className="flex w-full items-center justify-between">

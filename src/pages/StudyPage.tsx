@@ -34,7 +34,7 @@ export function StudyPage({ settings, onNavigate }: StudyPageProps) {
   const [selectedTopicId, setSelectedTopicId] = useState<string>('');
   const loadTopic = study.loadTopic;
 
-  useEffect(() => { setRetypeComplete(false); }, [study.currentIndex]);
+  useEffect(() => { setRetypeComplete(false); }, [study.currentIndex, selectedTopicId]);
 
   useEffect(() => {
     if (topics.length === 0) {

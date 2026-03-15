@@ -19,13 +19,13 @@ export function McqQuestion({ question, onSubmit, disabled, language = 'it' }: M
   const [revealed, setRevealed] = useState(false);
 
   const handleSubmit = useCallback(() => {
-    if (selected === null) return;
+    if (selected === null || revealed || disabled) return;
     const correct = selected === question.correct;
     setRevealed(true);
     if (correct) playCorrectSound();
     else playWrongSound();
     onSubmit(selected, correct);
-  }, [onSubmit, question.correct, selected]);
+  }, [onSubmit, question.correct, selected, revealed, disabled]);
 
   // Keyboard shortcuts: A/B/C/D or 1/2/3/4 to select, Enter to submit
   useEffect(() => {
