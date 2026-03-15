@@ -1,3 +1,4 @@
+import { set as idbSet, del as idbDel, entries as idbEntries, clear as idbClear } from 'idb-keyval';
 import type { Topic, Question, ReviewSession, DailyActivity, Settings, ChatHistory } from './types';
 
 const KEYS = {
@@ -9,15 +10,69 @@ const KEYS = {
   chatHistories: 'studygrind_chat_histories',
 } as const;
 
-const STORAGE_ERROR =
-  'Unable to persist StudyGrind data locally. Browser storage may be unavailable or full.';
+// ---------------------------------------------------------------------------
+// In-memory cache — synchronous reads, IndexedDB persistence
+// Strategy B: cache serves reads, IndexedDB is source of truth after init
+// ---------------------------------------------------------------------------
+
+const cache = new Map<string, unknown>();
+let initialized = false;
+
+/** Must be called and awaited before React renders (in main.tsx) */
+export async function initStorage(): Promise<void> {
+  if (initialized) return;
+
+  // 1. Load everything from IndexedDB into cache
+  try {
+    const allEntries = await idbEntries();
+    for (const [key, value] of allEntries) {
+      if (typeof key === 'string') {
+        cache.set(key, value);
+      }
+    }
+  } catch {
+    // IndexedDB unavailable — fall through to localStorage migration
+  }
+
+  // 2. Migrate localStorage data into IndexedDB (first-time or fallback)
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith('studygrind_') && !cache.has(key)) {
+      try {
+        const raw = localStorage.getItem(key);
+        if (raw) {
+          const value = JSON.parse(raw, (k, v) => {
+            if ((k === 'due' || k === 'last_review') && typeof v === 'string') {
+              return new Date(v);
+            }
+            return v;
+          });
+          cache.set(key, value);
+          idbSet(key, value).catch(() => {});
+        }
+      } catch {
+        // skip non-JSON values
+      }
+    }
+  }
+
+  initialized = true;
+}
+
+function notifyStorageChange(): void {
+  window.dispatchEvent(new Event('studygrind:data-changed'));
+}
 
 function get<T>(key: string, fallback: T): T {
+  if (initialized) {
+    const value = cache.get(key);
+    return (value !== undefined ? value : fallback) as T;
+  }
+  // Pre-init fallback: read from localStorage (only during app bootstrap)
   try {
     const raw = localStorage.getItem(key);
     if (!raw) return fallback;
     return JSON.parse(raw, (k, v) => {
-      // Revive Date objects from FSRS card fields
       if ((k === 'due' || k === 'last_review') && typeof v === 'string') {
         return new Date(v);
       }
@@ -28,32 +83,42 @@ function get<T>(key: string, fallback: T): T {
   }
 }
 
-function notifyStorageChange(): void {
-  window.dispatchEvent(new Event('studygrind:data-changed'));
-}
-
 function set<T>(key: string, value: T): boolean {
   try {
-    localStorage.setItem(key, JSON.stringify(value));
+    // Update in-memory cache immediately (synchronous)
+    cache.set(key, value);
     notifyStorageChange();
+
+    // Persist to IndexedDB (fire-and-forget)
+    idbSet(key, value).catch(error => {
+      console.error('IndexedDB write failed:', error);
+      window.dispatchEvent(new CustomEvent('studygrind:storage-error', {
+        detail: { message: 'Unable to persist data. Storage may be full.' },
+      }));
+    });
+
+    // Also write to localStorage as fallback (best-effort, may fail on quota)
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch {
+      // localStorage full — IndexedDB is the primary store now, this is fine
+    }
+
     return true;
   } catch (error) {
-    console.error(STORAGE_ERROR, error);
-    // Fire a custom event so the UI can show a toast (imported by App.tsx)
-    window.dispatchEvent(new CustomEvent('studygrind:storage-error', {
-      detail: { message: STORAGE_ERROR },
-    }));
+    console.error('Storage write failed:', error);
     return false;
   }
 }
 
 function remove(key: string): boolean {
   try {
-    localStorage.removeItem(key);
+    cache.delete(key);
     notifyStorageChange();
+    idbDel(key).catch(() => {});
+    try { localStorage.removeItem(key); } catch { /* ignore */ }
     return true;
-  } catch (error) {
-    console.error(STORAGE_ERROR, error);
+  } catch {
     return false;
   }
 }
@@ -227,5 +292,7 @@ export function mergeActivities(activitiesToMerge: DailyActivity[]): boolean {
 
 // Clear all
 export function clearAllData(): boolean {
-  return Object.values(KEYS).every(remove);
+  const keysCleared = Object.values(KEYS).every(remove);
+  idbClear().catch(() => {});
+  return keysCleared;
 }
