@@ -1,9 +1,16 @@
 import { useState, useCallback, useRef } from 'react';
 import type { Question } from '@/lib/types';
+import type { Card as FSRSCard } from 'ts-fsrs';
 import { getDueQuestions, rateQuestion } from '@/lib/fsrs';
 import type { Grade } from '@/lib/fsrs';
 import { getQuestions, updateQuestion, saveSession, recordActivity } from '@/lib/storage';
 import { v4 as uuid } from 'uuid';
+
+interface UndoEntry {
+  previousCardState: FSRSCard;
+  questionId: string;
+  previousState: ReviewState;
+}
 
 export type ReviewPhase = 'idle' | 'question' | 'feedback' | 'summary';
 
@@ -28,6 +35,8 @@ interface ReviewState {
 
 export function useReview() {
   const startTime = useRef<number>(0);
+  const undoStack = useRef<UndoEntry[]>([]);
+  const [canUndo, setCanUndo] = useState(false);
   const [summary, setSummary] = useState<ReviewSummary | null>(null);
   const [state, setState] = useState<ReviewState>({
     phase: 'idle',
@@ -84,11 +93,18 @@ export function useReview() {
     });
   }, []);
 
-  // Use functional setState to avoid stale closure over `state`
   const rate = useCallback((rating: Grade) => {
     setState(prev => {
       const current = prev.dueQuestions[prev.currentIndex];
       if (!current) return prev;
+
+      // Save undo entry before modifying
+      undoStack.current.push({
+        previousCardState: { ...current.fsrsCard },
+        questionId: current.id,
+        previousState: { ...prev },
+      });
+      setCanUndo(true);
 
       // Update FSRS card
       const updatedCard = rateQuestion(current.fsrsCard, rating);
@@ -144,15 +160,37 @@ export function useReview() {
     });
   }, []);
 
+  const undo = useCallback(() => {
+    const entry = undoStack.current.pop();
+    if (!entry) return;
+
+    // Restore the FSRS card to its previous state
+    const question = state.dueQuestions.find(q => q.id === entry.questionId);
+    if (question) {
+      const restored: Question = {
+        ...question,
+        fsrsCard: entry.previousCardState,
+        timesReviewed: Math.max(0, question.timesReviewed - 1),
+        timesCorrect: Math.max(0, question.timesCorrect - (entry.previousState.isCorrect ? 1 : 0)),
+      };
+      updateQuestion(restored);
+    }
+
+    setState(entry.previousState);
+    setCanUndo(undoStack.current.length > 0);
+  }, [state.dueQuestions]);
+
   const currentQuestion = state.dueQuestions[state.currentIndex] ?? null;
 
   return {
     ...state,
     currentQuestion,
     summary,
+    canUndo,
     loadDue,
     startSession,
     submitAnswer,
     rate,
+    undo,
   };
 }

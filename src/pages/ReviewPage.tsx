@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ProgressBar } from '@/components/quiz/ProgressBar';
@@ -6,11 +6,12 @@ import { McqQuestion } from '@/components/quiz/McqQuestion';
 import { ClozeQuestion } from '@/components/quiz/ClozeQuestion';
 import { ExplanationCard } from '@/components/quiz/ExplanationCard';
 import { RatingButtons } from '@/components/quiz/RatingButtons';
+import { RetypePrompt } from '@/components/quiz/RetypePrompt';
 import { SessionSummary } from '@/components/quiz/SessionSummary';
 import { ChatPanel } from '@/components/chat/ChatPanel';
 import { useReview } from '@/hooks/useReview';
 import { useChat } from '@/hooks/useChat';
-import { GraduationCap, PartyPopper } from 'lucide-react';
+import { GraduationCap, PartyPopper, Undo2 } from 'lucide-react';
 import { getTopics } from '@/lib/storage';
 import { getIntervalPreview } from '@/lib/fsrs';
 import { t } from '@/lib/i18n';
@@ -25,11 +26,29 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
   const review = useReview();
   const chat = useChat(settings);
   const lang = settings.language;
+  const [retypeComplete, setRetypeComplete] = useState(false);
+
+  // Reset retype state when moving to next question
+  useEffect(() => {
+    setRetypeComplete(false);
+  }, [review.currentIndex]);
 
   useEffect(() => {
     review.loadDue();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Ctrl+Z undo shortcut
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && review.canUndo && review.phase === 'question') {
+        e.preventDefault();
+        review.undo();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [review.canUndo, review.phase, review.undo]);
 
   const handleOpenChat = () => {
     const q = review.currentQuestion;
@@ -107,7 +126,20 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="sticky top-0 z-10 bg-background pt-2 pb-3">
-        <ProgressBar current={review.currentIndex} total={review.dueQuestions.length} results={review.results} />
+        <div className="flex items-center gap-2">
+          {review.canUndo && review.phase === 'question' && (
+            <button
+              onClick={review.undo}
+              className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+              title="Undo (Ctrl+Z)"
+            >
+              <Undo2 className="h-4 w-4" />
+            </button>
+          )}
+          <div className="flex-1">
+            <ProgressBar current={review.currentIndex} total={review.dueQuestions.length} results={review.results} />
+          </div>
+        </div>
       </div>
       <div className="space-y-6 pt-4">
         {q.type === 'mcq' ? (
@@ -118,7 +150,16 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
         {review.phase === 'feedback' && review.isCorrect !== null && (
           <div className="space-y-4">
             <ExplanationCard explanation={q.explanation} isCorrect={review.isCorrect} language={lang} onOpenChat={settings.provider ? handleOpenChat : undefined} hasChatHistory={chat.hasHistory(q.id)} />
-            <RatingButtons onRate={review.rate} language={lang} intervals={q ? getIntervalPreview(q.fsrsCard) : undefined} />
+            {!review.isCorrect && !retypeComplete && (
+              <RetypePrompt
+                correctAnswer={q.type === 'mcq' ? q.options[q.correct].replace(/^[A-D]\)\s*/, '') : q.acceptableAnswers[0]}
+                language={lang}
+                onComplete={() => setRetypeComplete(true)}
+              />
+            )}
+            {(review.isCorrect || retypeComplete) && (
+              <RatingButtons onRate={review.rate} language={lang} intervals={q ? getIntervalPreview(q.fsrsCard) : undefined} />
+            )}
           </div>
         )}
       </div>

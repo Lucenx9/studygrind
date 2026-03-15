@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -9,6 +9,7 @@ import { McqQuestion } from '@/components/quiz/McqQuestion';
 import { ClozeQuestion } from '@/components/quiz/ClozeQuestion';
 import { ExplanationCard } from '@/components/quiz/ExplanationCard';
 import { RatingButtons } from '@/components/quiz/RatingButtons';
+import { RetypePrompt } from '@/components/quiz/RetypePrompt';
 import { ChatPanel } from '@/components/chat/ChatPanel';
 import { useStudy } from '@/hooks/useStudy';
 import { useTopics } from '@/hooks/useTopics';
@@ -28,6 +29,9 @@ export function StudyPage({ settings }: StudyPageProps) {
   const study = useStudy();
   const chat = useChat(settings);
   const lang = settings.language;
+  const [retypeComplete, setRetypeComplete] = useState(false);
+
+  useEffect(() => { setRetypeComplete(false); }, [study.currentIndex]);
 
   useEffect(() => {
     if (topics.length > 0 && study.questions.length === 0) study.loadTopic(topics[0].id);
@@ -99,7 +103,16 @@ export function StudyPage({ settings }: StudyPageProps) {
             {study.phase === 'feedback' && study.isCorrect !== null && (
               <div className="space-y-4">
                 <ExplanationCard explanation={study.currentQuestion.explanation} isCorrect={study.isCorrect} language={lang} onOpenChat={settings.provider ? handleOpenChat : undefined} hasChatHistory={chat.hasHistory(study.currentQuestion.id)} />
-                <RatingButtons onRate={study.rate} language={lang} intervals={study.currentQuestion ? getIntervalPreview(study.currentQuestion.fsrsCard) : undefined} />
+                {!study.isCorrect && !retypeComplete && (
+                  <RetypePrompt
+                    correctAnswer={study.currentQuestion.type === 'mcq' ? study.currentQuestion.options[study.currentQuestion.correct].replace(/^[A-D]\)\s*/, '') : study.currentQuestion.acceptableAnswers[0]}
+                    language={lang}
+                    onComplete={() => setRetypeComplete(true)}
+                  />
+                )}
+                {(study.isCorrect || retypeComplete) && (
+                  <RatingButtons onRate={study.rate} language={lang} intervals={study.currentQuestion ? getIntervalPreview(study.currentQuestion.fsrsCard) : undefined} />
+                )}
               </div>
             )}
           </div>
