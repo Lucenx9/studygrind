@@ -16,12 +16,15 @@ interface ClozeQuestionProps {
   onSubmit: (answer: string, correct: boolean) => void;
   disabled: boolean;
   language?: Language;
+  /** Pre-filled answer when restoring a session in feedback phase */
+  initialAnswer?: string | null;
+  initialCorrect?: boolean | null;
 }
 
-export function ClozeQuestion({ question, onSubmit, disabled, language = 'it' }: ClozeQuestionProps) {
-  const [answer, setAnswer] = useState('');
-  const [revealed, setRevealed] = useState(false);
-  const [isCorrect, setIsCorrect] = useState(false);
+export function ClozeQuestion({ question, onSubmit, disabled, language = 'it', initialAnswer, initialCorrect }: ClozeQuestionProps) {
+  const [answer, setAnswer] = useState(typeof initialAnswer === 'string' ? initialAnswer : '');
+  const [revealed, setRevealed] = useState(initialAnswer != null);
+  const [isCorrect, setIsCorrect] = useState(initialCorrect ?? false);
   const voice = useVoiceInput(language);
   const voiceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);

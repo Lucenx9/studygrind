@@ -12,11 +12,13 @@ interface McqQuestionProps {
   onSubmit: (selectedIndex: number, correct: boolean) => void;
   disabled: boolean;
   language?: Language;
+  /** Pre-selected answer index when restoring a session in feedback phase */
+  initialAnswer?: number | null;
 }
 
-export function McqQuestion({ question, onSubmit, disabled, language = 'it' }: McqQuestionProps) {
-  const [selected, setSelected] = useState<number | null>(null);
-  const [revealed, setRevealed] = useState(false);
+export function McqQuestion({ question, onSubmit, disabled, language = 'it', initialAnswer }: McqQuestionProps) {
+  const [selected, setSelected] = useState<number | null>(initialAnswer ?? null);
+  const [revealed, setRevealed] = useState(initialAnswer != null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Auto-focus container on mount so keyboard shortcuts work immediately

@@ -182,9 +182,24 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
       </div>
       <div className="space-y-5">
         {q.type === 'mcq' ? (
-          <McqQuestion key={q.id} question={q} onSubmit={(idx, c) => review.submitAnswer(idx, c)} disabled={review.phase === 'feedback'} language={lang} />
+          <McqQuestion
+            key={q.id}
+            question={q}
+            onSubmit={(idx, c) => review.submitAnswer(idx, c)}
+            disabled={review.phase === 'feedback'}
+            language={lang}
+            initialAnswer={review.phase === 'feedback' && typeof review.userAnswer === 'number' ? review.userAnswer : undefined}
+          />
         ) : (
-          <ClozeQuestion key={q.id} question={q} onSubmit={(a, c) => review.submitAnswer(a, c)} disabled={review.phase === 'feedback'} language={lang} />
+          <ClozeQuestion
+            key={q.id}
+            question={q}
+            onSubmit={(a, c) => review.submitAnswer(a, c)}
+            disabled={review.phase === 'feedback'}
+            language={lang}
+            initialAnswer={review.phase === 'feedback' && typeof review.userAnswer === 'string' ? review.userAnswer : undefined}
+            initialCorrect={review.phase === 'feedback' ? review.isCorrect : undefined}
+          />
         )}
         {review.phase === 'feedback' && review.isCorrect !== null && (
           <div className="space-y-4">
