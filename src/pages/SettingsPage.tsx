@@ -125,7 +125,14 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
             <Label>{t('settings.apiKey', lang)}</Label>
             <div className="flex gap-2">
               <Input type="password" value={openRouterKey} onChange={e => setOpenRouterKey(e.target.value)} placeholder="sk-or-..." className="flex-1" />
-              <Button variant="outline" size="icon" onClick={handleFetchOpenRouterModels} disabled={!openRouterKey.trim() || openRouterLoading} title={t('settings.fetchModels', lang)}>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleFetchOpenRouterModels}
+                disabled={!openRouterKey.trim() || openRouterLoading}
+                title={t('settings.fetchModels', lang)}
+                aria-label={t('settings.fetchModels', lang)}
+              >
                 {openRouterLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
               </Button>
             </div>
@@ -196,7 +203,14 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
             <Label>{t('settings.apiKey', lang)}</Label>
             <div className="flex gap-2">
               <Input type="password" value={directKey} onChange={e => setDirectKey(e.target.value)} placeholder="sk-..." className="flex-1" />
-              <Button variant="outline" size="icon" onClick={handleFetchDirectModels} disabled={!directKey.trim() || directLoading} title={t('settings.fetchModels', lang)}>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleFetchDirectModels}
+                disabled={!directKey.trim() || directLoading}
+                title={t('settings.fetchModels', lang)}
+                aria-label={t('settings.fetchModels', lang)}
+              >
                 {directLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
               </Button>
             </div>

@@ -8,6 +8,7 @@ import { BarChart3, Flame, Target, Clock, Calendar, TrendingDown, ArrowRight, Al
 import { Button } from '@/components/ui/button';
 import { getDueQuestions } from '@/lib/fsrs';
 import { getQuestions } from '@/lib/storage';
+import { toDateKey } from '@/lib/utils';
 
 interface DashboardPageProps {
   language: Language;
@@ -17,6 +18,7 @@ interface DashboardPageProps {
 export function DashboardPage({ language: lang, onNavigate }: DashboardPageProps) {
   const dash = useDashboard();
   const dueCount = getDueQuestions(getQuestions()).length;
+  const todayKey = toDateKey(new Date());
 
   const STATE_LABELS: Record<string, { label: string; color: string }> = {
     [State.New]: { label: t('state.new', lang), color: 'bg-gray-400' },
@@ -187,7 +189,7 @@ export function DashboardPage({ language: lang, onNavigate }: DashboardPageProps
           <div className="flex gap-2 overflow-x-auto pb-2">
             {Array.from(dash.forecast.entries()).map(([date, count]) => {
               const d = new Date(date);
-              const isToday = date === new Date().toISOString().split('T')[0];
+              const isToday = date === todayKey;
               return (
                 <div key={date} className={`text-center min-w-[64px] rounded-xl py-3 px-2 ${isToday ? 'bg-primary/10' : ''}`}>
                   <p className={`text-xs font-medium ${isToday ? 'text-primary' : 'text-muted-foreground'}`}>
@@ -220,7 +222,7 @@ export function DashboardPage({ language: lang, onNavigate }: DashboardPageProps
                 const days: { date: string; count: number; dayOfWeek: number }[] = [];
                 const d = new Date(startDay);
                 while (d <= endDay) {
-                  const dateStr = d.toISOString().split('T')[0];
+                  const dateStr = toDateKey(d);
                   days.push({ date: dateStr, count: actMap.get(dateStr) ?? 0, dayOfWeek: d.getDay() });
                   d.setDate(d.getDate() + 1);
                 }

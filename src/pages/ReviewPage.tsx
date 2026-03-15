@@ -27,28 +27,32 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
   const chat = useChat(settings);
   const lang = settings.language;
   const [retypeComplete, setRetypeComplete] = useState(false);
+  const loadDue = review.loadDue;
+  const canUndo = review.canUndo;
+  const phase = review.phase;
+  const undo = review.undo;
+  const currentIndex = review.currentIndex;
 
   // Reset retype state when moving to next question
   useEffect(() => {
     setRetypeComplete(false);
-  }, [review.currentIndex]);
+  }, [currentIndex]);
 
   useEffect(() => {
-    review.loadDue();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    loadDue();
+  }, [loadDue]);
 
   // Ctrl+Z undo shortcut
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && review.canUndo && review.phase === 'question') {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && canUndo && phase === 'question') {
         e.preventDefault();
-        review.undo();
+        undo();
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [review.canUndo, review.phase, review.undo]);
+  }, [canUndo, phase, undo]);
 
   const handleOpenChat = () => {
     const q = review.currentQuestion;
@@ -130,8 +134,9 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
           {review.canUndo && review.phase === 'question' && (
             <button
               onClick={review.undo}
+              aria-label={lang === 'it' ? 'Annulla ultima valutazione' : 'Undo last rating'}
               className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
-              title="Undo (Ctrl+Z)"
+              title={lang === 'it' ? 'Annulla (Ctrl+Z)' : 'Undo (Ctrl+Z)'}
             >
               <Undo2 className="h-4 w-4" />
             </button>

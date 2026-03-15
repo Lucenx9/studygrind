@@ -30,13 +30,25 @@ export function StudyPage({ settings }: StudyPageProps) {
   const chat = useChat(settings);
   const lang = settings.language;
   const [retypeComplete, setRetypeComplete] = useState(false);
+  const [selectedTopicId, setSelectedTopicId] = useState<string>('');
+  const loadTopic = study.loadTopic;
 
   useEffect(() => { setRetypeComplete(false); }, [study.currentIndex]);
 
   useEffect(() => {
-    if (topics.length > 0 && study.questions.length === 0) study.loadTopic(topics[0].id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [topics]);
+    if (topics.length === 0) {
+      if (selectedTopicId) setSelectedTopicId('');
+      return;
+    }
+
+    if (selectedTopicId && topics.some(topic => topic.id === selectedTopicId)) {
+      return;
+    }
+
+    const nextTopicId = topics[0].id;
+    setSelectedTopicId(nextTopicId);
+    loadTopic(nextTopicId);
+  }, [loadTopic, selectedTopicId, topics]);
 
   const handleOpenChat = () => {
     const q = study.currentQuestion;
@@ -63,7 +75,14 @@ export function StudyPage({ settings }: StudyPageProps) {
       </div>
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-        <Select onValueChange={(v: string | null) => { if (v) study.loadTopic(v); }}>
+        <Select
+          value={selectedTopicId || undefined}
+          onValueChange={(v: string | null) => {
+            if (!v) return;
+            setSelectedTopicId(v);
+            loadTopic(v);
+          }}
+        >
           <SelectTrigger className="w-full sm:w-[300px]">
             <SelectValue placeholder={t('study.selectTopic', lang)} />
           </SelectTrigger>

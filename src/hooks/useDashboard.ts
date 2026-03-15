@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { getQuestions, getSessions, getActivities, getTopics } from '@/lib/storage';
 import { getReviewForecast, State } from '@/lib/fsrs';
 import type { Topic } from '@/lib/types';
+import { toDateKey } from '@/lib/utils';
 
 interface TopicStats {
   topic: Topic;
@@ -28,7 +29,7 @@ export function useDashboard() {
     const activities = getActivities();
 
     // Today's summary
-    const today = new Date().toISOString().split('T')[0];
+    const today = toDateKey(new Date());
     const todaySessions = sessions.filter(s => s.date.startsWith(today));
     const todayReviewed = todaySessions.reduce((sum, s) => sum + s.totalQuestions, 0);
     const todayCorrect = todaySessions.reduce((sum, s) => sum + s.correctAnswers, 0);
@@ -80,7 +81,7 @@ export function useDashboard() {
     let streak = 0;
     const d = new Date();
     for (const dateStr of sortedDates) {
-      const expected = d.toISOString().split('T')[0];
+      const expected = toDateKey(d);
       if (dateStr === expected) {
         streak++;
         d.setDate(d.getDate() - 1);

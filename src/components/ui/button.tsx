@@ -1,3 +1,5 @@
+/* eslint-disable react-refresh/only-export-components */
+
 "use client"
 
 import { Button as ButtonPrimitive } from "@base-ui/react/button"

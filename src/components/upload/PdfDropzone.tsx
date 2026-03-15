@@ -64,13 +64,24 @@ export function PdfDropzone({ onExtracted, language }: PdfDropzoneProps) {
     e.target.value = '';
   }, [handleFile]);
 
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      inputRef.current?.click();
+    }
+  }, []);
+
   return (
     <div className="space-y-2">
       <div
+        role="button"
+        tabIndex={loading ? -1 : 0}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onClick={() => inputRef.current?.click()}
+        onKeyDown={handleKeyDown}
+        aria-label={t('pdf.dropHere', language)}
         className={cn(
           'flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-6 cursor-pointer transition-colors',
           dragging ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50 hover:bg-accent/50',

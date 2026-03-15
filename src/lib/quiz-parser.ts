@@ -17,10 +17,7 @@ export function parseQuizResponse(raw: string, topicId: string): Question[] {
 
   for (const candidate of buildParseCandidates(raw)) {
     try {
-      const parsed = JSON.parse(candidate) as unknown;
-      if (!Array.isArray(parsed)) {
-        throw new Error('Response is not an array');
-      }
+      const parsed = extractQuestionArray(JSON.parse(candidate) as unknown);
 
       return parsed
         .map(normalizeQuestion)
@@ -32,6 +29,25 @@ export function parseQuizResponse(raw: string, topicId: string): Question[] {
   }
 
   throw lastError ?? new Error('Failed to parse quiz response');
+}
+
+function extractQuestionArray(parsed: unknown): unknown[] {
+  if (Array.isArray(parsed)) {
+    return parsed;
+  }
+
+  if (!parsed || typeof parsed !== 'object') {
+    throw new Error('Response is not an array');
+  }
+
+  const record = parsed as Record<string, unknown>;
+  for (const key of ['questions', 'quiz', 'items']) {
+    if (Array.isArray(record[key])) {
+      return record[key];
+    }
+  }
+
+  throw new Error('Response is not an array');
 }
 
 function buildParseCandidates(raw: string): string[] {
@@ -159,7 +175,9 @@ function normalizeQuestion(candidate: unknown): QuestionRaw | null {
   if (raw.type === 'mcq') {
     if (!Array.isArray(raw.options)) return null;
 
-    const options = raw.options.filter((option): option is string => typeof option === 'string');
+    const options = raw.options
+      .filter((option): option is string => typeof option === 'string')
+      .map(option => option.replace(/^[A-D][.)]\s*/i, '').trim());
     const correct =
       typeof raw.correct === 'number'
         ? raw.correct
@@ -253,12 +271,12 @@ export function levenshtein(a: string, b: string): number {
 }
 
 export function checkClozeAnswer(userAnswer: string, acceptableAnswers: string[]): boolean {
-  const cleaned = userAnswer.trim().toLowerCase();
+  const cleaned = userAnswer.trim().toLowerCase().replace(/\s+/g, ' ');
   return acceptableAnswers.some(ans => {
-    const target = ans.trim().toLowerCase();
+    const target = ans.trim().toLowerCase().replace(/\s+/g, ' ');
     if (cleaned === target) return true;
-    // Relative threshold: stricter for short words (DNA≠RNA), lenient for long ones
-    const maxDist = target.length <= 4 ? 1 : 2;
+    // Very short answers need exact matches; longer answers can tolerate small typos.
+    const maxDist = target.length <= 3 ? 0 : target.length <= 7 ? 1 : 2;
     return levenshtein(cleaned, target) <= maxDist;
   });
 }

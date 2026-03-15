@@ -3,12 +3,24 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { buildExportData, downloadAsJson, parseImportFile, type ImportPreview } from '@/lib/export';
-import { saveTopic, saveQuestions, getTopics } from '@/lib/storage';
+import {
+  getQuestionsByTopic,
+  getTopics,
+  mergeActivities,
+  replaceChatHistoriesForTopic,
+  replaceQuestionsForTopic,
+  saveChatHistoriesBulk,
+  saveQuestions,
+  saveSessionsBulk,
+  saveTopic,
+} from '@/lib/storage';
 import { useTopics } from '@/hooks/useTopics';
 import { t, type Language } from '@/lib/i18n';
+import { toDateKey } from '@/lib/utils';
 import { Download, Upload, FileJson, AlertTriangle } from 'lucide-react';
 import { v4 as uuid } from 'uuid';
 import { toast } from 'sonner';
+import type { ChatHistory, ReviewSession, Topic } from '@/lib/types';
 
 interface ExportImportProps {
   language: Language;
@@ -24,7 +36,7 @@ export function ExportImport({ language: lang }: ExportImportProps) {
 
   const handleExportAll = () => {
     const data = buildExportData();
-    const date = new Date().toISOString().split('T')[0];
+    const date = toDateKey(new Date());
     downloadAsJson(data, `studygrind-export-${date}.json`);
     toast.success(lang === 'it' ? 'Dati esportati' : 'Data exported');
   };
@@ -56,23 +68,118 @@ export function ExportImport({ language: lang }: ExportImportProps) {
     if (!importPreview) return;
     const existingTopics = getTopics();
     const existingNames = new Map(existingTopics.map(t => [t.name, t.id]));
+    const existingTopicIds = new Set(existingTopics.map(topic => topic.id));
+    const existingQuestionIds = new Set(
+      existingTopics.flatMap(topic => getQuestionsByTopic(topic.id).map(question => question.id)),
+    );
+    const topicIdMap = new Map<string, string>();
+    const questionIdMap = new Map<string, string>();
+    const replacedTopicIds = new Set<string>();
+    let ok = true;
 
     for (const topic of importPreview.data.topics) {
-      const existingId = existingNames.get(topic.name);
-      if (existingId && !replaceDuplicates) {
-        const newId = uuid();
-        const renamedTopic = { ...topic, id: newId, name: `${topic.name} (imported)` };
-        saveTopic(renamedTopic);
-        const topicQuestions = importPreview.data.questions
-          .filter(q => q.topicId === topic.id)
-          .map(q => ({ ...q, topicId: newId, id: uuid() }));
-        saveQuestions(topicQuestions);
+      const duplicateTopicId = existingNames.get(topic.name);
+      const shouldReplaceTopic = Boolean(duplicateTopicId && replaceDuplicates);
+
+      let finalTopicId = topic.id;
+      let finalTopicName = topic.name;
+
+      if (shouldReplaceTopic) {
+        finalTopicId = duplicateTopicId!;
+        replacedTopicIds.add(finalTopicId);
       } else {
-        saveTopic(topic);
-        const topicQuestions = importPreview.data.questions.filter(q => q.topicId === topic.id);
-        saveQuestions(topicQuestions);
+        if (duplicateTopicId) {
+          finalTopicId = uuid();
+          finalTopicName = `${topic.name} (imported)`;
+        } else if (existingTopicIds.has(finalTopicId)) {
+          finalTopicId = uuid();
+        }
       }
+
+      topicIdMap.set(topic.id, finalTopicId);
+      existingTopicIds.add(finalTopicId);
+
+      const replaceableQuestionIds = shouldReplaceTopic
+        ? new Set(getQuestionsByTopic(finalTopicId).map(question => question.id))
+        : new Set<string>();
+
+      const mappedQuestions = importPreview.data.questions
+        .filter(question => question.topicId === topic.id)
+        .map(question => {
+          let nextQuestionId = question.id;
+          if (existingQuestionIds.has(nextQuestionId) && !replaceableQuestionIds.has(nextQuestionId)) {
+            nextQuestionId = uuid();
+          }
+
+          questionIdMap.set(question.id, nextQuestionId);
+          existingQuestionIds.add(nextQuestionId);
+
+          return {
+            ...question,
+            id: nextQuestionId,
+            topicId: finalTopicId,
+          };
+        });
+
+      const normalizedTopic: Topic = {
+        ...topic,
+        id: finalTopicId,
+        name: finalTopicName,
+        questionCount: mappedQuestions.length,
+      };
+
+      ok = saveTopic(normalizedTopic) && ok;
+      ok = (
+        shouldReplaceTopic
+          ? replaceQuestionsForTopic(finalTopicId, mappedQuestions)
+          : saveQuestions(mappedQuestions)
+      ) && ok;
     }
+
+    const mappedChats: ChatHistory[] = importPreview.data.chatHistories
+      .map(history => {
+        const topicId = topicIdMap.get(history.topicId);
+        const questionId = questionIdMap.get(history.questionId);
+        if (!topicId || !questionId) return null;
+
+        return {
+          ...history,
+          topicId,
+          questionId,
+        };
+      })
+      .filter((history): history is ChatHistory => history !== null);
+
+    for (const topicId of replacedTopicIds) {
+      const topicHistories = mappedChats.filter(history => history.topicId === topicId);
+      ok = replaceChatHistoriesForTopic(topicId, topicHistories) && ok;
+    }
+
+    const newTopicChats = mappedChats.filter(history => !replacedTopicIds.has(history.topicId));
+    ok = saveChatHistoriesBulk(newTopicChats) && ok;
+
+    const mappedSessions: ReviewSession[] = importPreview.data.sessions.map(session => ({
+      ...session,
+      ratings: session.ratings
+        .map(rating => {
+          const mappedQuestionId = questionIdMap.get(rating.questionId);
+          return mappedQuestionId ? { ...rating, questionId: mappedQuestionId } : null;
+        })
+        .filter(
+          (
+            rating,
+          ): rating is ReviewSession['ratings'][number] => rating !== null,
+        ),
+    }));
+
+    ok = saveSessionsBulk(mappedSessions) && ok;
+    ok = mergeActivities(importPreview.data.dailyActivity) && ok;
+
+    if (!ok) {
+      setImportError(lang === 'it' ? 'Errore durante l\'importazione locale.' : 'Storage error while importing data.');
+      return;
+    }
+
     refresh();
     setImportPreview(null);
     setImportSuccess(true);
@@ -102,7 +209,12 @@ export function ExportImport({ language: lang }: ExportImportProps) {
                 ))}
               </SelectContent>
             </Select>
-            <Button variant="outline" onClick={handleExportTopic} disabled={!selectedTopic}>
+            <Button
+              variant="outline"
+              onClick={handleExportTopic}
+              disabled={!selectedTopic}
+              aria-label={lang === 'it' ? 'Esporta argomento selezionato' : 'Export selected topic'}
+            >
               <Download className="h-4 w-4" />
             </Button>
           </div>

@@ -48,7 +48,12 @@ export function ChatPanel({ isOpen, history, loading, canSendMore, language, onS
               </span>
             )}
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            aria-label={language === 'it' ? 'Chiudi chat' : 'Close chat'}
+          >
             <X className="h-4 w-4" />
           </Button>
         </div>

@@ -89,6 +89,11 @@ export function saveQuestions(questions: Question[]): boolean {
   return set(KEYS.questions, [...existing, ...newQs]);
 }
 
+export function replaceQuestionsForTopic(topicId: string, questions: Question[]): boolean {
+  const nextQuestions = getQuestions().filter(q => q.topicId !== topicId);
+  return set(KEYS.questions, [...nextQuestions, ...questions]);
+}
+
 export function updateQuestion(question: Question): boolean {
   const questions = getQuestions();
   const idx = questions.findIndex(q => q.id === question.id);
@@ -108,6 +113,17 @@ export function saveSession(session: ReviewSession): boolean {
   const sessions = getSessions();
   sessions.push(session);
   return set(KEYS.sessions, sessions);
+}
+
+export function saveSessionsBulk(sessions: ReviewSession[]): boolean {
+  const existing = getSessions();
+  const byId = new Map(existing.map(session => [session.id, session]));
+
+  for (const session of sessions) {
+    byId.set(session.id, session);
+  }
+
+  return set(KEYS.sessions, Array.from(byId.values()));
 }
 
 // Daily activity
@@ -159,6 +175,50 @@ export function saveChatHistory(history: ChatHistory): boolean {
   if (idx >= 0) histories[idx] = history;
   else histories.push(history);
   return set(KEYS.chatHistories, histories);
+}
+
+export function saveChatHistoriesBulk(histories: ChatHistory[]): boolean {
+  const existing = getChatHistories();
+  const byQuestionId = new Map(existing.map(history => [history.questionId, history]));
+
+  for (const history of histories) {
+    byQuestionId.set(history.questionId, history);
+  }
+
+  return set(KEYS.chatHistories, Array.from(byQuestionId.values()));
+}
+
+export function replaceChatHistoriesForTopic(topicId: string, histories: ChatHistory[]): boolean {
+  const nextHistories = getChatHistories().filter(history => history.topicId !== topicId);
+  return set(KEYS.chatHistories, [...nextHistories, ...histories]);
+}
+
+export function mergeActivities(activitiesToMerge: DailyActivity[]): boolean {
+  const activities = getActivities();
+
+  for (const incoming of activitiesToMerge) {
+    const idx = activities.findIndex(activity => activity.date === incoming.date);
+    if (idx >= 0) {
+      const existing = activities[idx];
+      const totalQuestions = existing.questionsReviewed + incoming.questionsReviewed;
+      activities[idx] = {
+        date: existing.date,
+        questionsReviewed: totalQuestions,
+        accuracy:
+          totalQuestions > 0
+            ? (
+                existing.accuracy * existing.questionsReviewed +
+                incoming.accuracy * incoming.questionsReviewed
+              ) / totalQuestions
+            : 0,
+      };
+    } else {
+      activities.push(incoming);
+    }
+  }
+
+  activities.sort((a, b) => a.date.localeCompare(b.date));
+  return set(KEYS.activities, activities);
 }
 
 // Clear all

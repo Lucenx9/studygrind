@@ -123,7 +123,13 @@ export function UploadPage({ settings }: UploadPageProps) {
                         <p className="text-xs text-muted-foreground">{qCount} {t('upload.questions', lang)}</p>
                       </div>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={() => { removeTopic(topic.id); toast(lang === 'it' ? 'Argomento eliminato' : 'Topic deleted'); }} className="shrink-0 text-destructive hover:text-destructive">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => { removeTopic(topic.id); toast(lang === 'it' ? 'Argomento eliminato' : 'Topic deleted'); }}
+                      aria-label={lang === 'it' ? `Elimina ${topic.name}` : `Delete ${topic.name}`}
+                      className="shrink-0 text-destructive hover:text-destructive"
+                    >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </CardContent>

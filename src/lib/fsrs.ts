@@ -1,6 +1,7 @@
 import { createEmptyCard, fsrs, generatorParameters, Rating, State } from 'ts-fsrs';
 import type { Card, Grade } from 'ts-fsrs';
 import type { Question } from './types';
+import { toDateKey } from './utils';
 
 const params = generatorParameters({
   enable_fuzz: true,
@@ -32,13 +33,12 @@ export function getReviewForecast(questions: Question[], days: number): Map<stri
   for (let i = 0; i < days; i++) {
     const date = new Date(now);
     date.setDate(date.getDate() + i);
-    const dateStr = date.toISOString().split('T')[0];
-    forecast.set(dateStr, 0);
+    forecast.set(toDateKey(date), 0);
   }
 
   for (const q of questions) {
     const due = new Date(q.fsrsCard.due);
-    const dateStr = due.toISOString().split('T')[0];
+    const dateStr = toDateKey(due);
     if (forecast.has(dateStr)) {
       forecast.set(dateStr, (forecast.get(dateStr) ?? 0) + 1);
     }

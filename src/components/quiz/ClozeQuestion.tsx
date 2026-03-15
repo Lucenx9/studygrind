@@ -23,11 +23,14 @@ export function ClozeQuestion({ question, onSubmit, disabled, language = 'it' }:
   const voice = useVoiceInput(language);
 
   const handleVoiceResult = (transcript: string) => {
+    if (revealed || disabled) return;
     setAnswer(transcript);
     setTimeout(() => {
       const correct = checkClozeAnswer(transcript, question.acceptableAnswers);
       setIsCorrect(correct);
       setRevealed(true);
+      if (correct) playCorrectSound();
+      else playWrongSound();
       onSubmit(transcript, correct);
     }, 300);
   };
@@ -83,6 +86,11 @@ export function ClozeQuestion({ question, onSubmit, disabled, language = 'it' }:
             size="icon"
             onClick={handleMicToggle}
             disabled={disabled}
+            aria-label={
+              voice.state === 'listening'
+                ? (language === 'it' ? 'Ferma input vocale' : 'Stop voice input')
+                : (language === 'it' ? 'Avvia input vocale' : 'Start voice input')
+            }
             className={cn(
               'shrink-0',
               voice.state === 'listening' && 'border-red-500 bg-red-500/10 animate-pulse',

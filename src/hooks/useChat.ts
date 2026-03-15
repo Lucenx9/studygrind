@@ -57,6 +57,8 @@ export function useChat(settings: Settings) {
   const [loading, setLoading] = useState(false);
   // Ref holds context but sendMessage captures a snapshot to avoid race conditions
   const contextRef = useRef<ChatContext | null>(null);
+  const activeChatIdRef = useRef<string | null>(null);
+  const requestVersionRef = useRef(0);
 
   const openChat = useCallback((
     question: Question,
@@ -65,6 +67,9 @@ export function useChat(settings: Settings) {
     notes: string,
   ) => {
     contextRef.current = { question, userAnswer, isCorrect, notes };
+    activeChatIdRef.current = question.id;
+    requestVersionRef.current += 1;
+    setLoading(false);
 
     const existing = getChatHistory(question.id);
     if (existing) {
@@ -91,8 +96,10 @@ export function useChat(settings: Settings) {
   const sendMessage = useCallback(async (content: string) => {
     // Snapshot context at call time to prevent race conditions
     const ctx = contextRef.current;
-    if (!history || !ctx || !settings.provider) return;
-    if (history.messages.length >= MAX_MESSAGES) return;
+    const currentHistory = history;
+    const provider = settings.provider;
+    if (!currentHistory || !ctx || !provider) return;
+    if (currentHistory.messages.length >= MAX_MESSAGES) return;
 
     const userMsg: ChatMessage = {
       role: 'user',
@@ -100,8 +107,12 @@ export function useChat(settings: Settings) {
       timestamp: new Date().toISOString(),
     };
 
-    const updatedMessages = [...history.messages, userMsg];
-    const updatedHistory: ChatHistory = { ...history, messages: updatedMessages };
+    const updatedMessages = [...currentHistory.messages, userMsg];
+    const updatedHistory: ChatHistory = { ...currentHistory, messages: updatedMessages };
+    const chatId = currentHistory.questionId;
+    const requestVersion = requestVersionRef.current + 1;
+
+    requestVersionRef.current = requestVersion;
     setHistory(updatedHistory);
     setLoading(true);
 
@@ -114,13 +125,12 @@ export function useChat(settings: Settings) {
       const llmMessages = [
         { role: 'system' as const, content: `${systemPrompt}\n\nCurrent escalation level: LEVEL ${level}. Follow the instructions for this level strictly.` },
         ...updatedMessages.map(m => ({
-          role: m.role as 'user' | 'system',
+          role: m.role,
           content: m.content,
         })),
       ];
 
-      // Use the snapshotted provider, not settings.provider (which could change)
-      const response = await chatCompletion(settings.provider, llmMessages);
+      const response = await chatCompletion(provider, llmMessages);
 
       const isQuestion = response.trim().endsWith('?');
 
@@ -137,6 +147,10 @@ export function useChat(settings: Settings) {
         socraticLevel: level,
       };
 
+      if (activeChatIdRef.current !== chatId || requestVersionRef.current !== requestVersion) {
+        return;
+      }
+
       setHistory(finalHistory);
       saveChatHistory(finalHistory);
     } catch (err) {
@@ -149,9 +163,15 @@ export function useChat(settings: Settings) {
         ...updatedHistory,
         messages: [...updatedMessages, errorMsg],
       };
+      if (activeChatIdRef.current !== chatId || requestVersionRef.current !== requestVersion) {
+        return;
+      }
       setHistory(errorHistory);
+      saveChatHistory(errorHistory);
     } finally {
-      setLoading(false);
+      if (activeChatIdRef.current === chatId && requestVersionRef.current === requestVersion) {
+        setLoading(false);
+      }
     }
   }, [history, settings]);
 

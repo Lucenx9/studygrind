@@ -1,3 +1,5 @@
+/* eslint-disable react-refresh/only-export-components */
+
 "use client"
 
 import { Tabs as TabsPrimitive } from "@base-ui/react/tabs"

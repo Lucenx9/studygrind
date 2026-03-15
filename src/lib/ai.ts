@@ -108,10 +108,10 @@ async function callGoogle(
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
   const systemMsg = messages.find(m => m.role === 'system');
-  const userMsgs = messages.filter(m => m.role === 'user');
+  const conversationMsgs = messages.filter(m => m.role !== 'system');
 
-  const contents = userMsgs.map(m => ({
-    role: 'user',
+  const contents = conversationMsgs.map(m => ({
+    role: m.role === 'assistant' ? 'model' : 'user',
     parts: [{ text: m.content }],
   }));
 

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 
 type VoiceState = 'idle' | 'listening' | 'processing';
 
@@ -19,6 +19,7 @@ export function useVoiceInput(language: 'it' | 'en') {
   const startListening = useCallback((onResult: (transcript: string) => void) => {
     if (!isSupported) return;
 
+    recognitionRef.current?.stop();
     const recognition = createRecognition();
     if (!recognition) return;
 
@@ -45,11 +46,13 @@ export function useVoiceInput(language: 'it' | 'en') {
     };
 
     recognition.onerror = () => {
+      recognitionRef.current = null;
       setState('idle');
       setInterim('');
     };
 
     recognition.onend = () => {
+      recognitionRef.current = null;
       setState('idle');
       setInterim('');
     };
@@ -60,8 +63,16 @@ export function useVoiceInput(language: 'it' | 'en') {
 
   const stopListening = useCallback(() => {
     recognitionRef.current?.stop();
+    recognitionRef.current = null;
     setState('idle');
     setInterim('');
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      recognitionRef.current?.stop();
+      recognitionRef.current = null;
+    };
   }, []);
 
   return {
