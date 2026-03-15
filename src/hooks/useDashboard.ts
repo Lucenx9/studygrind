@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { getQuestions, getSessions, getActivities, getTopics } from '@/lib/storage';
 import { getReviewForecast, State } from '@/lib/fsrs';
 import type { Topic } from '@/lib/types';
@@ -12,7 +12,16 @@ interface TopicStats {
 }
 
 export function useDashboard() {
+  // Re-compute when storage changes (e.g., after a review session)
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const handler = () => setTick(t => t + 1);
+    window.addEventListener('studygrind:data-changed', handler);
+    return () => window.removeEventListener('studygrind:data-changed', handler);
+  }, []);
+
   return useMemo(() => {
+    void tick; // dependency to trigger recomputation
     const topics = getTopics();
     const questions = getQuestions();
     const sessions = getSessions();
@@ -100,5 +109,5 @@ export function useDashboard() {
       forecast,
       activities,
     };
-  }, []);
+  }, [tick]);
 }

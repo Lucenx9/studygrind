@@ -13,6 +13,7 @@ import { useTopics } from '@/hooks/useTopics';
 import { t } from '@/lib/i18n';
 import type { Settings, Question, Topic } from '@/lib/types';
 import { Upload, Loader2, Trash2, BookOpen } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface UploadPageProps {
   settings: Settings;
@@ -95,6 +96,7 @@ export function UploadPage({ settings }: UploadPageProps) {
     const questionsSaved = saveQuestions(selected);
     if (!topicSaved || !questionsSaved) { setError(lang === 'it' ? 'Errore nel salvataggio locale.' : 'Storage error.'); return; }
     refresh();
+    toast.success(lang === 'it' ? `${selected.length} domande salvate in "${topicName}"` : `${selected.length} questions saved to "${topicName}"`);
     setNotes(''); setTopicName(''); setCustomInstructions(''); setGeneratedQuestions(null); setPendingTopicId(null);
   };
 
@@ -121,7 +123,7 @@ export function UploadPage({ settings }: UploadPageProps) {
                         <p className="text-xs text-muted-foreground">{qCount} {t('upload.questions', lang)}</p>
                       </div>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={() => removeTopic(topic.id)} className="shrink-0 text-destructive hover:text-destructive">
+                    <Button variant="ghost" size="icon" onClick={() => { removeTopic(topic.id); toast(lang === 'it' ? 'Argomento eliminato' : 'Topic deleted'); }} className="shrink-0 text-destructive hover:text-destructive">
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </CardContent>

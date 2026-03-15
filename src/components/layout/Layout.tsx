@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Sidebar, type Page } from './Sidebar';
 import type { Language } from '@/lib/i18n';
+import { Toaster } from 'sonner';
 
 interface LayoutProps {
   currentPage: Page;
@@ -19,6 +20,13 @@ export function Layout({ currentPage, onNavigate, dueCount, language, children }
           {children}
         </div>
       </main>
+      <Toaster
+        position="bottom-right"
+        toastOptions={{
+          className: 'bg-card text-card-foreground border-border',
+          duration: 3000,
+        }}
+      />
     </div>
   );
 }

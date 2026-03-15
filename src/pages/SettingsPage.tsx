@@ -14,6 +14,7 @@ import { fetchOpenRouterModels, fetchDirectModels, type ModelInfo } from '@/lib/
 import { t } from '@/lib/i18n';
 import type { Settings, ProviderConfig, DirectProvider } from '@/lib/types';
 import { Settings as SettingsIcon, Key, Globe, Palette, Trash2, Check, Loader2, RefreshCw } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface SettingsPageProps {
   settings: Settings;
@@ -91,12 +92,14 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
     if (!openRouterKey.trim() || !openRouterModel) return;
     const config: ProviderConfig = { method: 'openrouter', apiKey: openRouterKey.trim(), model: openRouterModel };
     onUpdate({ provider: config });
+    toast.success(lang === 'it' ? 'OpenRouter connesso' : 'OpenRouter connected');
   };
 
   const saveDirect = () => {
     if (!directKey.trim() || !directModel) return;
     const config: ProviderConfig = { method: 'direct', provider: directProvider, apiKey: directKey.trim(), model: directModel };
     onUpdate({ provider: config });
+    toast.success(lang === 'it' ? 'Provider connesso' : 'Provider connected');
   };
 
   const handleClearAll = () => { clearAllData(); setClearDialogOpen(false); window.location.reload(); };
@@ -109,7 +112,7 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
       </div>
 
       {/* OpenRouter */}
-      <Card>
+      <Card className="rounded-2xl">
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <Key className="h-4 w-4" /> {t('settings.openrouter', lang)}
@@ -164,7 +167,7 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
       </Card>
 
       {/* Direct API Key */}
-      <Card>
+      <Card className="rounded-2xl">
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <Key className="h-4 w-4" /> {t('settings.directKey', lang)}
@@ -229,7 +232,7 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
       </Card>
 
       {/* OAuth */}
-      <Card className="opacity-60">
+      <Card className="opacity-60 rounded-2xl">
         <CardHeader>
           <CardTitle className="text-base">{t('settings.oauth', lang)}</CardTitle>
           <CardDescription>{t('settings.oauthDesc', lang)}</CardDescription>
@@ -245,7 +248,7 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
       </Card>
 
       {/* Preferences */}
-      <Card>
+      <Card className="rounded-2xl">
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2"><Globe className="h-4 w-4" /> {t('settings.preferences', lang)}</CardTitle>
         </CardHeader>

@@ -1,7 +1,9 @@
+import { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Clock, Trophy } from 'lucide-react';
 import { t, type Language } from '@/lib/i18n';
+import confetti from 'canvas-confetti';
 
 interface SessionSummaryProps {
   totalQuestions: number;
@@ -45,6 +47,19 @@ export function SessionSummary({ totalQuestions, correctAnswers, durationSeconds
     : accuracy >= 70
     ? (language === 'it' ? 'Ottimo lavoro, continua così!' : 'Good work, keep it up!')
     : (language === 'it' ? 'Continua a esercitarti, stai migliorando!' : 'Keep practicing, you\'re improving!');
+
+  // Fire confetti on mount — intensity scales with accuracy
+  useEffect(() => {
+    if (accuracy >= 50) {
+      const intensity = accuracy >= 90 ? 1 : accuracy >= 70 ? 0.6 : 0.3;
+      confetti({
+        particleCount: Math.round(100 * intensity),
+        spread: 70 + 30 * intensity,
+        origin: { y: 0.6 },
+        colors: ['#22c55e', '#3b82f6', '#eab308', '#a855f7'],
+      });
+    }
+  }, [accuracy]);
 
   return (
     <div className="space-y-8">

@@ -8,14 +8,25 @@ export type StudyPhase = 'idle' | 'question' | 'feedback';
 
 type QuestionResult = 'correct' | 'wrong' | null;
 
+interface StudyState {
+  questions: Question[];
+  currentIndex: number;
+  phase: StudyPhase;
+  userAnswer: string | number | null;
+  isCorrect: boolean | null;
+  results: QuestionResult[];
+}
+
 export function useStudy() {
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [phase, setPhase] = useState<StudyPhase>('idle');
-  const [userAnswer, setUserAnswer] = useState<string | number | null>(null);
-  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+  const [state, setState] = useState<StudyState>({
+    questions: [],
+    currentIndex: 0,
+    phase: 'idle',
+    userAnswer: null,
+    isCorrect: null,
+    results: [],
+  });
   const [countTowardsReview, setCountTowardsReview] = useState(false);
-  const [results, setResults] = useState<QuestionResult[]>([]);
 
   const loadTopic = useCallback((topicId: string) => {
     const qs = getQuestionsByTopic(topicId);
@@ -26,89 +37,79 @@ export function useStudy() {
       if (aOrder !== bOrder) return aOrder - bOrder;
       return new Date(a.fsrsCard.due).getTime() - new Date(b.fsrsCard.due).getTime();
     });
-    setQuestions(qs);
-    setCurrentIndex(0);
-    setPhase('idle');
-    setResults(new Array(qs.length).fill(null));
+    setState({
+      questions: qs,
+      currentIndex: 0,
+      phase: 'idle',
+      userAnswer: null,
+      isCorrect: null,
+      results: new Array(qs.length).fill(null),
+    });
   }, []);
 
   const start = useCallback(() => {
-    setCurrentIndex(0);
-    setPhase('question');
-    setUserAnswer(null);
-    setIsCorrect(null);
-    setResults(prev => new Array(prev.length).fill(null));
+    setState(prev => ({
+      ...prev,
+      currentIndex: 0,
+      phase: 'question',
+      userAnswer: null,
+      isCorrect: null,
+      results: new Array(prev.questions.length).fill(null),
+    }));
   }, []);
 
   const submitAnswer = useCallback((answer: string | number, correct: boolean) => {
-    setPhase('feedback');
-    setUserAnswer(answer);
-    setIsCorrect(correct);
-    setResults(prev => {
-      // currentIndex is captured correctly here since submitAnswer
-      // is only called during 'question' phase before any index change
-      const next = [...prev];
-      // We need the current index — use a ref or read from state
-      return next;
-    });
-    // Update results separately using currentIndex
-    setCurrentIndex(idx => {
-      setResults(prev => {
-        const next = [...prev];
-        next[idx] = correct ? 'correct' : 'wrong';
-        return next;
-      });
-      return idx; // don't change the index
+    setState(prev => {
+      const newResults = [...prev.results];
+      newResults[prev.currentIndex] = correct ? 'correct' : 'wrong';
+      return {
+        ...prev,
+        phase: 'feedback' as StudyPhase,
+        userAnswer: answer,
+        isCorrect: correct,
+        results: newResults,
+      };
     });
   }, []);
 
   const rate = useCallback((rating: Grade) => {
-    // Read isCorrect from current state via functional update pattern
-    setIsCorrect(prevCorrect => {
-      setCurrentIndex(prevIndex => {
-        setQuestions(prevQuestions => {
-          if (countTowardsReview && prevQuestions[prevIndex]) {
-            const current = prevQuestions[prevIndex];
-            const updatedCard = rateQuestion(current.fsrsCard, rating);
-            const updated: Question = {
-              ...current,
-              fsrsCard: updatedCard,
-              timesReviewed: current.timesReviewed + 1,
-              timesCorrect: current.timesCorrect + (prevCorrect ? 1 : 0),
-            };
-            updateQuestion(updated);
-          }
-          return prevQuestions; // don't change questions array
-        });
+    setState(prev => {
+      const current = prev.questions[prev.currentIndex];
 
-        const next = prevIndex + 1;
-        setQuestions(qs => {
-          if (next >= qs.length) {
-            setPhase('idle');
-          } else {
-            setPhase('question');
-            setUserAnswer(null);
-          }
-          return qs;
-        });
+      if (countTowardsReview && current) {
+        const updatedCard = rateQuestion(current.fsrsCard, rating);
+        const updated: Question = {
+          ...current,
+          fsrsCard: updatedCard,
+          timesReviewed: current.timesReviewed + 1,
+          timesCorrect: current.timesCorrect + (prev.isCorrect ? 1 : 0),
+        };
+        updateQuestion(updated);
+      }
 
-        return next;
-      });
+      const next = prev.currentIndex + 1;
+      const isLast = next >= prev.questions.length;
 
-      return null; // reset isCorrect
+      return {
+        ...prev,
+        currentIndex: next,
+        phase: isLast ? 'idle' as StudyPhase : 'question' as StudyPhase,
+        userAnswer: null,
+        isCorrect: null,
+      };
     });
   }, [countTowardsReview]);
 
-  const currentQuestion = questions[currentIndex] ?? null;
+  const currentQuestion = state.questions[state.currentIndex] ?? null;
 
   return {
-    questions,
+    questions: state.questions,
     currentQuestion,
-    currentIndex,
-    phase,
-    userAnswer,
-    isCorrect,
-    results,
+    currentIndex: state.currentIndex,
+    phase: state.phase,
+    userAnswer: state.userAnswer,
+    isCorrect: state.isCorrect,
+    results: state.results,
     countTowardsReview,
     setCountTowardsReview,
     loadTopic,

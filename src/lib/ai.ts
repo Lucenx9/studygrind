@@ -1,7 +1,7 @@
 import type { ProviderConfig } from './types';
 
 interface ChatMessage {
-  role: 'system' | 'user';
+  role: 'system' | 'user' | 'assistant';
   content: string;
 }
 
@@ -76,7 +76,7 @@ async function callAnthropic(
   const headers = getAuthHeaders(config);
 
   const systemMsg = messages.find(m => m.role === 'system');
-  const userMsgs = messages.filter(m => m.role === 'user');
+  const conversationMsgs = messages.filter(m => m.role === 'user' || m.role === 'assistant');
 
   const res = await fetch(`${baseUrl}/messages`, {
     method: 'POST',
@@ -85,7 +85,7 @@ async function callAnthropic(
       model: config.model,
       max_tokens: 4096,
       system: systemMsg?.content ?? '',
-      messages: userMsgs.map(m => ({ role: m.role, content: m.content })),
+      messages: conversationMsgs.map(m => ({ role: m.role, content: m.content })),
     }),
   });
 

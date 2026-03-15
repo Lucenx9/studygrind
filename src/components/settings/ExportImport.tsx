@@ -8,6 +8,7 @@ import { useTopics } from '@/hooks/useTopics';
 import { t, type Language } from '@/lib/i18n';
 import { Download, Upload, FileJson, AlertTriangle } from 'lucide-react';
 import { v4 as uuid } from 'uuid';
+import { toast } from 'sonner';
 
 interface ExportImportProps {
   language: Language;
@@ -25,6 +26,7 @@ export function ExportImport({ language: lang }: ExportImportProps) {
     const data = buildExportData();
     const date = new Date().toISOString().split('T')[0];
     downloadAsJson(data, `studygrind-export-${date}.json`);
+    toast.success(lang === 'it' ? 'Dati esportati' : 'Data exported');
   };
 
   const handleExportTopic = () => {

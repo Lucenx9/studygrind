@@ -257,6 +257,8 @@ export function checkClozeAnswer(userAnswer: string, acceptableAnswers: string[]
   return acceptableAnswers.some(ans => {
     const target = ans.trim().toLowerCase();
     if (cleaned === target) return true;
-    return levenshtein(cleaned, target) <= 2;
+    // Relative threshold: stricter for short words (DNA≠RNA), lenient for long ones
+    const maxDist = target.length <= 4 ? 1 : 2;
+    return levenshtein(cleaned, target) <= maxDist;
   });
 }
