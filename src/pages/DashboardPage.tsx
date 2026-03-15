@@ -4,14 +4,19 @@ import { Progress } from '@/components/ui/progress';
 import { useDashboard } from '@/hooks/useDashboard';
 import { State } from '@/lib/fsrs';
 import { t, type Language } from '@/lib/i18n';
-import { BarChart3, Flame, Target, Clock, Calendar, TrendingDown } from 'lucide-react';
+import { BarChart3, Flame, Target, Clock, Calendar, TrendingDown, ArrowRight, AlertTriangle, Upload } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { getDueQuestions } from '@/lib/fsrs';
+import { getQuestions } from '@/lib/storage';
 
 interface DashboardPageProps {
   language: Language;
+  onNavigate?: (page: 'review' | 'upload') => void;
 }
 
-export function DashboardPage({ language: lang }: DashboardPageProps) {
+export function DashboardPage({ language: lang, onNavigate }: DashboardPageProps) {
   const dash = useDashboard();
+  const dueCount = getDueQuestions(getQuestions()).length;
 
   const STATE_LABELS: Record<string, { label: string; color: string }> = {
     [State.New]: { label: t('state.new', lang), color: 'bg-gray-400' },
@@ -26,6 +31,46 @@ export function DashboardPage({ language: lang }: DashboardPageProps) {
         <BarChart3 className="h-6 w-6 text-primary" />
         <h1 className="text-2xl font-bold tracking-tight">{t('dash.title', lang)}</h1>
       </div>
+
+      {/* Actionable hero */}
+      {onNavigate && dueCount > 0 && (
+        <Card className="rounded-2xl border-primary/20 bg-primary/5">
+          <CardContent className="flex items-center justify-between pt-5 pb-5">
+            <div>
+              <p className="text-lg font-semibold">
+                {dueCount} {lang === 'it' ? 'domande da ripassare' : 'questions due'}
+              </p>
+              {dash.weakest.length > 0 && dash.weakest[0].accuracy < 0.6 && (
+                <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                  <AlertTriangle className="h-3.5 w-3.5 text-orange-500" />
+                  {lang === 'it' ? `${dash.weakest[0].topic.name} ha bisogno di attenzione` : `${dash.weakest[0].topic.name} needs attention`}
+                </p>
+              )}
+            </div>
+            <Button onClick={() => onNavigate('review')} className="rounded-2xl gap-2">
+              {lang === 'it' ? 'Inizia' : 'Start'} <ArrowRight className="h-4 w-4" />
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {onNavigate && dash.totalQuestions === 0 && (
+        <Card className="rounded-2xl border-primary/20 bg-primary/5">
+          <CardContent className="flex items-center justify-between pt-5 pb-5">
+            <div>
+              <p className="text-lg font-semibold">
+                {lang === 'it' ? 'Inizia il tuo percorso di studio' : 'Start your learning journey'}
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {lang === 'it' ? 'Carica i tuoi appunti per generare le prime domande' : 'Upload your notes to generate your first questions'}
+              </p>
+            </div>
+            <Button onClick={() => onNavigate('upload')} className="rounded-2xl gap-2">
+              <Upload className="h-4 w-4" /> {lang === 'it' ? 'Carica' : 'Upload'}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stat cards */}
       <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">

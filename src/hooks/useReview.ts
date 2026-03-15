@@ -6,6 +6,29 @@ import type { Grade } from '@/lib/fsrs';
 import { getQuestions, updateQuestion, saveSession, recordActivity } from '@/lib/storage';
 import { v4 as uuid } from 'uuid';
 
+const SESSION_KEY = 'studygrind_active_session';
+
+interface SavedSession {
+  questionIds: string[];
+  currentIndex: number;
+  correctCount: number;
+  results: QuestionResult[];
+  ratings: ReviewState['ratings'];
+  startTime: number;
+}
+
+function saveActiveSession(data: SavedSession | null): void {
+  if (data) localStorage.setItem(SESSION_KEY, JSON.stringify(data));
+  else localStorage.removeItem(SESSION_KEY);
+}
+
+function loadActiveSession(): SavedSession | null {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    return raw ? JSON.parse(raw) as SavedSession : null;
+  } catch { return null; }
+}
+
 interface UndoEntry {
   previousCardState: FSRSCard;
   questionId: string;
@@ -52,6 +75,35 @@ export function useReview() {
   const loadDue = useCallback(() => {
     const allQuestions = getQuestions();
     const due = getDueQuestions(allQuestions);
+
+    // Check for an in-progress session to resume
+    const saved = loadActiveSession();
+    if (saved && saved.currentIndex < saved.questionIds.length) {
+      // Rebuild due questions from saved IDs (in original order)
+      const questionMap = new Map(allQuestions.map(q => [q.id, q]));
+      const savedQuestions = saved.questionIds
+        .map(id => questionMap.get(id))
+        .filter((q): q is Question => q !== undefined);
+
+      if (savedQuestions.length === saved.questionIds.length) {
+        startTime.current = saved.startTime;
+        setSummary(null);
+        setState({
+          phase: 'question',
+          dueQuestions: savedQuestions,
+          currentIndex: saved.currentIndex,
+          correctCount: saved.correctCount,
+          ratings: saved.ratings,
+          results: saved.results,
+          userAnswer: null,
+          isCorrect: null,
+        });
+        return savedQuestions;
+      }
+    }
+
+    // No saved session — start fresh
+    saveActiveSession(null);
     setSummary(null);
     setState(prev => ({
       ...prev,
@@ -66,16 +118,27 @@ export function useReview() {
   const startSession = useCallback(() => {
     startTime.current = Date.now();
     setSummary(null);
-    setState(prev => ({
-      ...prev,
-      phase: 'question',
-      currentIndex: 0,
-      correctCount: 0,
-      ratings: [],
-      results: new Array(prev.dueQuestions.length).fill(null),
-      userAnswer: null,
-      isCorrect: null,
-    }));
+    setState(prev => {
+      // Save session start
+      saveActiveSession({
+        questionIds: prev.dueQuestions.map(q => q.id),
+        currentIndex: 0,
+        correctCount: 0,
+        results: new Array(prev.dueQuestions.length).fill(null),
+        ratings: [],
+        startTime: startTime.current,
+      });
+      return {
+        ...prev,
+        phase: 'question',
+        currentIndex: 0,
+        correctCount: 0,
+        ratings: [],
+        results: new Array(prev.dueQuestions.length).fill(null),
+        userAnswer: null,
+        isCorrect: null,
+      };
+    });
   }, []);
 
   const submitAnswer = useCallback((answer: string | number, correct: boolean) => {
@@ -147,6 +210,17 @@ export function useReview() {
           : 0;
         recordActivity(today, nextSummary.totalQuestions, accuracy);
         setSummary(nextSummary);
+        saveActiveSession(null); // Clear saved session on completion
+      } else {
+        // Save progress for session recovery
+        saveActiveSession({
+          questionIds: prev.dueQuestions.map(q => q.id),
+          currentIndex: nextIndex,
+          correctCount: prev.correctCount,
+          results: prev.results,
+          ratings: newRatings,
+          startTime: startTime.current,
+        });
       }
 
       return {
