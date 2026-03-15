@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import type { ChatMessage, ChatHistory, Question, Settings } from '@/lib/types';
 import { t } from '@/lib/i18n';
 import { getChatHistory, saveChatHistory } from '@/lib/storage';
@@ -60,6 +60,14 @@ export function useChat(settings: Settings) {
   const contextRef = useRef<ChatContext | null>(null);
   const activeChatIdRef = useRef<string | null>(null);
   const requestVersionRef = useRef(0);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      requestVersionRef.current += 1;
+    };
+  }, []);
 
   const openChat = useCallback((
     question: Question,
@@ -151,6 +159,7 @@ export function useChat(settings: Settings) {
       if (activeChatIdRef.current !== chatId || requestVersionRef.current !== requestVersion) {
         return;
       }
+      if (!isMountedRef.current) return;
 
       setHistory(finalHistory);
       saveChatHistory(finalHistory);
@@ -168,10 +177,15 @@ export function useChat(settings: Settings) {
       if (activeChatIdRef.current !== chatId || requestVersionRef.current !== requestVersion) {
         return;
       }
+      if (!isMountedRef.current) return;
       setHistory(errorHistory);
       saveChatHistory(errorHistory);
     } finally {
-      if (activeChatIdRef.current === chatId && requestVersionRef.current === requestVersion) {
+      if (
+        isMountedRef.current &&
+        activeChatIdRef.current === chatId &&
+        requestVersionRef.current === requestVersion
+      ) {
         setLoading(false);
       }
     }

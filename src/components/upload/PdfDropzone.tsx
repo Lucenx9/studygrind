@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { FileUp, Loader2, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { t, type Language } from '@/lib/i18n';
@@ -15,6 +15,13 @@ export function PdfDropzone({ onExtracted, language }: PdfDropzoneProps) {
   const [warnings, setWarnings] = useState<PdfExtractionWarning[]>([]);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const handleFile = useCallback(async (file: File) => {
     if (file.type !== 'application/pdf') {
@@ -30,6 +37,7 @@ export function PdfDropzone({ onExtracted, language }: PdfDropzoneProps) {
       // Dynamic import: PDF.js is only loaded when user actually drops/selects a PDF
       const { extractTextFromPdf } = await import('@/lib/pdf');
       const result = await extractTextFromPdf(file);
+      if (!isMountedRef.current) return;
       setWarnings(result.warnings);
 
       if (!result.text.trim()) {
@@ -39,9 +47,12 @@ export function PdfDropzone({ onExtracted, language }: PdfDropzoneProps) {
 
       onExtracted(result.text);
     } catch {
+      if (!isMountedRef.current) return;
       setError(t('pdf.failedRead', language));
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
   }, [language, onExtracted]);
 

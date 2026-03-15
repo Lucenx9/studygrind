@@ -30,7 +30,10 @@ export function useDashboard() {
 
     // Today's summary
     const today = toDateKey(new Date());
-    const todaySessions = sessions.filter(s => s.date.startsWith(today));
+    const todaySessions = sessions.filter(s => {
+      const sessionDate = new Date(s.date);
+      return Number.isFinite(sessionDate.getTime()) && toDateKey(sessionDate) === today;
+    });
     const todayReviewed = todaySessions.reduce((sum, s) => sum + s.totalQuestions, 0);
     const todayCorrect = todaySessions.reduce((sum, s) => sum + s.correctAnswers, 0);
     const todayAccuracy = todayReviewed > 0 ? todayCorrect / todayReviewed : 0;

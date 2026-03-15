@@ -206,7 +206,7 @@ export function DashboardPage({ language: lang, onNavigate }: DashboardPageProps
         <CardContent>
           <div className="flex gap-2 overflow-x-auto pb-2">
             {Array.from(dash.forecast.entries()).map(([date, count]) => {
-              const d = new Date(date);
+              const d = parseDateKey(date);
               const isToday = date === todayKey;
               return (
                 <div key={date} className={`text-center min-w-[64px] rounded-xl py-3 px-2 ${isToday ? 'bg-primary/10' : ''}`}>
@@ -301,4 +301,9 @@ export function DashboardPage({ language: lang, onNavigate }: DashboardPageProps
       )}
     </div>
   );
+}
+
+function parseDateKey(date: string): Date {
+  const [year, month, day] = date.split('-').map(Number);
+  return new Date(year, month - 1, day);
 }

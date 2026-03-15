@@ -24,15 +24,23 @@ export function ClozeQuestion({ question, onSubmit, disabled, language = 'it' }:
   const [isCorrect, setIsCorrect] = useState(false);
   const voice = useVoiceInput(language);
   const voiceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Cleanup voice auto-submit timer on unmount to prevent state updates on unmounted component
   useEffect(() => {
     return () => { if (voiceTimerRef.current) clearTimeout(voiceTimerRef.current); };
   }, []);
 
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, [question.id]);
+
   const handleVoiceResult = (transcript: string) => {
     if (revealed || disabled) return;
     setAnswer(transcript);
+    if (voiceTimerRef.current) {
+      clearTimeout(voiceTimerRef.current);
+    }
     voiceTimerRef.current = setTimeout(() => {
       voiceTimerRef.current = null;
       const correct = checkClozeAnswer(transcript, question.acceptableAnswers);
@@ -84,6 +92,7 @@ export function ClozeQuestion({ question, onSubmit, disabled, language = 'it' }:
       </Card>
       <div className="flex flex-col gap-3 sm:flex-row">
         <Input
+          ref={inputRef}
           value={answer}
           onChange={e => setAnswer(e.target.value)}
           onKeyDown={handleKeyDown}

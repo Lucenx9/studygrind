@@ -4,11 +4,19 @@ import './index.css'
 import App from './app/App.tsx'
 import { initStorage } from './lib/storage'
 
-// Hydrate in-memory cache from IndexedDB before rendering
-initStorage().then(() => {
+async function bootstrap() {
+  try {
+    // Hydrate in-memory cache from IndexedDB before rendering.
+    await initStorage()
+  } catch (error) {
+    console.error('Storage initialization failed, continuing with in-memory fallbacks.', error)
+  }
+
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <App />
     </StrictMode>,
   )
-})
+}
+
+void bootstrap()

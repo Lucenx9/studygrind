@@ -35,25 +35,29 @@ export async function initStorage(): Promise<void> {
   }
 
   // 2. Migrate localStorage data into IndexedDB (first-time or fallback)
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key && key.startsWith('studygrind_') && !cache.has(key)) {
-      try {
-        const raw = localStorage.getItem(key);
-        if (raw) {
-          const value = JSON.parse(raw, (k, v) => {
-            if ((k === 'due' || k === 'last_review') && typeof v === 'string') {
-              return new Date(v);
-            }
-            return v;
-          });
-          cache.set(key, value);
-          idbSet(key, value).catch(() => {});
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('studygrind_') && !cache.has(key)) {
+        try {
+          const raw = localStorage.getItem(key);
+          if (raw) {
+            const value = JSON.parse(raw, (k, v) => {
+              if ((k === 'due' || k === 'last_review') && typeof v === 'string') {
+                return new Date(v);
+              }
+              return v;
+            });
+            cache.set(key, value);
+            idbSet(key, value).catch(() => {});
+          }
+        } catch {
+          // skip non-JSON values
         }
-      } catch {
-        // skip non-JSON values
       }
     }
+  } catch {
+    // localStorage unavailable — rely on IndexedDB/in-memory cache only
   }
 
   initialized = true;

@@ -20,6 +20,10 @@ function isAnthropicOAuthToken(key: string): boolean {
   return key.startsWith('sk-ant-oat');
 }
 
+function normalizeCredential(value: string): string {
+  return value.trim();
+}
+
 function getBaseUrl(config: ProviderConfig): string {
   if (config.method === 'openrouter') {
     return 'https://openrouter.ai/api/v1';
@@ -45,47 +49,50 @@ function getBaseUrl(config: ProviderConfig): string {
 function getAuthHeaders(config: ProviderConfig): Record<string, string> {
   if (config.method === 'openrouter') {
     return {
-      'Authorization': `Bearer ${config.apiKey}`,
+      'Authorization': `Bearer ${normalizeCredential(config.apiKey)}`,
       'HTTP-Referer': window.location.origin,
       'X-Title': 'StudyGrind',
     };
   }
   if (config.method === 'direct') {
+    const apiKey = normalizeCredential(config.apiKey);
     if (config.provider === 'anthropic') {
       // OAuth tokens use Bearer auth + beta header; regular keys use x-api-key
       // Both need anthropic-dangerous-direct-browser-access for CORS
-      if (isAnthropicOAuthToken(config.apiKey)) {
+      if (isAnthropicOAuthToken(apiKey)) {
         return {
-          'Authorization': `Bearer ${config.apiKey}`,
+          'Authorization': `Bearer ${apiKey}`,
           'anthropic-version': ANTHROPIC_VERSION,
           'anthropic-beta': ANTHROPIC_OAUTH_BETA,
           'anthropic-dangerous-direct-browser-access': 'true',
         };
       }
       return {
-        'x-api-key': config.apiKey,
+        'x-api-key': apiKey,
         'anthropic-version': ANTHROPIC_VERSION,
         'anthropic-dangerous-direct-browser-access': 'true',
       };
     }
     if (config.provider === 'google') {
       // Google: pass key in header, NOT in URL query param
-      return { 'x-goog-api-key': config.apiKey };
+      return { 'x-goog-api-key': apiKey };
     }
-    return { 'Authorization': `Bearer ${config.apiKey}` };
+    return { 'Authorization': `Bearer ${apiKey}` };
   }
   if (config.method === 'oauth') {
+    const accessToken = normalizeCredential(config.accessToken);
     if (config.provider === 'anthropic') {
       return {
-        'x-api-key': config.accessToken,
+        'Authorization': `Bearer ${accessToken}`,
         'anthropic-version': ANTHROPIC_VERSION,
+        'anthropic-beta': ANTHROPIC_OAUTH_BETA,
         'anthropic-dangerous-direct-browser-access': 'true',
       };
     }
     if (config.provider === 'google') {
-      return { 'Authorization': `Bearer ${config.accessToken}` };
+      return { 'Authorization': `Bearer ${accessToken}` };
     }
-    return { 'Authorization': `Bearer ${config.accessToken}` };
+    return { 'Authorization': `Bearer ${accessToken}` };
   }
   return {};
 }

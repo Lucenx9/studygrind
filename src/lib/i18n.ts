@@ -220,6 +220,7 @@ const translations = {
 
   // --- Chat ---
   'chat.socraticTutor': { it: 'Tutor Socratico', en: 'Socratic Tutor' },
+  'chat.send': { it: 'Invia messaggio', en: 'Send message' },
   'chat.level': { it: 'Livello', en: 'Level' },
   'chat.tellMe': { it: 'Dimmi cosa non ti è chiaro di questa domanda.', en: 'Tell me what confused you about this question.' },
   'chat.illGuide': { it: 'Ti guiderò a capirlo da solo.', en: "I'll guide you to understand it yourself." },
@@ -256,6 +257,8 @@ const translations = {
   'common.close': { it: 'Chiudi', en: 'Close' },
   'common.loadingWorkspace': { it: 'Caricamento area di studio', en: 'Loading workspace' },
   'common.preparingStudyFlow': { it: 'Sto preparando il tuo flusso di studio...', en: 'Preparing your study flow...' },
+  'common.unexpectedError': { it: 'Si è verificato un errore imprevisto.', en: 'An unexpected error occurred.' },
+  'common.reloadApp': { it: 'Ricarica l’app', en: 'Reload app' },
   'common.appTagline': { it: 'Ripasso con FSRS e AI', en: 'FSRS and AI-powered study' },
   'common.unknown': { it: 'Sconosciuto', en: 'Unknown' },
 } as const;

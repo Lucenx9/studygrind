@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useCallback } from 'react';
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -47,12 +47,26 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
   // Debounced slider: update UI immediately, persist after 500ms idle
   const [localQpg, setLocalQpg] = useState(settings.questionsPerGeneration);
   const sliderTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isMountedRef = useRef(true);
   const handleSliderChange = useCallback((val: number | readonly number[]) => {
     const v = Array.isArray(val) ? val[0] : val;
     setLocalQpg(v);
     if (sliderTimerRef.current) clearTimeout(sliderTimerRef.current);
     sliderTimerRef.current = setTimeout(() => onUpdate({ questionsPerGeneration: v }), 500);
   }, [onUpdate]);
+
+  useEffect(() => {
+    setLocalQpg(settings.questionsPerGeneration);
+  }, [settings.questionsPerGeneration]);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      if (sliderTimerRef.current) {
+        clearTimeout(sliderTimerRef.current);
+      }
+    };
+  }, []);
 
   const filteredOpenRouterModels = useMemo(() => {
     if (!openRouterSearch.trim()) return openRouterModels;
@@ -74,12 +88,16 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
     setOpenRouterError(null);
     try {
       const models = await fetchOpenRouterModels(cleanKey(openRouterKey));
+      if (!isMountedRef.current) return;
       setOpenRouterModels(models);
       if (models.length > 0 && !openRouterModel) setOpenRouterModel(models[0].id);
     } catch {
+      if (!isMountedRef.current) return;
       setOpenRouterError(t('settings.modelFetchError', lang));
     } finally {
-      setOpenRouterLoading(false);
+      if (isMountedRef.current) {
+        setOpenRouterLoading(false);
+      }
     }
   };
 
@@ -90,12 +108,16 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
     setDirectError(null);
     try {
       const models = await fetchDirectModels(directProvider, cleanKey(directKey));
+      if (!isMountedRef.current) return;
       setDirectModels(models);
       if (models.length > 0 && !directModel) setDirectModel(models[0].id);
     } catch {
+      if (!isMountedRef.current) return;
       setDirectError(t('settings.modelFetchError', lang));
     } finally {
-      setDirectLoading(false);
+      if (isMountedRef.current) {
+        setDirectLoading(false);
+      }
     }
   };
 

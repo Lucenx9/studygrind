@@ -12,6 +12,8 @@ type QuestionCandidate = Partial<QuestionRaw> & {
   type?: unknown;
 };
 
+const OPTION_PREFIX_RE = /^[[(]?(?:[A-D]|[1-4])(?:[.):\]])?\s*/i;
+
 export function parseQuizResponse(raw: string, topicId: string): Question[] {
   let lastError: Error | null = null;
 
@@ -166,10 +168,12 @@ function normalizeQuestion(candidate: unknown): QuestionRaw | null {
   if (!candidate || typeof candidate !== 'object') return null;
 
   const raw = candidate as QuestionCandidate;
+  const questionText = typeof raw.question === 'string' ? raw.question.trim() : '';
+  const explanationText = typeof raw.explanation === 'string' ? raw.explanation.trim() : '';
   if (
     (raw.type !== 'mcq' && raw.type !== 'cloze') ||
-    typeof raw.question !== 'string' ||
-    typeof raw.explanation !== 'string'
+    !questionText ||
+    !explanationText
   ) {
     return null;
   }
@@ -179,7 +183,8 @@ function normalizeQuestion(candidate: unknown): QuestionRaw | null {
 
     const options = raw.options
       .filter((option): option is string => typeof option === 'string')
-      .map(option => option.replace(/^[\(\[]?[A-Da-d1-4][.):\]\)]\s*/i, '').trim());
+      .map(option => option.replace(OPTION_PREFIX_RE, '').trim());
+    const normalizedOptions = options.map(option => option.toLocaleLowerCase());
     const correct =
       typeof raw.correct === 'number'
         ? raw.correct
@@ -187,16 +192,23 @@ function normalizeQuestion(candidate: unknown): QuestionRaw | null {
           ? Number.parseInt(raw.correct, 10)
           : Number.NaN;
 
-    if (options.length !== 4 || !Number.isInteger(correct) || correct < 0 || correct > 3) {
+    if (
+      options.length !== 4 ||
+      options.some(option => option.length === 0) ||
+      new Set(normalizedOptions).size !== options.length ||
+      !Number.isInteger(correct) ||
+      correct < 0 ||
+      correct > 3
+    ) {
       return null;
     }
 
     return {
       type: 'mcq',
-      question: raw.question.trim(),
+      question: questionText,
       options,
       correct,
-      explanation: raw.explanation.trim(),
+      explanation: explanationText,
     };
   }
 
@@ -210,22 +222,24 @@ function normalizeQuestion(candidate: unknown): QuestionRaw | null {
     (answer): answer is string => typeof answer === 'string' && answer.trim().length > 0,
   );
 
-  if (!answers?.length || !raw.question.includes('___')) {
+  if (!answers?.length || !questionText.includes('___')) {
     return null;
   }
 
   return {
     type: 'cloze',
-    question: raw.question.trim(),
-    acceptable_answers: answers,
-    explanation: raw.explanation.trim(),
+    question: questionText,
+    acceptable_answers: Array.from(
+      new Set(answers.map(answer => answer.trim()).filter(Boolean)),
+    ),
+    explanation: explanationText,
   };
 }
 
 /**
  * Post-process MCQ questions to ensure correct answers are evenly distributed
  * across positions A/B/C/D. LLMs consistently bias toward position B despite
- * prompt instructions, so we shuffle deterministically after generation.
+ * prompt instructions, so we rebalance them after generation.
  */
 function rebalanceCorrectPositions(questions: QuestionRaw[]): QuestionRaw[] {
   const mcqs = questions.filter((q): q is QuestionRaw & { type: 'mcq' } => q.type === 'mcq');
@@ -244,31 +258,48 @@ function rebalanceCorrectPositions(questions: QuestionRaw[]): QuestionRaw[] {
     newOptions[q.correct] = newOptions[targetPos];
     newOptions[targetPos] = correctText;
 
-    // Re-label A/B/C/D prefixes
-    const relabeled = newOptions.map((opt, idx) => {
-      const label = String.fromCharCode(65 + idx); // A, B, C, D
-      const stripped = opt.replace(/^[\(\[]?[A-Da-d1-4][.):\]\)]\s*/i, '').trim();
-      return `${label}) ${stripped}`;
-    });
-
-    return { ...q, options: relabeled, correct: targetPos };
+    return { ...q, options: newOptions, correct: targetPos };
   });
 }
 
 /** Build a shuffled sequence of positions [0,1,2,3,...] that distributes evenly */
 function buildTargetPositions(count: number): number[] {
-  const positions: number[] = [];
-  // Fill with repeating 0,1,2,3 pattern, then shuffle each group of 4
-  for (let i = 0; i < count; i += 4) {
-    const group = [0, 1, 2, 3].slice(0, Math.min(4, count - i));
-    // Fisher-Yates shuffle
-    for (let j = group.length - 1; j > 0; j--) {
-      const k = Math.floor(Math.random() * (j + 1));
-      [group[j], group[k]] = [group[k], group[j]];
-    }
-    positions.push(...group);
+  const base = Math.floor(count / 4);
+  const remainder = count % 4;
+  const bonusOrder = shufflePositions([0, 1, 2, 3]);
+  const quotas = new Map<number, number>(
+    [0, 1, 2, 3].map(position => [position, base]),
+  );
+
+  for (let i = 0; i < remainder; i++) {
+    const position = bonusOrder[i];
+    quotas.set(position, (quotas.get(position) ?? 0) + 1);
   }
+
+  const positions: number[] = [];
+  while (positions.length < count) {
+    const round = shufflePositions([0, 1, 2, 3]);
+    for (const position of round) {
+      const remaining = quotas.get(position) ?? 0;
+      if (remaining <= 0) continue;
+      positions.push(position);
+      quotas.set(position, remaining - 1);
+      if (positions.length === count) {
+        break;
+      }
+    }
+  }
+
   return positions;
+}
+
+function shufflePositions(values: number[]): number[] {
+  const result = [...values];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
 }
 
 function toQuestion(raw: QuestionRaw, topicId: string): Question {
@@ -322,15 +353,36 @@ export function levenshtein(a: string, b: string): number {
 }
 
 export function checkClozeAnswer(userAnswer: string, acceptableAnswers: string[]): boolean {
-  const cleaned = userAnswer.trim().toLowerCase().replace(/\s+/g, ' ');
+  const cleaned = normalizeAnswer(userAnswer);
+  if (!cleaned) return false;
+
   return acceptableAnswers.some(ans => {
-    const target = ans.trim().toLowerCase().replace(/\s+/g, ' ');
+    const target = normalizeAnswer(ans);
+    if (!target) return false;
     if (cleaned === target) return true;
-    // Relative threshold: 20% of target length, with floor for short strings
-    // ≤3 chars: exact match only. 4-9 chars: max 1. 10+ chars: ~20%.
-    const maxDist = target.length <= 3 ? 0 : Math.max(1, Math.floor(target.length * 0.2));
-    // Also reject if user's input length differs too much from target
+    if (cleaned.split(' ').length !== target.split(' ').length) return false;
+
+    // Tighten the threshold for short answers to reduce false positives,
+    // while still tolerating obvious typos on longer terms.
+    const maxDist =
+      target.length <= 4
+        ? 0
+        : target.length <= 8
+          ? 1
+          : Math.min(2, Math.max(1, Math.floor(target.length * 0.15)));
     if (Math.abs(cleaned.length - target.length) > maxDist) return false;
+    if (target.length <= 8 && cleaned[0] !== target[0]) return false;
+
     return levenshtein(cleaned, target) <= maxDist;
   });
+}
+
+function normalizeAnswer(value: string): string {
+  return value
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim()
+    .toLocaleLowerCase()
+    .replace(/\s+/g, ' ');
 }

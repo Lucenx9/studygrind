@@ -15,15 +15,33 @@ export function RetypePrompt({ correctAnswer, language, onComplete }: RetypeProm
   const [value, setValue] = useState('');
   const [matched, setMatched] = useState(false);
   const headingRef = useRef<HTMLParagraphElement>(null);
+  const completeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Focus heading first for screen reader context, then user tabs to input
   useEffect(() => { headingRef.current?.focus(); }, []);
+  useEffect(() => {
+    return () => {
+      if (completeTimerRef.current) {
+        clearTimeout(completeTimerRef.current);
+      }
+    };
+  }, []);
+
+  const scheduleComplete = () => {
+    if (completeTimerRef.current) {
+      clearTimeout(completeTimerRef.current);
+    }
+    completeTimerRef.current = setTimeout(() => {
+      completeTimerRef.current = null;
+      onComplete();
+    }, 400);
+  };
 
   const handleChange = (input: string) => {
     setValue(input);
-    if (checkClozeAnswer(input, [correctAnswer])) {
+    if (!matched && checkClozeAnswer(input, [correctAnswer])) {
       setMatched(true);
-      setTimeout(onComplete, 400);
+      scheduleComplete();
     }
   };
 
@@ -31,9 +49,9 @@ export function RetypePrompt({ correctAnswer, language, onComplete }: RetypeProm
     if (e.key === 'Enter' && value.trim()) {
       e.preventDefault();
       e.stopPropagation();
-      if (checkClozeAnswer(value, [correctAnswer])) {
+      if (!matched && checkClozeAnswer(value, [correctAnswer])) {
         setMatched(true);
-        setTimeout(onComplete, 400);
+        scheduleComplete();
       }
     }
   };

@@ -7,15 +7,20 @@ function isAnthropicOAuthToken(key: string): boolean {
   return key.startsWith('sk-ant-oat');
 }
 
+function normalizeCredential(value: string): string {
+  return value.trim();
+}
+
 export interface ModelInfo {
   id: string;
   name: string;
 }
 
 export async function fetchOpenRouterModels(apiKey: string): Promise<ModelInfo[]> {
+  const normalizedKey = normalizeCredential(apiKey);
   const res = await fetch('https://openrouter.ai/api/v1/models', {
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
+      'Authorization': `Bearer ${normalizedKey}`,
       'HTTP-Referer': window.location.origin,
     },
   });
@@ -40,8 +45,9 @@ export async function fetchDirectModels(provider: DirectProvider, apiKey: string
 }
 
 async function fetchOpenAIModels(apiKey: string): Promise<ModelInfo[]> {
+  const normalizedKey = normalizeCredential(apiKey);
   const res = await fetch('https://api.openai.com/v1/models', {
-    headers: { 'Authorization': `Bearer ${apiKey}` },
+    headers: { 'Authorization': `Bearer ${normalizedKey}` },
   });
 
   if (!res.ok) throw new Error(`Failed to fetch models: ${res.status}`);
@@ -55,16 +61,17 @@ async function fetchOpenAIModels(apiKey: string): Promise<ModelInfo[]> {
 }
 
 async function fetchAnthropicModels(apiKey: string): Promise<ModelInfo[]> {
+  const normalizedKey = normalizeCredential(apiKey);
   // OAuth tokens use Bearer + beta header; regular keys use x-api-key
-  const headers: Record<string, string> = isAnthropicOAuthToken(apiKey)
+  const headers: Record<string, string> = isAnthropicOAuthToken(normalizedKey)
     ? {
-        'Authorization': `Bearer ${apiKey}`,
+        'Authorization': `Bearer ${normalizedKey}`,
         'anthropic-version': ANTHROPIC_VERSION,
         'anthropic-beta': ANTHROPIC_OAUTH_BETA,
         'anthropic-dangerous-direct-browser-access': 'true',
       }
     : {
-        'x-api-key': apiKey,
+        'x-api-key': normalizedKey,
         'anthropic-version': ANTHROPIC_VERSION,
         'anthropic-dangerous-direct-browser-access': 'true',
       };
@@ -74,7 +81,7 @@ async function fetchAnthropicModels(apiKey: string): Promise<ModelInfo[]> {
   if (!res.ok) {
     // If model listing fails with OAuth token, return hardcoded list
     // (the /v1/models endpoint may not support OAuth tokens yet)
-    if (isAnthropicOAuthToken(apiKey)) {
+    if (isAnthropicOAuthToken(normalizedKey)) {
       return getAnthropicFallbackModels();
     }
     throw new Error(`Failed to fetch models: ${res.status}`);
@@ -96,8 +103,9 @@ function getAnthropicFallbackModels(): ModelInfo[] {
 
 // Google: API key in header, NOT in URL query param (security)
 async function fetchGoogleModels(apiKey: string): Promise<ModelInfo[]> {
+  const normalizedKey = normalizeCredential(apiKey);
   const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models', {
-    headers: { 'x-goog-api-key': apiKey },
+    headers: { 'x-goog-api-key': normalizedKey },
   });
 
   if (!res.ok) throw new Error(`Failed to fetch models: ${res.status}`);

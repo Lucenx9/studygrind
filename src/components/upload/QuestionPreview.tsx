@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Question } from '@/lib/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,10 @@ interface QuestionPreviewProps {
 
 export function QuestionPreview({ questions, language, onSave }: QuestionPreviewProps) {
   const [selected, setSelected] = useState<Set<string>>(new Set(questions.map(q => q.id)));
+
+  useEffect(() => {
+    setSelected(new Set(questions.map(q => q.id)));
+  }, [questions]);
 
   const toggle = (id: string) => {
     setSelected(prev => {

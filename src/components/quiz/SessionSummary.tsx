@@ -13,7 +13,7 @@ interface SessionSummaryProps {
   onClose: () => void;
 }
 
-function AccuracyRing({ value }: { value: number }) {
+function AccuracyRing({ value, reducedMotion }: { value: number; reducedMotion: boolean }) {
   const radius = 40;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (value / 100) * circumference;
@@ -27,7 +27,7 @@ function AccuracyRing({ value }: { value: number }) {
           cx="50" cy="50" r={radius} fill="none"
           stroke={color} strokeWidth="5" strokeLinecap="round"
           strokeDasharray={circumference} strokeDashoffset={offset}
-          style={{ transition: 'stroke-dashoffset 1s ease-out' }}
+          style={{ transition: reducedMotion ? 'none' : 'stroke-dashoffset 1s ease-out' }}
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
@@ -41,6 +41,7 @@ export function SessionSummary({ totalQuestions, correctAnswers, durationSeconds
   const accuracy = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
   const minutes = Math.floor(durationSeconds / 60);
   const seconds = durationSeconds % 60;
+  const reducedMotion = prefersReducedMotion();
 
   const message = accuracy >= 90
     ? t('session.outstanding', language)
@@ -50,7 +51,7 @@ export function SessionSummary({ totalQuestions, correctAnswers, durationSeconds
 
   // Fire confetti on mount — intensity scales with accuracy
   useEffect(() => {
-    if (accuracy >= 50) {
+    if (!reducedMotion && accuracy >= 50) {
       const intensity = accuracy >= 90 ? 1 : accuracy >= 70 ? 0.6 : 0.3;
       confetti({
         particleCount: Math.round(100 * intensity),
@@ -59,7 +60,7 @@ export function SessionSummary({ totalQuestions, correctAnswers, durationSeconds
         colors: ['#22c55e', '#3b82f6', '#eab308', '#a855f7'],
       });
     }
-  }, [accuracy]);
+  }, [accuracy, reducedMotion]);
 
   return (
     <div className="space-y-8">
@@ -70,7 +71,7 @@ export function SessionSummary({ totalQuestions, correctAnswers, durationSeconds
       </div>
 
       <div className="animate-fade-in-up" style={{ animationDelay: '200ms' }}>
-        <AccuracyRing value={accuracy} />
+        <AccuracyRing value={accuracy} reducedMotion={reducedMotion} />
       </div>
 
       <div className="grid gap-4 animate-fade-in-up sm:grid-cols-3" style={{ animationDelay: '300ms' }}>
@@ -115,4 +116,9 @@ export function SessionSummary({ totalQuestions, correctAnswers, durationSeconds
       </div>
     </div>
   );
+}
+
+function prefersReducedMotion(): boolean {
+  return typeof window !== 'undefined'
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }

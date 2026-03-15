@@ -29,6 +29,8 @@ const ENDPOINTS: Record<string, OAuthEndpoints> = {
   },
 };
 
+const OAUTH_SESSION_KEYS = ['oauth_verifier', 'oauth_state', 'oauth_provider'] as const;
+
 function generateCodeVerifier(): string {
   const array = new Uint8Array(32);
   crypto.getRandomValues(array);
@@ -87,40 +89,51 @@ export async function startOAuthFlow(
   );
 
   if (!popup) {
+    clearOAuthSession();
     throw new Error('Popup blocked. Please allow popups for this site.');
   }
 
   // Wait for callback via postMessage
   return new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => {
+    let settled = false;
+    const finish = (callback: () => void) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      clearInterval(closedPoll);
       window.removeEventListener('message', handler);
-      reject(new Error('OAuth timeout — popup was closed'));
-    }, 120000);
+      clearOAuthSession();
+      if (!popup.closed) {
+        popup.close();
+      }
+      callback();
+    };
 
-    const handler = async (event: MessageEvent) => {
+    const timeout = window.setTimeout(() => {
+      finish(() => reject(new Error('OAuth timeout — popup was closed')));
+    }, 120000);
+    const closedPoll = window.setInterval(() => {
+      if (popup.closed) {
+        finish(() => reject(new Error('OAuth popup was closed before completion')));
+      }
+    }, 500);
+
+    const handler = async (event: MessageEvent<unknown>) => {
       // SECURITY: verify the message comes from our own origin (strict equality)
       if (event.origin !== window.location.origin) return;
-      if (event.data?.type !== 'oauth_callback') return;
+      if (event.source !== popup) return;
+      if (!isOAuthCallbackMessage(event.data)) return;
 
-      // Validate expected payload schema — reject unexpected fields
       const data = event.data;
-      if (typeof data !== 'object' || data === null) return;
-      if (data.code !== undefined && typeof data.code !== 'string') return;
-      if (data.state !== undefined && typeof data.state !== 'string') return;
-      if (data.error !== undefined && typeof data.error !== 'string') return;
-
-      clearTimeout(timeout);
-      window.removeEventListener('message', handler);
-
       const { code, state: returnedState, error } = data;
 
       if (error) {
-        reject(new Error(`OAuth error: ${error}`));
+        finish(() => reject(new Error(`OAuth error: ${error}`)));
         return;
       }
 
-      if (returnedState !== state) {
-        reject(new Error('OAuth state mismatch'));
+      if (!code || returnedState !== state) {
+        finish(() => reject(new Error('OAuth state mismatch')));
         return;
       }
 
@@ -144,16 +157,36 @@ export async function startOAuthFlow(
         const tokens = await tokenRes.json();
         const expiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString();
 
-        resolve({
+        finish(() => resolve({
           accessToken: tokens.access_token,
           expiresAt,
           email: tokens.email,
-        });
+        }));
       } catch (err) {
-        reject(err);
+        finish(() => reject(err instanceof Error ? err : new Error('OAuth token exchange failed')));
       }
     };
 
     window.addEventListener('message', handler);
   });
+}
+
+function clearOAuthSession(): void {
+  for (const key of OAUTH_SESSION_KEYS) {
+    sessionStorage.removeItem(key);
+  }
+}
+
+function isOAuthCallbackMessage(
+  value: unknown,
+): value is { type: 'oauth_callback'; code?: string; state?: string; error?: string } {
+  if (!value || typeof value !== 'object') return false;
+
+  const candidate = value as Record<string, unknown>;
+  return (
+    candidate.type === 'oauth_callback' &&
+    (candidate.code === undefined || typeof candidate.code === 'string') &&
+    (candidate.state === undefined || typeof candidate.state === 'string') &&
+    (candidate.error === undefined || typeof candidate.error === 'string')
+  );
 }

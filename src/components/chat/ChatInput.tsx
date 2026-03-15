@@ -7,9 +7,11 @@ interface ChatInputProps {
   onSend: (message: string) => void;
   disabled: boolean;
   placeholder?: string;
+  inputLabel?: string;
+  sendLabel?: string;
 }
 
-export function ChatInput({ onSend, disabled, placeholder }: ChatInputProps) {
+export function ChatInput({ onSend, disabled, placeholder, inputLabel, sendLabel }: ChatInputProps) {
   const [value, setValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -41,6 +43,7 @@ export function ChatInput({ onSend, disabled, placeholder }: ChatInputProps) {
         onChange={e => setValue(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={placeholder ?? ''}
+        aria-label={inputLabel ?? placeholder ?? 'Message'}
         disabled={disabled}
         className="min-h-[52px] max-h-[140px] resize-none text-sm"
         rows={1}
@@ -49,6 +52,7 @@ export function ChatInput({ onSend, disabled, placeholder }: ChatInputProps) {
         size="icon-sm"
         onClick={handleSubmit}
         disabled={!value.trim() || disabled}
+        aria-label={sendLabel ?? 'Send message'}
         className="shrink-0"
       >
         <Send className="h-4 w-4" />

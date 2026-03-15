@@ -10,6 +10,12 @@ const params = generatorParameters({
 });
 
 const scheduler = fsrs(params);
+const VALID_STATES = new Set<State>([
+  State.New,
+  State.Learning,
+  State.Review,
+  State.Relearning,
+]);
 
 export function createNewCard(): Card {
   return createEmptyCard(new Date());
@@ -18,16 +24,19 @@ export function createNewCard(): Card {
 export function getDueQuestions(questions: Question[]): Question[] {
   const now = new Date();
   return questions.filter(q => {
-    const due = new Date(q.fsrsCard.due);
-    // Skip cards with corrupted dates instead of crashing
-    if (isNaN(due.getTime())) return true; // surface them for review so user notices
-    return due <= now;
+    const card = safeCard(q.fsrsCard);
+    return card.due <= now;
   });
 }
 
 /** Safely convert a potentially deserialized card (with string dates) to a proper Card */
 export function safeCard(card: CardInput | Card): Card {
-  return TypeConvert.card(card);
+  try {
+    const converted = TypeConvert.card(card);
+    return isValidCard(converted) ? converted : createNewCard();
+  } catch {
+    return createNewCard();
+  }
 }
 
 export function rateQuestion(card: Card, rating: Grade): Card {
@@ -56,8 +65,7 @@ export function getReviewForecast(questions: Question[], days: number): Map<stri
   }
 
   for (const q of questions) {
-    const due = new Date(q.fsrsCard.due);
-    const dateStr = toDateKey(due);
+    const dateStr = toDateKey(safeCard(q.fsrsCard).due);
     if (forecast.has(dateStr)) {
       forecast.set(dateStr, (forecast.get(dateStr) ?? 0) + 1);
     }
@@ -94,3 +102,30 @@ export function getIntervalPreview(card: Card): { again: string; hard: string; g
 
 export { Rating, State };
 export type { Grade };
+
+function isValidCard(card: Card): boolean {
+  return (
+    isValidDate(card.due) &&
+    (card.last_review === undefined || isValidDate(card.last_review)) &&
+    VALID_STATES.has(card.state) &&
+    isFiniteNumber(card.stability) &&
+    isFiniteNumber(card.difficulty) &&
+    isNonNegativeNumber(card.elapsed_days) &&
+    isNonNegativeNumber(card.scheduled_days) &&
+    isNonNegativeNumber(card.learning_steps) &&
+    isNonNegativeNumber(card.reps) &&
+    isNonNegativeNumber(card.lapses)
+  );
+}
+
+function isValidDate(value: Date): boolean {
+  return value instanceof Date && Number.isFinite(value.getTime());
+}
+
+function isFiniteNumber(value: number): boolean {
+  return Number.isFinite(value);
+}
+
+function isNonNegativeNumber(value: number): boolean {
+  return Number.isFinite(value) && value >= 0;
+}

@@ -78,7 +78,12 @@ export async function parseImportFile(file: File): Promise<ImportPreview> {
   }
 
   const text = await file.text();
-  const data = JSON.parse(text) as unknown;
+  let data: unknown;
+  try {
+    data = JSON.parse(text) as unknown;
+  } catch {
+    throw new Error('Invalid JSON file.');
+  }
 
   validateImport(data);
 
@@ -116,14 +121,17 @@ function reviveDate(value: unknown): Date {
 }
 
 function validateImport(data: unknown): asserts data is StudygrindExport {
-  if (!data || typeof data !== 'object') {
+  if (!isRecord(data)) {
     throw new Error('Invalid file format.');
   }
 
-  const d = data as Record<string, unknown>;
+  const d = data;
 
   if (d.version !== 1) {
     throw new Error('Unsupported export version. Expected version 1.');
+  }
+  if (typeof d.exportedAt !== 'string') {
+    throw new Error('Invalid file: missing export timestamp.');
   }
 
   if (!Array.isArray(d.topics)) {
@@ -144,23 +152,49 @@ function validateImport(data: unknown): asserts data is StudygrindExport {
   if (!Array.isArray(d.dailyActivity)) {
     d.dailyActivity = [];
   }
+  const sessions = d.sessions as unknown[];
+  const chatHistories = d.chatHistories as unknown[];
+  const dailyActivity = d.dailyActivity as unknown[];
 
+  const topicIds = new Set<string>();
   // Validate topics
-  for (const t of d.topics as Record<string, unknown>[]) {
-    if (typeof t.id !== 'string' || typeof t.name !== 'string') {
+  for (const topic of d.topics) {
+    if (
+      !isRecord(topic) ||
+      typeof topic.id !== 'string' ||
+      typeof topic.name !== 'string' ||
+      typeof topic.notes !== 'string' ||
+      typeof topic.createdAt !== 'string' ||
+      !isNonNegativeInteger(topic.questionCount) ||
+      (topic.customInstructions !== undefined && typeof topic.customInstructions !== 'string')
+    ) {
       throw new Error('Invalid file: topics are missing required fields (id, name).');
     }
+    topicIds.add(topic.id);
   }
 
+  const questionIds = new Set<string>();
   // Validate questions with FSRS card structure and semantic integrity
-  for (const q of d.questions as Record<string, unknown>[]) {
-    if (typeof q.id !== 'string' || typeof q.topicId !== 'string') {
+  for (const question of d.questions) {
+    if (
+      !isRecord(question) ||
+      typeof question.id !== 'string' ||
+      typeof question.topicId !== 'string' ||
+      typeof question.question !== 'string' ||
+      typeof question.explanation !== 'string' ||
+      !isNonNegativeInteger(question.timesReviewed) ||
+      !isNonNegativeInteger(question.timesCorrect) ||
+      question.timesCorrect > question.timesReviewed
+    ) {
       throw new Error('Invalid file: questions are missing required fields (id, topicId).');
     }
-    if (!q.fsrsCard || typeof q.fsrsCard !== 'object') {
+    if (!topicIds.has(question.topicId)) {
+      throw new Error('Invalid file: question references a missing topic.');
+    }
+    if (!isRecord(question.fsrsCard)) {
       throw new Error('Invalid file: questions are missing FSRS card data.');
     }
-    const card = q.fsrsCard as Record<string, unknown>;
+    const card = question.fsrsCard;
     if (card.due === undefined || card.state === undefined) {
       throw new Error('Invalid file: FSRS card is missing required fields (due, state).');
     }
@@ -168,26 +202,110 @@ function validateImport(data: unknown): asserts data is StudygrindExport {
     if (typeof card.state === 'number' && (card.state < 0 || card.state > 3)) {
       throw new Error('Invalid file: FSRS card state out of range (expected 0-3).');
     }
-    if (typeof q.type !== 'string' || (q.type !== 'mcq' && q.type !== 'cloze')) {
+    if (typeof question.type !== 'string' || (question.type !== 'mcq' && question.type !== 'cloze')) {
       throw new Error('Invalid file: question type must be "mcq" or "cloze".');
     }
     // Semantic validation: MCQ correct index must be within options bounds
-    if (q.type === 'mcq') {
-      const options = q.options;
-      const correct = q.correct;
-      if (!Array.isArray(options) || options.length < 2) {
+    if (question.type === 'mcq') {
+      const options = question.options;
+      const correct = question.correct;
+      if (!isNonEmptyStringArray(options) || options.length < 2) {
         throw new Error('Invalid file: MCQ question must have at least 2 options.');
       }
       if (typeof correct !== 'number' || correct < 0 || correct >= options.length) {
         throw new Error('Invalid file: MCQ correct answer index out of bounds.');
       }
+      if (new Set(options.map(option => option.trim().toLocaleLowerCase())).size !== options.length) {
+        throw new Error('Invalid file: MCQ question contains duplicate options.');
+      }
     }
     // Semantic validation: cloze must have non-empty acceptable answers
-    if (q.type === 'cloze') {
-      const answers = q.acceptableAnswers ?? q.acceptable_answers;
-      if (!Array.isArray(answers) || answers.length === 0) {
+    if (question.type === 'cloze') {
+      const answers = question.acceptableAnswers ?? question.acceptable_answers;
+      if (!isNonEmptyStringArray(answers)) {
         throw new Error('Invalid file: cloze question must have at least one acceptable answer.');
       }
     }
+    questionIds.add(question.id);
   }
+
+  for (const session of sessions) {
+    if (
+      !isRecord(session) ||
+      typeof session.id !== 'string' ||
+      typeof session.date !== 'string' ||
+      !isNonNegativeInteger(session.totalQuestions) ||
+      !isNonNegativeInteger(session.correctAnswers) ||
+      session.correctAnswers > session.totalQuestions ||
+      !isNonNegativeInteger(session.durationSeconds) ||
+      !Array.isArray(session.ratings)
+    ) {
+      throw new Error('Invalid file: session data is malformed.');
+    }
+
+    for (const rating of session.ratings) {
+      if (
+        !isRecord(rating) ||
+        typeof rating.questionId !== 'string' ||
+        !questionIds.has(rating.questionId) ||
+        typeof rating.correct !== 'boolean' ||
+        (rating.rating !== 1 && rating.rating !== 2 && rating.rating !== 3 && rating.rating !== 4)
+      ) {
+        throw new Error('Invalid file: session ratings are malformed.');
+      }
+    }
+  }
+
+  for (const history of chatHistories) {
+    if (
+      !isRecord(history) ||
+      typeof history.questionId !== 'string' ||
+      typeof history.topicId !== 'string' ||
+      !questionIds.has(history.questionId) ||
+      !topicIds.has(history.topicId) ||
+      (history.socraticLevel !== 1 && history.socraticLevel !== 2 && history.socraticLevel !== 3) ||
+      !Array.isArray(history.messages)
+    ) {
+      throw new Error('Invalid file: chat history is malformed.');
+    }
+
+    for (const message of history.messages) {
+      if (
+        !isRecord(message) ||
+        (message.role !== 'user' && message.role !== 'assistant') ||
+        typeof message.content !== 'string' ||
+        typeof message.timestamp !== 'string' ||
+        (message.isQuestion !== undefined && typeof message.isQuestion !== 'boolean')
+      ) {
+        throw new Error('Invalid file: chat messages are malformed.');
+      }
+    }
+  }
+
+  for (const activity of dailyActivity) {
+    if (
+      !isRecord(activity) ||
+      typeof activity.date !== 'string' ||
+      !isNonNegativeInteger(activity.questionsReviewed) ||
+      !isUnitInterval(activity.accuracy)
+    ) {
+      throw new Error('Invalid file: daily activity is malformed.');
+    }
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isNonNegativeInteger(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0;
+}
+
+function isNonEmptyStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every(item => typeof item === 'string' && item.trim().length > 0);
+}
+
+function isUnitInterval(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1;
 }

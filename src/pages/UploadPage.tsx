@@ -31,6 +31,7 @@ export function UploadPage({ settings }: UploadPageProps) {
   const [pendingTopicId, setPendingTopicId] = useState<string | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isMountedRef = useRef(true);
   const lang = settings.language;
 
   // Timer for generation progress — timestamp-based to avoid drift when tab is backgrounded
@@ -49,6 +50,12 @@ export function UploadPage({ settings }: UploadPageProps) {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [generating]);
 
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   const buildRetryMessages = (reason: string) => {
     const retryMessages = buildQuizPrompt(notes, settings.questionsPerGeneration, lang, customInstructions || undefined);
     retryMessages[0] = {
@@ -66,6 +73,7 @@ export function UploadPage({ settings }: UploadPageProps) {
 
     try {
       const tempTopicId = crypto.randomUUID();
+      if (!isMountedRef.current) return;
       setPendingTopicId(tempTopicId);
       const baseMessages = buildQuizPrompt(notes, settings.questionsPerGeneration, lang, customInstructions || undefined);
 
@@ -89,13 +97,17 @@ export function UploadPage({ settings }: UploadPageProps) {
         }
       }
 
+      if (!isMountedRef.current) return;
       if (!questions) throw lastError ?? new Error('Failed');
       if (questions.length === 0) { setError(t('upload.noValidQuestions', lang)); return; }
       setGeneratedQuestions(questions);
     } catch (err) {
+      if (!isMountedRef.current) return;
       setError(err instanceof Error ? err.message : 'Failed');
     } finally {
-      setGenerating(false);
+      if (isMountedRef.current) {
+        setGenerating(false);
+      }
     }
   };
 

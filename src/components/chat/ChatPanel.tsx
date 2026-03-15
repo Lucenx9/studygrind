@@ -91,6 +91,8 @@ export function ChatPanel({ isOpen, history, loading, canSendMore, language, onS
             onSend={onSend}
             disabled={loading}
             placeholder={t('chat.whatConfused', language)}
+            inputLabel={t('chat.whatConfused', language)}
+            sendLabel={t('chat.send', language)}
           />
         ) : (
           <div className="border-t border-border/70 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] text-center text-xs text-muted-foreground">

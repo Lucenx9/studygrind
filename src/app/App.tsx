@@ -1,7 +1,9 @@
-import { lazy, Suspense, useState, useEffect } from 'react';
+import { lazy, Suspense, useState, useEffect, Component } from 'react';
+import type { ErrorInfo, ReactNode } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import type { Page } from '@/components/layout/Sidebar';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { useSettings } from '@/hooks/useSettings';
 import { getDueQuestions } from '@/lib/fsrs';
@@ -34,6 +36,47 @@ function PageFallback({ language }: { language: Language }) {
       </Card>
     </div>
   );
+}
+
+function ErrorFallback({ language }: { language: Language }) {
+  return (
+    <div className="flex min-h-[60vh] items-center justify-center">
+      <Card className="w-full max-w-md border-destructive/25 bg-card/92">
+        <CardContent className="flex flex-col items-center gap-4 px-6 py-8 text-center">
+          <div className="space-y-1">
+            <p className="text-sm font-medium">{t('common.unexpectedError', language)}</p>
+            <p className="text-xs text-muted-foreground">{t('common.reloadApp', language)}</p>
+          </div>
+          <Button type="button" onClick={() => window.location.reload()}>
+            {t('common.reloadApp', language)}
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+class AppErrorBoundary extends Component<
+  { children: ReactNode; language: Language },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError(): { hasError: boolean } {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('StudyGrind render error:', error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <ErrorFallback language={this.props.language} />;
+    }
+
+    return this.props.children;
+  }
 }
 
 export default function App() {
@@ -84,26 +127,28 @@ export default function App() {
 
   return (
     <Layout currentPage={page} onNavigate={setPage} dueCount={dueCount} language={settings.language}>
-      <Suspense fallback={<PageFallback language={settings.language} />}>
-        {showOnboarding ? (
-          <WelcomeWizard
-            language={settings.language}
-            hasProvider={settings.provider !== null}
-            onGoToSettings={() => setPage('settings')}
-            onGoToUpload={() => setPage('upload')}
-            onDismiss={dismissOnboarding}
-          />
-        ) : (
-          <>
-            {page === 'review' && <ReviewPage onNavigate={navigate} settings={settings} />}
-            {page === 'study' && <StudyPage settings={settings} onNavigate={navigate} />}
-            {page === 'upload' && <UploadPage settings={settings} />}
-            {page === 'dashboard' && <DashboardPage language={settings.language} onNavigate={navigate} />}
-            {page === 'settings' && <SettingsPage settings={settings} onUpdate={updateSettings} />}
-          </>
-        )}
-      </Suspense>
-      <ReloadPrompt />
+      <AppErrorBoundary language={settings.language}>
+        <Suspense fallback={<PageFallback language={settings.language} />}>
+          {showOnboarding ? (
+            <WelcomeWizard
+              language={settings.language}
+              hasProvider={settings.provider !== null}
+              onGoToSettings={() => setPage('settings')}
+              onGoToUpload={() => setPage('upload')}
+              onDismiss={dismissOnboarding}
+            />
+          ) : (
+            <>
+              {page === 'review' && <ReviewPage onNavigate={navigate} settings={settings} />}
+              {page === 'study' && <StudyPage settings={settings} onNavigate={navigate} />}
+              {page === 'upload' && <UploadPage settings={settings} />}
+              {page === 'dashboard' && <DashboardPage language={settings.language} onNavigate={navigate} />}
+              {page === 'settings' && <SettingsPage settings={settings} onUpdate={updateSettings} />}
+            </>
+          )}
+        </Suspense>
+        <ReloadPrompt />
+      </AppErrorBoundary>
     </Layout>
   );
 }
