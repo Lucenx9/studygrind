@@ -73,7 +73,7 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
     setOpenRouterLoading(true);
     setOpenRouterError(null);
     try {
-      const models = await fetchOpenRouterModels(openRouterKey.trim());
+      const models = await fetchOpenRouterModels(cleanKey(openRouterKey));
       setOpenRouterModels(models);
       if (models.length > 0 && !openRouterModel) setOpenRouterModel(models[0].id);
     } catch {
@@ -89,7 +89,7 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
     setDirectLoading(true);
     setDirectError(null);
     try {
-      const models = await fetchDirectModels(directProvider, directKey.trim());
+      const models = await fetchDirectModels(directProvider, cleanKey(directKey));
       setDirectModels(models);
       if (models.length > 0 && !directModel) setDirectModel(models[0].id);
     } catch {
@@ -99,16 +99,19 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
     }
   };
 
+  // Strip all whitespace (including newlines from multi-line paste) from API keys
+  const cleanKey = (key: string) => key.replace(/\s+/g, '');
+
   const saveOpenRouter = () => {
     if (!openRouterKey.trim() || !openRouterModel) return;
-    const config: ProviderConfig = { method: 'openrouter', apiKey: openRouterKey.trim(), model: openRouterModel };
+    const config: ProviderConfig = { method: 'openrouter', apiKey: cleanKey(openRouterKey), model: openRouterModel };
     onUpdate({ provider: config });
     toast.success(t('settings.openrouterConnectedToast', lang));
   };
 
   const saveDirect = () => {
     if (!directKey.trim() || !directModel) return;
-    const config: ProviderConfig = { method: 'direct', provider: directProvider, apiKey: directKey.trim(), model: directModel };
+    const config: ProviderConfig = { method: 'direct', provider: directProvider, apiKey: cleanKey(directKey), model: directModel };
     onUpdate({ provider: config });
     toast.success(t('settings.providerConnectedToast', lang));
   };
