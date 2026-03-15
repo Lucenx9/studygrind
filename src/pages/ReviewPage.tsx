@@ -191,7 +191,7 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
             <ExplanationCard explanation={q.explanation} isCorrect={review.isCorrect} language={lang} onOpenChat={settings.provider ? handleOpenChat : undefined} hasChatHistory={chat.hasHistory(q.id)} />
             {!review.isCorrect && !retypeComplete && (
               <RetypePrompt
-                correctAnswer={q.type === 'mcq' ? q.options[q.correct].replace(/^[A-D]\)\s*/, '') : q.acceptableAnswers[0]}
+                correctAnswer={q.type === 'mcq' ? q.options[q.correct].replace(/^[[(]?(?:[A-Da-d]|[1-4])(?:[.):\]])?\s*/i, '') : q.acceptableAnswers[0]}
                 language={lang}
                 onComplete={() => setRetypeComplete(true)}
               />

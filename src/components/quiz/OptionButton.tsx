@@ -11,8 +11,11 @@ interface OptionButtonProps {
 }
 
 const LETTERS = ['A', 'B', 'C', 'D'];
+const LABEL_PREFIX_RE = /^[[(]?(?:[A-Da-d]|[1-4])(?:[.):\]])?\s*/;
 
 export function OptionButton({ label, index, selected, correctIndex, disabled, onClick }: OptionButtonProps) {
+  // Strip any leftover A)/B)/1. prefix — the badge already shows the letter
+  const cleanLabel = label.replace(LABEL_PREFIX_RE, '').trim() || label;
   const isRevealed = correctIndex !== null;
   const isCorrect = index === correctIndex;
   const isWrong = isRevealed && selected && !isCorrect;
@@ -47,7 +50,7 @@ export function OptionButton({ label, index, selected, correctIndex, disabled, o
          LETTERS[index]}
       </span>
 
-      <span className="flex-1 text-[15px] leading-relaxed sm:text-base">{label}</span>
+      <span className="flex-1 text-[15px] leading-relaxed sm:text-base">{cleanLabel}</span>
     </button>
   );
 }
