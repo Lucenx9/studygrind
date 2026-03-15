@@ -67,18 +67,30 @@ function getAuthHeaders(config: ProviderConfig): Record<string, string> {
   return {};
 }
 
-// Anthropic uses a different API format
-async function callAnthropic(
-  config: ProviderConfig,
-  messages: ChatMessage[],
-): Promise<string> {
+const API_TIMEOUT_MS = 120_000; // 2 minutes
+
+function fetchWithTimeout(url: string, options: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+  return fetch(url, { ...options, signal: controller.signal })
+    .finally(() => clearTimeout(timeout));
+}
+
+function throwApiError(provider: string, status: number, body: string): never {
+  if (status === 401 || status === 403) throw new Error(`${provider}: Invalid API key (${status})`);
+  if (status === 429) throw new Error(`${provider}: Rate limited. Wait a moment and try again.`);
+  if (status >= 500) throw new Error(`${provider}: Server error (${status}). Try again later.`);
+  throw new Error(`${provider} error (${status}): ${body.slice(0, 200)}`);
+}
+
+// Anthropic
+async function callAnthropic(config: ProviderConfig, messages: ChatMessage[]): Promise<string> {
   const baseUrl = getBaseUrl(config);
   const headers = getAuthHeaders(config);
-
   const systemMsg = messages.find(m => m.role === 'system');
   const conversationMsgs = messages.filter(m => m.role === 'user' || m.role === 'assistant');
 
-  const res = await fetch(`${baseUrl}/messages`, {
+  const res = await fetchWithTimeout(`${baseUrl}/messages`, {
     method: 'POST',
     headers: { ...headers, 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -89,24 +101,17 @@ async function callAnthropic(
     }),
   });
 
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Anthropic API error (${res.status}): ${err}`);
-  }
-
+  if (!res.ok) throwApiError('Anthropic', res.status, await res.text());
   const data = await res.json();
+  if (!data?.content?.[0]?.text) throw new Error('Anthropic returned an empty response');
   return data.content[0].text;
 }
 
-// Google Gemini — API key passed via header, not URL
-async function callGoogle(
-  config: ProviderConfig,
-  messages: ChatMessage[],
-): Promise<string> {
+// Google Gemini
+async function callGoogle(config: ProviderConfig, messages: ChatMessage[]): Promise<string> {
   const headers = getAuthHeaders(config);
   const model = config.model;
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
-
   const systemMsg = messages.find(m => m.role === 'system');
   const conversationMsgs = messages.filter(m => m.role !== 'system');
 
@@ -115,54 +120,35 @@ async function callGoogle(
     parts: [{ text: m.content }],
   }));
 
-  const body: Record<string, unknown> = {
-    contents,
-    generationConfig: { maxOutputTokens: 16384 },
-  };
-  if (systemMsg) {
-    body.systemInstruction = { parts: [{ text: systemMsg.content }] };
-  }
+  const body: Record<string, unknown> = { contents, generationConfig: { maxOutputTokens: 16384 } };
+  if (systemMsg) body.systemInstruction = { parts: [{ text: systemMsg.content }] };
 
-  const res = await fetch(url, {
+  const res = await fetchWithTimeout(url, {
     method: 'POST',
     headers: { ...headers, 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
 
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Google API error (${res.status}): ${err}`);
-  }
-
+  if (!res.ok) throwApiError('Google', res.status, await res.text());
   const data = await res.json();
+  if (!data?.candidates?.[0]?.content?.parts?.[0]?.text) throw new Error('Google returned an empty response');
   return data.candidates[0].content.parts[0].text;
 }
 
 // OpenAI-compatible (OpenRouter, OpenAI direct)
-async function callOpenAI(
-  config: ProviderConfig,
-  messages: ChatMessage[],
-): Promise<string> {
+async function callOpenAI(config: ProviderConfig, messages: ChatMessage[]): Promise<string> {
   const baseUrl = getBaseUrl(config);
   const headers = getAuthHeaders(config);
 
-  const res = await fetch(`${baseUrl}/chat/completions`, {
+  const res = await fetchWithTimeout(`${baseUrl}/chat/completions`, {
     method: 'POST',
     headers: { ...headers, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: config.model,
-      messages,
-      temperature: 0.7,
-      max_tokens: 16384,
-    }),
+    body: JSON.stringify({ model: config.model, messages, temperature: 0.7, max_tokens: 16384 }),
   });
 
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`API error (${res.status}): ${err}`);
-  }
-
+  if (!res.ok) throwApiError('API', res.status, await res.text());
   const data = await res.json();
+  if (!data?.choices?.[0]?.message?.content) throw new Error('API returned an empty response');
   return data.choices[0].message.content;
 }
 

@@ -103,7 +103,13 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
     toast.success(t('settings.providerConnectedToast', lang));
   };
 
-  const handleClearAll = () => { clearAllData(); setClearDialogOpen(false); window.location.reload(); };
+  const handleClearAll = () => {
+    clearAllData();
+    localStorage.removeItem('studygrind_onboarding_done');
+    localStorage.removeItem('studygrind_active_session');
+    setClearDialogOpen(false);
+    window.location.reload();
+  };
 
   return (
     <div className="space-y-6">
@@ -189,7 +195,7 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
               <p className="text-xs text-muted-foreground">{t('settings.noModels', lang)}</p>
             )}
           </div>
-          <Button type="submit" disabled={!openRouterKey.trim() || !openRouterModel}>
+          <Button type="submit" disabled={!openRouterKey.trim() || !openRouterModel || openRouterLoading}>
             {activeMethod === 'openrouter' ? t('settings.update', lang) : t('settings.connect', lang)}
           </Button>
           </form>
@@ -276,7 +282,7 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
               <Input value={directModel} onChange={e => setDirectModel(e.target.value)} placeholder="gpt-4o-mini" />
             )}
           </div>
-          <Button type="submit" disabled={!directKey.trim() || !directModel}>
+          <Button type="submit" disabled={!directKey.trim() || !directModel || directLoading}>
             {activeMethod === 'direct' ? t('settings.update', lang) : t('settings.connect', lang)}
           </Button>
           </form>

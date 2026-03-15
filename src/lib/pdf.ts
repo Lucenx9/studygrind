@@ -18,7 +18,12 @@ export interface PdfExtractionResult {
   warnings: PdfExtractionWarning[];
 }
 
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+
 export async function extractTextFromPdf(file: File): Promise<PdfExtractionResult> {
+  if (file.size > MAX_FILE_SIZE) {
+    throw new Error(`PDF too large (${Math.round(file.size / 1024 / 1024)}MB). Maximum is 50MB.`);
+  }
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
