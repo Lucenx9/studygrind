@@ -19,9 +19,11 @@ export function parseQuizResponse(raw: string, topicId: string): Question[] {
     try {
       const parsed = extractQuestionArray(JSON.parse(candidate) as unknown);
 
-      return parsed
+      const questions = parsed
         .map(normalizeQuestion)
-        .filter((question): question is QuestionRaw => question !== null)
+        .filter((question): question is QuestionRaw => question !== null);
+
+      return rebalanceCorrectPositions(questions)
         .map(question => toQuestion(question, topicId));
     } catch (error) {
       lastError = error instanceof Error ? error : new Error('Failed to parse quiz response');
@@ -218,6 +220,55 @@ function normalizeQuestion(candidate: unknown): QuestionRaw | null {
     acceptable_answers: answers,
     explanation: raw.explanation.trim(),
   };
+}
+
+/**
+ * Post-process MCQ questions to ensure correct answers are evenly distributed
+ * across positions A/B/C/D. LLMs consistently bias toward position B despite
+ * prompt instructions, so we shuffle deterministically after generation.
+ */
+function rebalanceCorrectPositions(questions: QuestionRaw[]): QuestionRaw[] {
+  const mcqs = questions.filter((q): q is QuestionRaw & { type: 'mcq' } => q.type === 'mcq');
+  const targetPositions = buildTargetPositions(mcqs.length);
+
+  let posIdx = 0;
+  return questions.map(q => {
+    if (q.type !== 'mcq') return q;
+
+    const targetPos = targetPositions[posIdx++];
+    if (q.correct === targetPos) return q;
+
+    // Swap the correct answer to the target position
+    const newOptions = [...q.options];
+    const correctText = newOptions[q.correct];
+    newOptions[q.correct] = newOptions[targetPos];
+    newOptions[targetPos] = correctText;
+
+    // Re-label A/B/C/D prefixes
+    const relabeled = newOptions.map((opt, idx) => {
+      const label = String.fromCharCode(65 + idx); // A, B, C, D
+      const stripped = opt.replace(/^[A-Da-d][.)]\s*/i, '').trim();
+      return `${label}) ${stripped}`;
+    });
+
+    return { ...q, options: relabeled, correct: targetPos };
+  });
+}
+
+/** Build a shuffled sequence of positions [0,1,2,3,...] that distributes evenly */
+function buildTargetPositions(count: number): number[] {
+  const positions: number[] = [];
+  // Fill with repeating 0,1,2,3 pattern, then shuffle each group of 4
+  for (let i = 0; i < count; i += 4) {
+    const group = [0, 1, 2, 3].slice(0, Math.min(4, count - i));
+    // Fisher-Yates shuffle
+    for (let j = group.length - 1; j > 0; j--) {
+      const k = Math.floor(Math.random() * (j + 1));
+      [group[j], group[k]] = [group[k], group[j]];
+    }
+    positions.push(...group);
+  }
+  return positions;
 }
 
 function toQuestion(raw: QuestionRaw, topicId: string): Question {
