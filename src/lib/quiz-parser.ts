@@ -258,7 +258,22 @@ function rebalanceCorrectPositions(questions: QuestionRaw[]): QuestionRaw[] {
     newOptions[q.correct] = newOptions[targetPos];
     newOptions[targetPos] = correctText;
 
-    return { ...q, options: newOptions, correct: targetPos };
+    // Update letter references in explanation to match new positions
+    const oldLetter = String.fromCharCode(65 + q.correct); // e.g. "B"
+    const newLetter = String.fromCharCode(65 + targetPos); // e.g. "D"
+    const swappedLetter = String.fromCharCode(65 + q.correct); // letter that moved to old position
+    let explanation = q.explanation;
+    // Replace "B is correct" → "D is correct", "B)" → "D)", etc.
+    // Use word-boundary-aware replacement to avoid mangling words like "Both"
+    const oldPattern = new RegExp(`(?<=^|[\\s(])${oldLetter}(?=[).:,\\s]|$)`, 'g');
+    const newPattern = new RegExp(`(?<=^|[\\s(])${newLetter}(?=[).:,\\s]|$)`, 'g');
+    // Two-pass swap via placeholder to avoid collision
+    const placeholder = '\x00SWAP\x00';
+    explanation = explanation.replace(oldPattern, placeholder);
+    explanation = explanation.replace(newPattern, swappedLetter);
+    explanation = explanation.replace(new RegExp(placeholder.replace(/\x00/g, '\\x00'), 'g'), newLetter);
+
+    return { ...q, options: newOptions, correct: targetPos, explanation };
   });
 }
 
