@@ -2,11 +2,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useDashboard } from '@/hooks/useDashboard';
-import { State } from '@/lib/fsrs';
+import { State, getDueQuestions } from '@/lib/fsrs';
 import { t, type Language } from '@/lib/i18n';
 import { BarChart3, Flame, Target, Clock, Calendar, TrendingDown, ArrowRight, AlertTriangle, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { getDueQuestions } from '@/lib/fsrs';
 import { getQuestions } from '@/lib/storage';
 import { toDateKey } from '@/lib/utils';
 
@@ -21,178 +20,264 @@ export function DashboardPage({ language: lang, onNavigate }: DashboardPageProps
   const todayKey = toDateKey(new Date());
 
   const STATE_LABELS: Record<string, { label: string; color: string }> = {
-    [State.New]: { label: t('state.new', lang), color: 'bg-gray-400' },
-    [State.Learning]: { label: t('state.learning', lang), color: 'bg-blue-500' },
-    [State.Review]: { label: t('state.review', lang), color: 'bg-green-500' },
-    [State.Relearning]: { label: t('state.relearning', lang), color: 'bg-orange-500' },
+    [State.New]: { label: t('state.new', lang), color: 'bg-slate-400' },
+    [State.Learning]: { label: t('state.learning', lang), color: 'bg-sky-500' },
+    [State.Review]: { label: t('state.review', lang), color: 'bg-emerald-500' },
+    [State.Relearning]: { label: t('state.relearning', lang), color: 'bg-amber-500' },
   };
+
+  const statItems = [
+    {
+      key: 'today-reviewed',
+      icon: Target,
+      value: String(dash.todayReviewed),
+      label: t('dash.reviewedToday', lang),
+      tone: 'bg-sky-500/10 text-sky-500',
+    },
+    {
+      key: 'today-accuracy',
+      icon: Target,
+      value: `${Math.round(dash.todayAccuracy * 100)}%`,
+      label: t('dash.accuracy', lang),
+      tone: 'bg-emerald-500/10 text-emerald-500',
+    },
+    {
+      key: 'today-time',
+      icon: Clock,
+      value: `${Math.round(dash.todayDuration / 60)}m`,
+      label: t('dash.timeSpent', lang),
+      tone: 'bg-violet-500/10 text-violet-500',
+    },
+    {
+      key: 'streak',
+      icon: Flame,
+      value: String(dash.streak),
+      label: t('dash.dayStreak', lang),
+      tone: 'bg-amber-500/10 text-amber-500',
+    },
+  ];
 
   return (
     <div className="space-y-8">
-      <div className="space-y-4">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/12 text-primary">
-            <BarChart3 className="h-6 w-6" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-primary/10 text-primary">
+            <BarChart3 className="h-5 w-5" />
           </div>
           <div className="space-y-1">
             <h1 className="text-3xl font-semibold tracking-[-0.03em]">{t('dash.title', lang)}</h1>
             <p className="max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">{t('dash.subtitle', lang)}</p>
           </div>
         </div>
+        {dueCount > 0 && onNavigate && (
+          <Button onClick={() => onNavigate('review')} size="lg" className="w-full gap-2 lg:w-auto">
+            {t('dash.start', lang)} <ArrowRight className="h-4 w-4" />
+          </Button>
+        )}
       </div>
 
-      {/* Actionable hero */}
-      {onNavigate && dueCount > 0 && (
-        <Card className="border-primary/20 bg-gradient-to-br from-primary/12 via-card/96 to-card/92">
-          <CardContent className="flex flex-col gap-5 px-6 py-6 sm:flex-row sm:items-end sm:justify-between">
-            <div className="space-y-2">
-              <p className="text-4xl font-semibold tracking-[-0.04em] text-primary">{dueCount}</p>
-              <p className="text-sm font-medium text-muted-foreground">{t('dash.questionsDue', lang)}</p>
-              {dash.weakest.length > 0 && dash.weakest[0].accuracy < 0.6 && (
-                <p className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
-                  <AlertTriangle className="h-3.5 w-3.5 text-orange-500" />
-                  {t('dash.topicNeedsAttention', lang).replace('{topic}', dash.weakest[0].topic.name)}
-                </p>
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.5fr)_360px]">
+        {onNavigate && dueCount > 0 ? (
+          <Card className="border-primary/15 bg-gradient-to-br from-primary/8 via-card/98 to-card/95">
+            <CardContent className="flex h-full flex-col justify-between gap-8 px-6 py-6 sm:px-7 sm:py-7">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="space-y-3">
+                  <Badge variant="secondary" className="bg-primary/10 text-primary">
+                    {t('review.queueReady', lang)}
+                  </Badge>
+                  <div className="space-y-2">
+                    <p className="text-5xl font-semibold tracking-[-0.05em] text-foreground sm:text-6xl">{dueCount}</p>
+                    <p className="text-sm font-medium text-muted-foreground">{t('dash.questionsDue', lang)}</p>
+                    <p className="max-w-2xl text-sm leading-6 text-muted-foreground">{t('review.queueHint', lang)}</p>
+                  </div>
+                </div>
+                {dash.weakest.length > 0 && dash.weakest[0].accuracy < 0.6 && (
+                  <div className="rounded-[18px] border border-amber-500/20 bg-amber-500/8 px-4 py-3 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2 text-amber-500">
+                      <AlertTriangle className="h-4 w-4" />
+                      <span className="font-medium text-foreground">{dash.weakest[0].topic.name}</span>
+                    </div>
+                    <p className="mt-2 text-xs leading-5">
+                      {t('dash.topicNeedsAttention', lang).replace('{topic}', dash.weakest[0].topic.name)}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="rounded-[18px] border border-border/60 bg-background/55 px-4 py-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t('dash.overallProgress', lang)}</p>
+                  <p className="mt-3 text-2xl font-semibold tracking-[-0.03em]">{dash.totalQuestions}</p>
+                  <p className="text-xs text-muted-foreground">{t('dash.totalQuestions', lang)}</p>
+                </div>
+                <div className="rounded-[18px] border border-border/60 bg-background/55 px-4 py-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t('dash.accuracy', lang)}</p>
+                  <p className="mt-3 text-2xl font-semibold tracking-[-0.03em]">{Math.round(dash.overallAccuracy * 100)}%</p>
+                  <p className="text-xs text-muted-foreground">{t('dash.overallAccuracy', lang)}</p>
+                </div>
+                <div className="rounded-[18px] border border-border/60 bg-background/55 px-4 py-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t('dash.upcomingReviews', lang)}</p>
+                  <p className="mt-3 text-2xl font-semibold tracking-[-0.03em]">
+                    {Array.from(dash.forecast.values()).reduce((sum, count) => sum + count, 0)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">7 {t('dash.questionsWord', lang)}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="border-primary/15 bg-gradient-to-br from-primary/8 via-card/98 to-card/95">
+            <CardContent className="flex h-full flex-col justify-between gap-8 px-6 py-6 sm:px-7 sm:py-7">
+              <div className="space-y-3">
+                <Badge variant="secondary" className="bg-primary/10 text-primary">
+                  {t('dash.startJourney', lang)}
+                </Badge>
+                <div className="space-y-2">
+                  <p className="text-3xl font-semibold tracking-[-0.04em] text-foreground">{t('dash.startJourney', lang)}</p>
+                  <p className="max-w-2xl text-sm leading-6 text-muted-foreground">{t('dash.startJourneyDesc', lang)}</p>
+                </div>
+              </div>
+
+              {onNavigate && (
+                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+                  <div className="rounded-[18px] border border-border/60 bg-background/55 px-4 py-4 text-sm leading-6 text-muted-foreground">
+                    {t('upload.subtitle', lang)}
+                  </div>
+                  <Button onClick={() => onNavigate('upload')} size="lg" className="gap-2">
+                    <Upload className="h-4 w-4" /> {t('dash.uploadCta', lang)}
+                  </Button>
+                </div>
               )}
-            </div>
-            <Button onClick={() => onNavigate('review')} size="lg" className="gap-2">
-              {t('dash.start', lang)} <ArrowRight className="h-4 w-4" />
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+            </CardContent>
+          </Card>
+        )}
 
-      {onNavigate && dash.totalQuestions === 0 && (
-        <Card className="border-primary/20 bg-gradient-to-br from-primary/12 via-card/96 to-card/92">
-          <CardContent className="flex flex-col gap-5 px-6 py-6 sm:flex-row sm:items-end sm:justify-between">
-            <div className="space-y-2">
-              <p className="text-2xl font-semibold tracking-[-0.03em]">{t('dash.startJourney', lang)}</p>
-              <p className="text-sm text-muted-foreground">{t('dash.startJourneyDesc', lang)}</p>
-            </div>
-            <Button onClick={() => onNavigate('upload')} size="lg" className="gap-2">
-              <Upload className="h-4 w-4" /> {t('dash.uploadCta', lang)}
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Card>
-          <CardContent className="space-y-4 px-5 py-5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-500">
-              <Target className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-3xl font-semibold tracking-[-0.03em]">{dash.todayReviewed}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{t('dash.reviewedToday', lang)}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="space-y-4 px-5 py-5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-green-500/10 text-green-500">
-              <Target className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-3xl font-semibold tracking-[-0.03em]">{Math.round(dash.todayAccuracy * 100)}%</p>
-              <p className="mt-1 text-xs text-muted-foreground">{t('dash.accuracy', lang)}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="space-y-4 px-5 py-5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-500">
-              <Clock className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-3xl font-semibold tracking-[-0.03em]">{Math.round(dash.todayDuration / 60)}m</p>
-              <p className="mt-1 text-xs text-muted-foreground">{t('dash.timeSpent', lang)}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="space-y-4 px-5 py-5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-orange-500/10 text-orange-500">
-              <Flame className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-3xl font-semibold tracking-[-0.03em]">{dash.streak}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{t('dash.dayStreak', lang)}</p>
-            </div>
+          <CardHeader className="border-b border-border/50 pb-4">
+            <CardTitle className="text-sm uppercase tracking-[0.16em] text-muted-foreground">{t('dash.today', lang)}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 pt-4">
+            {statItems.map(({ key, icon: Icon, value, label, tone }) => (
+              <div key={key} className="flex items-center gap-4 rounded-[18px] border border-border/55 bg-background/45 px-4 py-3">
+                <div className={`flex h-10 w-10 items-center justify-center rounded-[14px] ${tone}`}>
+                  <Icon className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground">{label}</p>
+                  <p className="mt-1 text-xl font-semibold tracking-[-0.03em]">{value}</p>
+                </div>
+              </div>
+            ))}
           </CardContent>
         </Card>
       </div>
 
-      {/* Overall progress */}
-      <Card className="rounded-2xl">
-        <CardHeader><CardTitle className="text-base">{t('dash.overallProgress', lang)}</CardTitle></CardHeader>
-        <CardContent className="flex items-center gap-8">
-          <div>
-            <p className="text-3xl font-bold">{dash.totalQuestions}</p>
-            <p className="text-xs text-muted-foreground">{t('dash.totalQuestions', lang)}</p>
-          </div>
-          <div>
-            <p className="text-3xl font-bold">{Math.round(dash.overallAccuracy * 100)}%</p>
-            <p className="text-xs text-muted-foreground">{t('dash.overallAccuracy', lang)}</p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.25fr)_minmax(280px,360px)]">
+        <Card>
+          <CardHeader className="border-b border-border/50 pb-4">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Calendar className="h-4 w-4 text-primary" />
+              {t('dash.upcomingReviews', lang)}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-5">
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {Array.from(dash.forecast.entries()).map(([date, count]) => {
+                const d = parseDateKey(date);
+                const isToday = date === todayKey;
+                return (
+                  <div
+                    key={date}
+                    className={`min-w-[78px] rounded-[18px] border px-3 py-3 text-center ${
+                      isToday
+                        ? 'border-primary/20 bg-primary/9'
+                        : 'border-border/55 bg-background/45'
+                    }`}
+                  >
+                    <p className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${isToday ? 'text-primary' : 'text-muted-foreground'}`}>
+                      {isToday ? t('dash.today', lang) : d.toLocaleDateString(lang === 'it' ? 'it-IT' : 'en-US', { weekday: 'short' })}
+                    </p>
+                    <p className={`mt-2 text-2xl font-semibold tracking-[-0.04em] ${isToday ? 'text-primary' : 'text-foreground'}`}>
+                      {count}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* Topics */}
+        {dash.weakest.length > 0 && (
+          <Card>
+            <CardHeader className="border-b border-border/50 pb-4">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <TrendingDown className="h-4 w-4 text-rose-500" />
+                {t('dash.weakestAreas', lang)}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 pt-5">
+              {dash.weakest.slice(0, 4).map(({ topic, accuracy, againCount }) => (
+                <div key={topic.id} className="rounded-[18px] border border-border/55 bg-background/45 px-4 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="truncate font-medium">{topic.name}</span>
+                    <span className="text-xs text-muted-foreground">{Math.round(accuracy * 100)}% {t('dash.acc', lang)}</span>
+                  </div>
+                  {againCount > 0 && (
+                    <div className="mt-3 flex items-center justify-between">
+                      <span className="text-xs uppercase tracking-[0.12em] text-muted-foreground">{t('dash.forgot', lang)}</span>
+                      <Badge variant="destructive" className="text-[11px]">{againCount}</Badge>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
       {dash.topicStats.length > 0 && (
-        <div className="space-y-3">
-          <h2 className="text-sm font-medium text-muted-foreground">{t('dash.topics', lang)}</h2>
-          <div className="grid gap-3">
+        <Card>
+          <CardHeader className="border-b border-border/50 pb-4">
+            <CardTitle className="text-base">{t('dash.topics', lang)}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 pt-5">
             {dash.topicStats.map(({ topic, total, byState, accuracy }) => (
-              <Card key={topic.id} className="rounded-2xl">
-                <CardContent className="pt-5 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <p className="font-medium truncate">{topic.name}</p>
-                    <Badge variant="secondary">{total} {t('dash.questionsShort', lang)}</Badge>
+              <div key={topic.id} className="rounded-[18px] border border-border/55 bg-background/45 px-4 py-4">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-3">
+                      <p className="truncate font-semibold">{topic.name}</p>
+                      <Badge variant="secondary">{total} {t('dash.questionsShort', lang)}</Badge>
+                    </div>
+                    <div className="mt-3 flex h-2 overflow-hidden rounded-full bg-secondary">
+                      {Object.entries(STATE_LABELS).map(([state, { color }]) => {
+                        const count = byState[state] ?? 0;
+                        const pct = total > 0 ? (count / total) * 100 : 0;
+                        return pct > 0 ? <div key={state} className={color} style={{ width: `${pct}%` }} /> : null;
+                      })}
+                    </div>
                   </div>
-                  {/* State bar - thicker */}
-                  <div className="flex h-3 rounded-full overflow-hidden bg-secondary">
-                    {Object.entries(STATE_LABELS).map(([state, { color }]) => {
-                      const count = byState[state] ?? 0;
-                      const pct = total > 0 ? (count / total) * 100 : 0;
-                      return pct > 0 ? <div key={state} className={color} style={{ width: `${pct}%` }} /> : null;
-                    })}
-                  </div>
-                  <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                    {Object.entries(STATE_LABELS).map(([state, { label, color }]) => {
-                      const count = byState[state] ?? 0;
-                      return count > 0 ? (
-                        <div key={state} className="flex items-center gap-1.5">
-                          <div className={`h-2.5 w-2.5 rounded-full ${color}`} />
-                          {label}: {count}
-                        </div>
-                      ) : null;
-                    })}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">{t('dash.accuracy', lang)}:</span>
-                    <Progress value={accuracy * 100} className="flex-1 h-2" />
-                    <span className="text-xs font-semibold">{Math.round(accuracy * 100)}%</span>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
 
-      {/* Weakest areas */}
-      {dash.weakest.length > 0 && (
-        <Card className="rounded-2xl">
-          <CardHeader><CardTitle className="text-base flex items-center gap-2"><TrendingDown className="h-4 w-4 text-red-500" />{t('dash.weakestAreas', lang)}</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            {dash.weakest.slice(0, 3).map(({ topic, accuracy, againCount }) => (
-              <div key={topic.id} className="flex items-center justify-between text-sm">
-                <span className="truncate">{topic.name}</span>
-                <div className="flex items-center gap-3">
-                  <span className="text-muted-foreground">{Math.round(accuracy * 100)}% {t('dash.acc', lang)}</span>
-                  {againCount > 0 && <Badge variant="destructive" className="text-xs">{againCount} {t('dash.forgot', lang)}</Badge>}
+                  <div className="grid gap-3 sm:grid-cols-2 lg:w-[360px]">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs uppercase tracking-[0.12em] text-muted-foreground">{t('dash.accuracy', lang)}</span>
+                        <span className="text-xs font-semibold">{Math.round(accuracy * 100)}%</span>
+                      </div>
+                      <Progress value={accuracy * 100} className="mt-2 h-2" />
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                      {Object.entries(STATE_LABELS).map(([state, { label, color }]) => {
+                        const count = byState[state] ?? 0;
+                        return count > 0 ? (
+                          <div key={state} className="flex items-center gap-1.5">
+                            <div className={`h-2.5 w-2.5 rounded-full ${color}`} />
+                            <span>{label}: {count}</span>
+                          </div>
+                        ) : null;
+                      })}
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
@@ -200,37 +285,13 @@ export function DashboardPage({ language: lang, onNavigate }: DashboardPageProps
         </Card>
       )}
 
-      {/* Upcoming reviews - with today highlight */}
-      <Card className="rounded-2xl">
-        <CardHeader><CardTitle className="text-base flex items-center gap-2"><Calendar className="h-4 w-4 text-primary" />{t('dash.upcomingReviews', lang)}</CardTitle></CardHeader>
-        <CardContent>
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            {Array.from(dash.forecast.entries()).map(([date, count]) => {
-              const d = parseDateKey(date);
-              const isToday = date === todayKey;
-              return (
-                <div key={date} className={`text-center min-w-[64px] rounded-xl py-3 px-2 ${isToday ? 'bg-primary/10' : ''}`}>
-                  <p className={`text-xs font-medium ${isToday ? 'text-primary' : 'text-muted-foreground'}`}>
-                    {isToday ? t('dash.today', lang) : d.toLocaleDateString(lang === 'it' ? 'it-IT' : 'en-US', { weekday: 'short' })}
-                  </p>
-                  <p className={`text-xl font-bold mt-1 ${isToday ? 'text-primary' : count > 0 ? 'text-foreground' : 'text-muted-foreground'}`}>
-                    {count}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Activity heatmap */}
       {dash.activities.length > 0 && (
-        <Card className="rounded-2xl">
-          <CardHeader>
+        <Card>
+          <CardHeader className="border-b border-border/50 pb-4">
             <CardTitle className="text-base">{t('dash.studyActivity', lang)}</CardTitle>
             <p className="text-sm text-muted-foreground">{t('dash.last90Days', lang)}</p>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-5">
             <div className="overflow-x-auto">
               {(() => {
                 const actMap = new Map(dash.activities.map(a => [a.date, a.questionsReviewed]));
@@ -249,34 +310,31 @@ export function DashboardPage({ language: lang, onNavigate }: DashboardPageProps
                 }
 
                 const maxCount = Math.max(...days.map(x => x.count), 1);
-                const colors = ['bg-secondary', 'bg-green-200 dark:bg-green-900', 'bg-green-400 dark:bg-green-700', 'bg-green-500 dark:bg-green-600', 'bg-green-700 dark:bg-green-500'];
-                // Show all 7 labels, abbreviated to single char
+                const colors = ['bg-secondary', 'bg-emerald-200/70 dark:bg-emerald-950', 'bg-emerald-400/75 dark:bg-emerald-700', 'bg-emerald-500 dark:bg-emerald-600', 'bg-emerald-700 dark:bg-emerald-500'];
                 const weekLabels = lang === 'it'
                   ? ['L', 'Ma', 'Me', 'G', 'V', 'S', 'D']
                   : ['M', 'Tu', 'W', 'Th', 'F', 'Sa', 'Su'];
 
                 const weeks: typeof days[] = [];
-                for (let i = 0; i < days.length; i += 7) {
-                  weeks.push(days.slice(i, i + 7));
-                }
+                for (let i = 0; i < days.length; i += 7) weeks.push(days.slice(i, i + 7));
 
                 return (
-                  <div className="flex gap-[3px]">
-                    {/* Day labels - show all 7 */}
-                    <div className="flex flex-col gap-[3px] mr-1.5">
-                      {weekLabels.map((l, i) => (
-                        <div key={i} className="h-3.5 w-5 text-[9px] text-muted-foreground flex items-center justify-end pr-0.5">{l}</div>
+                  <div className="flex gap-[4px]">
+                    <div className="mr-2 flex flex-col gap-[4px]">
+                      {weekLabels.map((label, index) => (
+                        <div key={index} className="flex h-3.5 w-5 items-center justify-end pr-0.5 text-[9px] text-muted-foreground">
+                          {label}
+                        </div>
                       ))}
                     </div>
-                    {/* Week columns */}
-                    {weeks.map((week, wi) => (
-                      <div key={wi} className="flex flex-col gap-[3px]">
+                    {weeks.map((week, weekIndex) => (
+                      <div key={weekIndex} className="flex flex-col gap-[4px]">
                         {week.map(({ date, count }) => {
                           const intensity = count > 0 ? Math.ceil((count / maxCount) * 4) : 0;
                           return (
                             <div
                               key={date}
-                              className={`h-3.5 w-3.5 rounded-[3px] ${colors[intensity]}`}
+                              className={`h-3.5 w-3.5 rounded-[4px] ${colors[intensity]}`}
                               title={`${date}: ${count} ${t('dash.questionsWord', lang)}`}
                             />
                           );
@@ -294,7 +352,7 @@ export function DashboardPage({ language: lang, onNavigate }: DashboardPageProps
       {dash.totalQuestions === 0 && (
         <Card className="border-dashed text-center">
           <CardContent className="px-6 py-10 text-muted-foreground">
-            <BarChart3 className="mx-auto mb-4 h-16 w-16 opacity-20" />
+            <BarChart3 className="mx-auto mb-4 h-14 w-14 opacity-20" />
             <p className="text-lg">{t('dash.noData', lang)}</p>
           </CardContent>
         </Card>

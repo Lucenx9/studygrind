@@ -59,10 +59,10 @@ export function ChatMessage({ message }: ChatMessageProps) {
     <div className={cn('flex', isUser ? 'justify-end' : 'justify-start')}>
       <div
         className={cn(
-          'max-w-[88%] rounded-[22px] border px-4 py-3 text-sm leading-7 shadow-[0_14px_34px_-30px_rgba(15,23,42,0.8)]',
+          'max-w-[88%] rounded-[18px] border px-4 py-3 text-sm leading-7 shadow-[0_12px_28px_-24px_rgba(15,23,42,0.72)]',
           isUser
-            ? 'rounded-br-md border-primary bg-primary text-primary-foreground'
-            : 'rounded-bl-md border-border/70 bg-secondary/80 text-secondary-foreground',
+            ? 'rounded-br-md border-primary/80 bg-primary text-primary-foreground'
+            : 'rounded-bl-md border-border/60 bg-secondary/75 text-secondary-foreground',
         )}
       >
         {!isUser && message.isQuestion && (

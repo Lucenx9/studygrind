@@ -29,22 +29,22 @@ export function ChatPanel({ isOpen, history, loading, canSendMore, language, onS
   return (
     <>
       {isOpen && (
-        <div className="fixed inset-0 z-40 bg-black/20 md:hidden" onClick={onClose} />
+        <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[1px] md:hidden" onClick={onClose} />
       )}
 
       <div
         className={cn(
-          'fixed right-0 top-0 z-50 flex h-full w-full max-w-full flex-col border-l border-border/70 bg-card/95 shadow-[0_24px_60px_-32px_rgba(15,23,42,0.85)] backdrop-blur-xl transition-transform duration-300 md:w-[420px]',
+          'fixed right-0 top-0 z-50 flex h-full w-full max-w-full flex-col border-l border-border/65 bg-popover/94 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.8)] backdrop-blur-xl transition-transform duration-300 md:w-[408px]',
           isOpen ? 'translate-x-0' : 'translate-x-full',
         )}
       >
-        <div className="flex items-center justify-between border-b border-border/70 px-5 py-4 pt-[max(1rem,env(safe-area-inset-top))]">
+        <div className="flex items-center justify-between border-b border-border/60 px-5 py-4 pt-[max(1rem,env(safe-area-inset-top))]">
           <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary/12 text-primary">
+            <div className="flex h-9 w-9 items-center justify-center rounded-[14px] bg-primary/10 text-primary">
               <MessageCircle className="h-4 w-4" />
             </div>
             <div>
-              <span className="text-sm font-semibold">{t('chat.socraticTutor', language)}</span>
+              <span className="text-sm font-semibold tracking-[-0.01em]">{t('chat.socraticTutor', language)}</span>
               {history && (
                 <div className="text-xs text-muted-foreground">
                   {t('chat.level', language)} {history.socraticLevel}/3
@@ -64,10 +64,10 @@ export function ChatPanel({ isOpen, history, loading, canSendMore, language, onS
 
         <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
           {(!history || history.messages.length === 0) && (
-            <div className="rounded-[24px] border border-border/70 bg-background/55 px-5 py-8 text-center text-sm text-muted-foreground">
-              <MessageCircle className="mx-auto mb-3 h-8 w-8 opacity-30" />
+            <div className="rounded-[20px] border border-border/60 bg-background/45 px-5 py-8 text-center text-sm text-muted-foreground">
+              <MessageCircle className="mx-auto mb-3 h-8 w-8 opacity-25" />
               <p>{t('chat.tellMe', language)}</p>
-              <p className="text-xs mt-1">{t('chat.illGuide', language)}</p>
+              <p className="mt-1 text-xs">{t('chat.illGuide', language)}</p>
             </div>
           )}
 
@@ -77,7 +77,7 @@ export function ChatPanel({ isOpen, history, loading, canSendMore, language, onS
 
           {loading && (
             <div className="flex justify-start">
-              <div className="flex gap-1 rounded-[22px] rounded-bl-md bg-secondary px-4 py-3">
+              <div className="flex gap-1 rounded-[18px] rounded-bl-md border border-border/55 bg-secondary/80 px-4 py-3">
                 <span className="w-2 h-2 rounded-full bg-muted-foreground/50 bounce-dot" />
                 <span className="w-2 h-2 rounded-full bg-muted-foreground/50 bounce-dot" />
                 <span className="w-2 h-2 rounded-full bg-muted-foreground/50 bounce-dot" />

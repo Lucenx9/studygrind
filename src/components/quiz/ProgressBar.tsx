@@ -24,12 +24,12 @@ export function ProgressBar({ current, total, results }: ProgressBarProps) {
           return (
             <div
               key={i}
-              className={`h-3 flex-1 rounded-full transition-[background-color,transform] duration-300 ${color}`}
+              className={`h-2.5 flex-1 rounded-full transition-[background-color,transform] duration-300 ${color}`}
             />
           );
         })}
       </div>
-      <div className="rounded-full border border-border/70 bg-background/80 px-3 py-1.5 text-sm font-semibold shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]">
+      <div className="rounded-full border border-border/60 bg-background/80 px-3 py-1.5 text-sm font-semibold shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]">
         <span className="text-primary">{currentStep}</span>
         <span className="text-muted-foreground"> / {total}</span>
       </div>

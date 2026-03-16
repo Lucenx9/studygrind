@@ -95,8 +95,8 @@ export function PdfDropzone({ onExtracted, language }: PdfDropzoneProps) {
         onKeyDown={handleKeyDown}
         aria-label={t('pdf.dropHere', language)}
         className={cn(
-          'flex cursor-pointer flex-col items-center justify-center gap-3 rounded-[24px] border-2 border-dashed p-6 text-center transition-[border-color,background-color,transform] duration-200',
-          dragging ? 'border-primary bg-primary/6' : 'border-border/70 bg-background/55 hover:border-primary/40 hover:bg-accent/45',
+          'flex cursor-pointer flex-col items-center justify-center gap-3 rounded-[20px] border-2 border-dashed p-6 text-center transition-[border-color,background-color,transform] duration-200',
+          dragging ? 'border-primary bg-primary/6' : 'border-border/65 bg-background/55 hover:border-primary/34 hover:bg-accent/38',
           loading && 'pointer-events-none opacity-60',
         )}
       >
@@ -108,7 +108,7 @@ export function PdfDropzone({ onExtracted, language }: PdfDropzoneProps) {
           </>
         ) : (
           <>
-            <div className="flex h-14 w-14 items-center justify-center rounded-[22px] bg-primary/10 text-primary">
+            <div className="flex h-14 w-14 items-center justify-center rounded-[18px] bg-primary/10 text-primary">
               <FileUp className="h-7 w-7" />
             </div>
             <p className="text-sm font-medium text-foreground">{t('pdf.dropHere', language)}</p>
@@ -120,7 +120,7 @@ export function PdfDropzone({ onExtracted, language }: PdfDropzoneProps) {
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       {warnings.map((warning, i) => (
-        <div key={i} className="flex items-start gap-2 rounded-2xl bg-yellow-500/10 p-3 text-sm">
+        <div key={i} className="flex items-start gap-2 rounded-[18px] bg-yellow-500/10 p-3 text-sm">
           <AlertTriangle className="h-4 w-4 shrink-0 text-yellow-600 dark:text-yellow-400 mt-0.5" />
           <p className="text-yellow-700 dark:text-yellow-300">
             {warning.type === 'page-limit'

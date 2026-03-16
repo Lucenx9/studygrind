@@ -43,6 +43,12 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
   const [directSearch, setDirectSearch] = useState('');
 
   const [clearDialogOpen, setClearDialogOpen] = useState(false);
+  const openRouterSectionRef = useRef<HTMLElement | null>(null);
+  const directSectionRef = useRef<HTMLElement | null>(null);
+  const oauthSectionRef = useRef<HTMLElement | null>(null);
+  const preferencesSectionRef = useRef<HTMLElement | null>(null);
+  const dataSectionRef = useRef<HTMLElement | null>(null);
+  const dangerSectionRef = useRef<HTMLElement | null>(null);
 
   // Debounced slider: update UI immediately, persist after 500ms idle
   const [localQpg, setLocalQpg] = useState(settings.questionsPerGeneration);
@@ -146,12 +152,22 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
     window.location.reload();
   };
 
+  const providerStatus = activeMethod === 'openrouter'
+    ? t('settings.openrouter', lang)
+    : activeMethod === 'direct'
+      ? `${t('settings.directKey', lang)}`
+      : t('upload.aiNeeded', lang);
+  const themeLabel = settings.theme === 'light' ? t('settings.light', lang) : t('settings.dark', lang);
+  const scrollToSection = (ref: { current: HTMLElement | null }) => {
+    ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   return (
     <div className="space-y-6">
       <div className="space-y-4">
         <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/12 text-primary">
-            <SettingsIcon className="h-6 w-6" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-primary/10 text-primary">
+            <SettingsIcon className="h-5 w-5" />
           </div>
           <div className="space-y-1">
             <h1 className="text-3xl font-semibold tracking-[-0.03em]">{t('settings.title', lang)}</h1>
@@ -160,252 +176,328 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
         </div>
       </div>
 
-      {/* OpenRouter */}
-      <Card className="rounded-2xl">
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <Key className="h-4 w-4" /> {t('settings.openrouter', lang)}
-            {activeMethod === 'openrouter' && <Badge className="gap-1"><Check className="h-3 w-3" /> {t('settings.connected', lang)}</Badge>}
-          </CardTitle>
-          <CardDescription>{t('settings.openrouterDesc', lang)}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form
-            className="space-y-4"
-            onSubmit={(event) => {
-              event.preventDefault();
-              saveOpenRouter();
-            }}
-          >
-          <div className="space-y-2">
-            <Label>{t('settings.apiKey', lang)}</Label>
-            <div className="flex gap-2">
-              <Input type="password" value={openRouterKey} onChange={e => setOpenRouterKey(e.target.value)} placeholder="sk-or-..." className="flex-1" />
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={handleFetchOpenRouterModels}
-                disabled={!openRouterKey.trim() || openRouterLoading}
-                title={t('settings.fetchModels', lang)}
-                aria-label={t('settings.fetchModels', lang)}
-              >
-                {openRouterLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-              </Button>
-            </div>
-          </div>
-          {openRouterError && (
-            <Alert variant="destructive">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>{t('settings.modelsUnavailable', lang)}</AlertTitle>
-              <AlertDescription>{openRouterError}</AlertDescription>
-            </Alert>
-          )}
-          <div className="space-y-2">
-            <Label>{t('settings.model', lang)}</Label>
-            {openRouterModels.length > 0 ? (
-              <>
-                <Input
-                  value={openRouterSearch}
-                  onChange={e => setOpenRouterSearch(e.target.value)}
-                  placeholder={t('settings.searchModel', lang)}
-                  className="mb-2"
-                />
-                <Select value={openRouterModel} onValueChange={(v: string | null) => { if (v) { setOpenRouterModel(v); setOpenRouterSearch(''); } }}>
-                  <SelectTrigger><SelectValue placeholder={t('settings.selectModel', lang)} /></SelectTrigger>
-                  <SelectContent className="max-h-[300px]">
-                    {filteredOpenRouterModels.map(m => (
-                      <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
-                    ))}
-                    {filteredOpenRouterModels.length === 0 && (
-                      <div className="px-3 py-2 text-sm text-muted-foreground">{t('settings.noResults', lang)}</div>
+      <div className="grid gap-5 xl:grid-cols-[280px_minmax(0,1fr)]">
+        <aside className="space-y-4 xl:sticky xl:top-8 self-start">
+          <Card className="border-primary/15 bg-gradient-to-br from-primary/8 via-card/98 to-card/96">
+            <CardHeader className="border-b border-border/50 pb-4">
+              <CardTitle className="text-base">{t('settings.title', lang)}</CardTitle>
+              <CardDescription>{t('settings.subtitle', lang)}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3 pt-5">
+              <div className="rounded-[18px] border border-border/55 bg-background/45 px-4 py-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{t('settings.provider', lang)}</p>
+                <div className="mt-2 flex items-center justify-between gap-3">
+                  <span className="font-medium">{providerStatus}</span>
+                  {activeMethod && (
+                    <Badge className="gap-1">
+                      <Check className="h-3 w-3" /> {t('settings.connected', lang)}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                <div className="rounded-[18px] border border-border/55 bg-background/45 px-4 py-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{t('settings.language', lang)}</p>
+                  <p className="mt-2 font-medium">{settings.language === 'it' ? 'Italiano' : 'English'}</p>
+                </div>
+                <div className="rounded-[18px] border border-border/55 bg-background/45 px-4 py-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{t('settings.theme', lang)}</p>
+                  <p className="mt-2 font-medium">{themeLabel}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card size="sm">
+            <CardHeader className="border-b border-border/50 pb-3">
+              <CardTitle className="text-sm uppercase tracking-[0.16em] text-muted-foreground">{t('settings.sections', lang)}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1.5 pt-3">
+              {[
+                { label: t('settings.openrouter', lang), ref: openRouterSectionRef },
+                { label: t('settings.directKey', lang), ref: directSectionRef },
+                { label: t('settings.oauth', lang), ref: oauthSectionRef },
+                { label: t('settings.preferences', lang), ref: preferencesSectionRef },
+                { label: t('settings.dataManagement', lang), ref: dataSectionRef },
+                { label: t('settings.clearAllData', lang), ref: dangerSectionRef },
+              ].map(({ label, ref }) => (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => scrollToSection(ref)}
+                  className="flex w-full items-center justify-between rounded-[14px] px-3 py-2.5 text-left text-sm text-muted-foreground transition-colors hover:bg-accent/55 hover:text-foreground"
+                >
+                  <span>{label}</span>
+                  <span className="text-xs text-muted-foreground">→</span>
+                </button>
+              ))}
+            </CardContent>
+          </Card>
+        </aside>
+
+        <div className="space-y-5">
+          <section ref={openRouterSectionRef} className="scroll-mt-8">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Key className="h-4 w-4" /> {t('settings.openrouter', lang)}
+                  {activeMethod === 'openrouter' && <Badge className="gap-1"><Check className="h-3 w-3" /> {t('settings.connected', lang)}</Badge>}
+                </CardTitle>
+                <CardDescription>{t('settings.openrouterDesc', lang)}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form
+                  className="space-y-4"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    saveOpenRouter();
+                  }}
+                >
+                  <div className="space-y-2">
+                    <Label>{t('settings.apiKey', lang)}</Label>
+                    <div className="flex gap-2">
+                      <Input type="password" value={openRouterKey} onChange={e => setOpenRouterKey(e.target.value)} placeholder="sk-or-..." className="flex-1" />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={handleFetchOpenRouterModels}
+                        disabled={!openRouterKey.trim() || openRouterLoading}
+                        title={t('settings.fetchModels', lang)}
+                        aria-label={t('settings.fetchModels', lang)}
+                      >
+                        {openRouterLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                  {openRouterError && (
+                    <Alert variant="destructive">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertTitle>{t('settings.modelsUnavailable', lang)}</AlertTitle>
+                      <AlertDescription>{openRouterError}</AlertDescription>
+                    </Alert>
+                  )}
+                  <div className="space-y-2">
+                    <Label>{t('settings.model', lang)}</Label>
+                    {openRouterModels.length > 0 ? (
+                      <>
+                        <Input
+                          value={openRouterSearch}
+                          onChange={e => setOpenRouterSearch(e.target.value)}
+                          placeholder={t('settings.searchModel', lang)}
+                          className="mb-2"
+                        />
+                        <Select value={openRouterModel} onValueChange={(v: string | null) => { if (v) { setOpenRouterModel(v); setOpenRouterSearch(''); } }}>
+                          <SelectTrigger><SelectValue placeholder={t('settings.selectModel', lang)} /></SelectTrigger>
+                          <SelectContent className="max-h-[300px]">
+                            {filteredOpenRouterModels.map(m => (
+                              <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                            ))}
+                            {filteredOpenRouterModels.length === 0 && (
+                              <div className="px-3 py-2 text-sm text-muted-foreground">{t('settings.noResults', lang)}</div>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </>
+                    ) : (
+                      <Input value={openRouterModel} onChange={e => setOpenRouterModel(e.target.value)} placeholder="openai/gpt-4o-mini" />
                     )}
-                  </SelectContent>
-                </Select>
-              </>
-            ) : (
-              <Input value={openRouterModel} onChange={e => setOpenRouterModel(e.target.value)} placeholder="openai/gpt-4o-mini" />
-            )}
-            {openRouterModels.length === 0 && openRouterKey.trim() && (
-              <p className="text-xs text-muted-foreground">{t('settings.noModels', lang)}</p>
-            )}
-          </div>
-          <Button type="submit" disabled={!openRouterKey.trim() || !openRouterModel || openRouterLoading}>
-            {activeMethod === 'openrouter' ? t('settings.update', lang) : t('settings.connect', lang)}
-          </Button>
-          </form>
-        </CardContent>
-      </Card>
+                    {openRouterModels.length === 0 && openRouterKey.trim() && (
+                      <p className="text-xs text-muted-foreground">{t('settings.noModels', lang)}</p>
+                    )}
+                  </div>
+                  <Button type="submit" disabled={!openRouterKey.trim() || !openRouterModel || openRouterLoading}>
+                    {activeMethod === 'openrouter' ? t('settings.update', lang) : t('settings.connect', lang)}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </section>
 
-      {/* Direct API Key */}
-      <Card className="rounded-2xl">
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <Key className="h-4 w-4" /> {t('settings.directKey', lang)}
-            {activeMethod === 'direct' && <Badge className="gap-1"><Check className="h-3 w-3" /> {t('settings.connected', lang)}</Badge>}
-          </CardTitle>
-          <CardDescription>{t('settings.directKeyDesc', lang)}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form
-            className="space-y-4"
-            onSubmit={(event) => {
-              event.preventDefault();
-              saveDirect();
-            }}
-          >
-          <div className="space-y-2">
-            <Label>{t('settings.provider', lang)}</Label>
-            <Select value={directProvider} onValueChange={(v: string | null) => {
-              if (!v) return;
-              setDirectProvider(v as DirectProvider);
-              setDirectModel('');
-              setDirectModels([]);
-            }}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="openai">OpenAI</SelectItem>
-                <SelectItem value="anthropic">Anthropic</SelectItem>
-                <SelectItem value="google">Google</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label>{t('settings.apiKey', lang)}</Label>
-            <div className="flex gap-2">
-              <Input type="password" value={directKey} onChange={e => setDirectKey(e.target.value)} placeholder="sk-..." className="flex-1" />
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={handleFetchDirectModels}
-                disabled={!directKey.trim() || directLoading}
-                title={t('settings.fetchModels', lang)}
-                aria-label={t('settings.fetchModels', lang)}
-              >
-                {directLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-              </Button>
-            </div>
-          </div>
-          {directError && (
-            <Alert variant="destructive">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>{t('settings.modelsUnavailable', lang)}</AlertTitle>
-              <AlertDescription>{directError}</AlertDescription>
-            </Alert>
-          )}
-          <div className="space-y-2">
-            <Label>{t('settings.model', lang)}</Label>
-            {directModels.length > 0 ? (
-              <>
-                <Input
-                  value={directSearch}
-                  onChange={e => setDirectSearch(e.target.value)}
-                  placeholder={t('settings.searchModel', lang)}
-                  className="mb-2"
-                />
-                <Select value={directModel} onValueChange={(v: string | null) => { if (v) { setDirectModel(v); setDirectSearch(''); } }}>
-                  <SelectTrigger><SelectValue placeholder={t('settings.selectModel', lang)} /></SelectTrigger>
-                  <SelectContent className="max-h-[300px]">
-                    {filteredDirectModels.map(m => (
-                      <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </>
-            ) : (
-              <Input value={directModel} onChange={e => setDirectModel(e.target.value)} placeholder="gpt-4o-mini" />
-            )}
-          </div>
-          <Button type="submit" disabled={!directKey.trim() || !directModel || directLoading}>
-            {activeMethod === 'direct' ? t('settings.update', lang) : t('settings.connect', lang)}
-          </Button>
-          </form>
-        </CardContent>
-      </Card>
+          <section ref={directSectionRef} className="scroll-mt-8">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Key className="h-4 w-4" /> {t('settings.directKey', lang)}
+                  {activeMethod === 'direct' && <Badge className="gap-1"><Check className="h-3 w-3" /> {t('settings.connected', lang)}</Badge>}
+                </CardTitle>
+                <CardDescription>{t('settings.directKeyDesc', lang)}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form
+                  className="space-y-4"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    saveDirect();
+                  }}
+                >
+                  <div className="space-y-2">
+                    <Label>{t('settings.provider', lang)}</Label>
+                    <Select value={directProvider} onValueChange={(v: string | null) => {
+                      if (!v) return;
+                      setDirectProvider(v as DirectProvider);
+                      setDirectModel('');
+                      setDirectModels([]);
+                    }}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="openai">OpenAI</SelectItem>
+                        <SelectItem value="anthropic">Anthropic</SelectItem>
+                        <SelectItem value="google">Google</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t('settings.apiKey', lang)}</Label>
+                    <div className="flex gap-2">
+                      <Input type="password" value={directKey} onChange={e => setDirectKey(e.target.value)} placeholder="sk-..." className="flex-1" />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={handleFetchDirectModels}
+                        disabled={!directKey.trim() || directLoading}
+                        title={t('settings.fetchModels', lang)}
+                        aria-label={t('settings.fetchModels', lang)}
+                      >
+                        {directLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                  {directError && (
+                    <Alert variant="destructive">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertTitle>{t('settings.modelsUnavailable', lang)}</AlertTitle>
+                      <AlertDescription>{directError}</AlertDescription>
+                    </Alert>
+                  )}
+                  <div className="space-y-2">
+                    <Label>{t('settings.model', lang)}</Label>
+                    {directModels.length > 0 ? (
+                      <>
+                        <Input
+                          value={directSearch}
+                          onChange={e => setDirectSearch(e.target.value)}
+                          placeholder={t('settings.searchModel', lang)}
+                          className="mb-2"
+                        />
+                        <Select value={directModel} onValueChange={(v: string | null) => { if (v) { setDirectModel(v); setDirectSearch(''); } }}>
+                          <SelectTrigger><SelectValue placeholder={t('settings.selectModel', lang)} /></SelectTrigger>
+                          <SelectContent className="max-h-[300px]">
+                            {filteredDirectModels.map(m => (
+                              <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </>
+                    ) : (
+                      <Input value={directModel} onChange={e => setDirectModel(e.target.value)} placeholder="gpt-4o-mini" />
+                    )}
+                  </div>
+                  <Button type="submit" disabled={!directKey.trim() || !directModel || directLoading}>
+                    {activeMethod === 'direct' ? t('settings.update', lang) : t('settings.connect', lang)}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </section>
 
-      {/* OAuth */}
-      <Card className="opacity-60 rounded-2xl">
-        <CardHeader>
-          <CardTitle className="text-base">{t('settings.oauth', lang)}</CardTitle>
-          <CardDescription>{t('settings.oauthDesc', lang)}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-2">
-            <Button variant="outline" disabled>{t('settings.signInWith', lang)} OpenAI</Button>
-            <Button variant="outline" disabled>{t('settings.signInWith', lang)} Google</Button>
-            <Button variant="outline" disabled>{t('settings.signInWith', lang)} Claude</Button>
-          </div>
-          <p className="text-xs text-muted-foreground mt-2">{t('settings.oauthConfigure', lang)}</p>
-        </CardContent>
-      </Card>
+          <section ref={oauthSectionRef} className="scroll-mt-8">
+            <Card className="opacity-80">
+              <CardHeader>
+                <CardTitle className="text-base">{t('settings.oauth', lang)}</CardTitle>
+                <CardDescription>{t('settings.oauthDesc', lang)}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" disabled>{t('settings.signInWith', lang)} OpenAI</Button>
+                  <Button variant="outline" disabled>{t('settings.signInWith', lang)} Google</Button>
+                  <Button variant="outline" disabled>{t('settings.signInWith', lang)} Claude</Button>
+                </div>
+                <p className="mt-3 text-xs text-muted-foreground">{t('settings.oauthConfigure', lang)}</p>
+              </CardContent>
+            </Card>
+          </section>
 
-      {/* Preferences */}
-      <Card className="rounded-2xl">
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2"><Globe className="h-4 w-4" /> {t('settings.preferences', lang)}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <Label>{t('settings.language', lang)}</Label>
-              <p className="text-xs text-muted-foreground">{t('settings.languageDescLong', lang)}</p>
-            </div>
-            <Select value={settings.language} onValueChange={(v: string | null) => { if (v) onUpdate({ language: v as 'it' | 'en' }); }}>
-              <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="it">Italiano</SelectItem>
-                <SelectItem value="en">English</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <section ref={preferencesSectionRef} className="scroll-mt-8">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2"><Globe className="h-4 w-4" /> {t('settings.preferences', lang)}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <div className="rounded-[18px] border border-border/55 bg-background/45 p-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <Label>{t('settings.language', lang)}</Label>
+                        <p className="text-xs leading-5 text-muted-foreground">{t('settings.languageDescLong', lang)}</p>
+                      </div>
+                      <Select value={settings.language} onValueChange={(v: string | null) => { if (v) onUpdate({ language: v as 'it' | 'en' }); }}>
+                        <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="it">Italiano</SelectItem>
+                          <SelectItem value="en">English</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <Label className="flex items-center gap-2"><Palette className="h-4 w-4" /> {t('settings.theme', lang)}</Label>
-              <p className="text-xs text-muted-foreground">{t('settings.themeDesc', lang)}</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">{t('settings.dark', lang)}</span>
-              <Switch checked={settings.theme === 'light'} onCheckedChange={checked => onUpdate({ theme: checked ? 'light' : 'dark' })} />
-              <span className="text-sm text-muted-foreground">{t('settings.light', lang)}</span>
-            </div>
-          </div>
+                  <div className="rounded-[18px] border border-border/55 bg-background/45 p-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <Label className="flex items-center gap-2"><Palette className="h-4 w-4" /> {t('settings.theme', lang)}</Label>
+                        <p className="text-xs leading-5 text-muted-foreground">{t('settings.themeDesc', lang)}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">{t('settings.dark', lang)}</span>
+                        <Switch checked={settings.theme === 'light'} onCheckedChange={checked => onUpdate({ theme: checked ? 'light' : 'dark' })} />
+                        <span className="text-sm text-muted-foreground">{t('settings.light', lang)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label>{t('settings.questionsPerGen', lang)}</Label>
-              <span className="text-sm font-medium">{localQpg}</span>
-            </div>
-            <Slider value={[localQpg]} onValueChange={handleSliderChange} min={10} max={30} step={1} />
-          </div>
-        </CardContent>
-      </Card>
+                <div className="rounded-[18px] border border-border/55 bg-background/45 p-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label>{t('settings.questionsPerGen', lang)}</Label>
+                      <span className="text-sm font-medium">{localQpg}</span>
+                    </div>
+                    <Slider value={[localQpg]} onValueChange={handleSliderChange} min={10} max={30} step={1} />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </section>
 
-      {/* Data management */}
-      <ExportImport language={lang} />
+          <section ref={dataSectionRef} className="scroll-mt-8">
+            <ExportImport language={lang} />
+          </section>
 
-      {/* Danger zone */}
-      <Card className="border-destructive/30">
-        <CardContent className="space-y-4 pt-6">
-          <p className="text-sm leading-6 text-muted-foreground">{t('settings.dangerDesc', lang)}</p>
-          <Button variant="destructive" className="w-full gap-2" onClick={() => setClearDialogOpen(true)}>
-            <Trash2 className="h-4 w-4" /> {t('settings.clearAllData', lang)}
-          </Button>
-          <Dialog open={clearDialogOpen} onOpenChange={setClearDialogOpen}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>{t('settings.clearConfirmTitle', lang)}</DialogTitle>
-                <DialogDescription>{t('settings.clearConfirmDesc', lang)}</DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setClearDialogOpen(false)}>{t('common.cancel', lang)}</Button>
-                <Button variant="destructive" onClick={handleClearAll}>{t('settings.deleteEverything', lang)}</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </CardContent>
-      </Card>
+          <section ref={dangerSectionRef} className="scroll-mt-8">
+            <Card className="border-destructive/25">
+              <CardContent className="space-y-4 pt-6">
+                <p className="text-sm leading-6 text-muted-foreground">{t('settings.dangerDesc', lang)}</p>
+                <Button variant="destructive" className="w-full gap-2" onClick={() => setClearDialogOpen(true)}>
+                  <Trash2 className="h-4 w-4" /> {t('settings.clearAllData', lang)}
+                </Button>
+                <Dialog open={clearDialogOpen} onOpenChange={setClearDialogOpen}>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>{t('settings.clearConfirmTitle', lang)}</DialogTitle>
+                      <DialogDescription>{t('settings.clearConfirmDesc', lang)}</DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setClearDialogOpen(false)}>{t('common.cancel', lang)}</Button>
+                      <Button variant="destructive" onClick={handleClearAll}>{t('settings.deleteEverything', lang)}</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </CardContent>
+            </Card>
+          </section>
+        </div>
+      </div>
     </div>
   );
 }

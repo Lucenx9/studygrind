@@ -176,6 +176,7 @@ const translations = {
   'settings.connect': { it: 'Connetti', en: 'Connect' },
   'settings.update': { it: 'Aggiorna', en: 'Update' },
   'settings.preferences': { it: 'Preferenze', en: 'Preferences' },
+  'settings.sections': { it: 'Sezioni', en: 'Sections' },
   'settings.language': { it: 'Lingua', en: 'Language' },
   'settings.languageDesc': { it: 'Per le domande generate', en: 'For generated questions' },
   'settings.languageDescLong': { it: 'Usata per le domande generate e per il tutor Socratico.', en: 'Used for generated questions and the Socratic tutor.' },

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -17,6 +17,7 @@ import { getTopics } from '@/lib/storage';
 import { getIntervalPreview } from '@/lib/fsrs';
 import { t } from '@/lib/i18n';
 import type { Settings } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 interface ReviewPageProps {
   onNavigate: (page: 'upload' | 'study') => void;
@@ -28,7 +29,6 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
   const chat = useChat(settings);
   const lang = settings.language;
   const [retypeComplete, setRetypeComplete] = useState(false);
-  const feedbackRef = useRef<HTMLDivElement>(null);
   const loadDue = review.loadDue;
   const canUndo = review.canUndo;
   const phase = review.phase;
@@ -39,13 +39,6 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
   useEffect(() => {
     setRetypeComplete(false);
   }, [currentIndex]);
-
-  // Auto-scroll to feedback when answer is revealed
-  useEffect(() => {
-    if (phase === 'feedback' && feedbackRef.current) {
-      setTimeout(() => feedbackRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 150);
-    }
-  }, [phase]);
 
   useEffect(() => {
     loadDue();
@@ -116,9 +109,9 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
             </div>
           </div>
         </div>
-        <Card className="border-primary/20 bg-gradient-to-br from-primary/12 via-card/95 to-card/90">
+        <Card className="border-primary/15 bg-gradient-to-br from-primary/8 via-card/98 to-card/94">
           <CardContent className="space-y-6 px-6 py-6 sm:px-7 sm:py-7">
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
               <div className="space-y-4">
                 <Badge variant="secondary" className="bg-primary/12 text-primary">
                   {t('review.queueReady', lang)}
@@ -128,23 +121,29 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
                   <p className="text-sm font-medium text-muted-foreground">{t('review.dueToday', lang)}</p>
                   <p className="max-w-2xl text-sm leading-6 text-muted-foreground">{t('review.queueHint', lang)}</p>
                 </div>
+                <Button onClick={review.startSession} size="lg" className="w-full sm:w-auto">
+                  {t('review.startReview', lang)}
+                </Button>
               </div>
-              <Button onClick={review.startSession} size="lg" className="w-full sm:w-auto">
-                {t('review.startReview', lang)}
-              </Button>
+              {dueByTopic.size > 0 && (
+                <div className="rounded-[18px] border border-border/55 bg-background/50 p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                    {t('dash.topics', lang)}
+                  </p>
+                  <div className="mt-3 space-y-2">
+                    {Array.from(dueByTopic.entries()).slice(0, 4).map(([topicId, count]) => {
+                      const topic = topics.find(tp => tp.id === topicId);
+                      return (
+                        <div key={topicId} className="flex items-center justify-between gap-3 rounded-[14px] border border-border/50 bg-background/55 px-3 py-2.5 text-sm">
+                          <span className="truncate">{topic?.name ?? t('common.unknown', lang)}</span>
+                          <span className="text-xs font-semibold text-muted-foreground">{count}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
-            {dueByTopic.size > 0 && (
-              <div className="flex flex-wrap gap-2 pt-1">
-                {Array.from(dueByTopic.entries()).map(([topicId, count]) => {
-                  const topic = topics.find(tp => tp.id === topicId);
-                  return (
-                    <span key={topicId} className="rounded-full border border-primary/10 bg-background/75 px-3 py-1.5 text-xs font-medium text-foreground shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)]">
-                      {topic?.name ?? t('common.unknown', lang)}: {count}
-                    </span>
-                  );
-                })}
-              </div>
-            )}
           </CardContent>
         </Card>
       </div>
@@ -166,11 +165,13 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
 
   const q = review.currentQuestion;
   if (!q) return null;
+  const currentTopic = getTopics().find(topic => topic.id === q.topicId);
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <div className="sticky top-0 z-20 mb-6 rounded-[24px] border border-border/70 bg-background/80 px-4 py-4 shadow-[0_18px_45px_-36px_rgba(15,23,42,0.75)] backdrop-blur-xl">
-        <div className="flex items-center gap-2">
+    <div className={cn('mx-auto max-w-[860px]', chat.isOpen && 'xl:mr-[396px]')}>
+      <div className="sticky top-0 z-20 mb-6 rounded-[20px] border border-border/65 bg-background/82 px-4 py-4 shadow-[0_18px_40px_-34px_rgba(15,23,42,0.72)] backdrop-blur-xl">
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
           {review.canUndo && review.phase === 'question' && (
             <Button
               variant="outline"
@@ -183,6 +184,12 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
               <Undo2 className="h-4 w-4" />
             </Button>
           )}
+            {currentTopic && <Badge variant="secondary">{currentTopic.name}</Badge>}
+            <div className="ml-auto rounded-full border border-border/60 bg-background/78 px-3 py-1 text-sm font-semibold">
+              <span className="text-primary">{review.currentIndex + 1}</span>
+              <span className="text-muted-foreground"> / {review.dueQuestions.length}</span>
+            </div>
+          </div>
           <div className="flex-1">
             <ProgressBar current={review.currentIndex} total={review.dueQuestions.length} results={review.results} />
           </div>
@@ -210,7 +217,7 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
           />
         )}
         {review.phase === 'feedback' && review.isCorrect !== null && (
-          <div ref={feedbackRef} className="space-y-4">
+          <div className="space-y-4">
             <ExplanationCard explanation={q.explanation} isCorrect={review.isCorrect} language={lang} onOpenChat={settings.provider ? handleOpenChat : undefined} hasChatHistory={chat.hasHistory(q.id)} />
             {!review.isCorrect && !retypeComplete && (
               <RetypePrompt

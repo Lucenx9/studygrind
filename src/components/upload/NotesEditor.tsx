@@ -28,7 +28,7 @@ export function NotesEditor({ value, onChange, language }: NotesEditorProps) {
         </Button>
       </div>
       {preview ? (
-        <div className="min-h-[300px] rounded-[22px] border border-border/70 bg-background/55 p-5 whitespace-pre-wrap text-sm leading-7 text-foreground/85 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)]">
+        <div className="min-h-[320px] rounded-[18px] border border-border/60 bg-background/55 p-5 whitespace-pre-wrap text-sm leading-7 text-foreground/85 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)]">
           {value || t('upload.nothingToPreview', language)}
         </div>
       ) : (
@@ -36,7 +36,7 @@ export function NotesEditor({ value, onChange, language }: NotesEditorProps) {
           value={value}
           onChange={e => onChange(e.target.value)}
           placeholder={t('upload.pasteNotes', language)}
-          className="min-h-[300px] font-mono text-sm leading-7"
+          className="min-h-[320px] font-mono text-sm leading-7"
         />
       )}
     </div>

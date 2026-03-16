@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -19,6 +20,7 @@ import { getTopics } from '@/lib/storage';
 import { getIntervalPreview } from '@/lib/fsrs';
 import { t } from '@/lib/i18n';
 import type { Settings } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 interface StudyPageProps {
   settings: Settings;
@@ -150,8 +152,15 @@ export function StudyPage({ settings, onNavigate }: StudyPageProps) {
       </Card>
 
       {(study.phase === 'question' || study.phase === 'feedback') && study.currentQuestion && (
-        <div className="mx-auto max-w-3xl">
-          <div className="sticky top-0 z-20 mb-6 rounded-[24px] border border-border/70 bg-background/80 px-4 py-4 shadow-[0_18px_45px_-36px_rgba(15,23,42,0.75)] backdrop-blur-xl">
+        <div className={cn('mx-auto max-w-[860px]', chat.isOpen && 'xl:mr-[396px]')}>
+          <div className="sticky top-0 z-20 mb-6 rounded-[20px] border border-border/65 bg-background/82 px-4 py-4 shadow-[0_18px_40px_-34px_rgba(15,23,42,0.72)] backdrop-blur-xl">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <Badge variant="secondary">{topics.find(tp => tp.id === study.currentQuestion?.topicId)?.name}</Badge>
+              <div className="rounded-full border border-border/60 bg-background/78 px-3 py-1 text-sm font-semibold">
+                <span className="text-primary">{study.currentIndex + 1}</span>
+                <span className="text-muted-foreground"> / {study.questions.length}</span>
+              </div>
+            </div>
             <ProgressBar current={study.currentIndex} total={study.questions.length} results={study.results} />
           </div>
           <div className="space-y-5">

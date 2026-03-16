@@ -143,36 +143,34 @@ export function UploadPage({ settings }: UploadPageProps) {
 
       {topics.length > 0 && (
         <Card>
-          <CardHeader>
+          <CardHeader className="border-b border-border/50 pb-4">
             <CardTitle className="text-lg">{t('upload.manageTopics', lang)}</CardTitle>
             <CardDescription>{t('upload.yourTopics', lang)}</CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-3 sm:grid-cols-2">
+          <CardContent className="space-y-3 pt-5">
             {topics.map(topic => {
               const qCount = getQuestionsByTopic(topic.id).length;
               return (
-                <Card key={topic.id} size="sm" className="border-border/60 bg-background/55">
-                  <CardContent className="flex items-center justify-between gap-4 px-4 py-4">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                        <BookOpen className="h-4 w-4" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold">{topic.name}</p>
-                        <p className="text-xs text-muted-foreground">{qCount} {t('upload.questions', lang)}</p>
-                      </div>
+                <div key={topic.id} className="flex items-center justify-between gap-4 rounded-[18px] border border-border/55 bg-background/45 px-4 py-4">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-primary/10 text-primary">
+                      <BookOpen className="h-4 w-4" />
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      onClick={() => { removeTopic(topic.id); toast(t('upload.topicDeleted', lang)); }}
-                      aria-label={t('upload.deleteTopic', lang).replace('{topic}', topic.name)}
-                      className="shrink-0 text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </CardContent>
-                </Card>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold">{topic.name}</p>
+                      <p className="text-xs text-muted-foreground">{qCount} {t('upload.questions', lang)}</p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => { removeTopic(topic.id); toast(t('upload.topicDeleted', lang)); }}
+                    aria-label={t('upload.deleteTopic', lang).replace('{topic}', topic.name)}
+                    className="shrink-0 text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               );
             })}
           </CardContent>
@@ -180,44 +178,72 @@ export function UploadPage({ settings }: UploadPageProps) {
       )}
 
       {!generatedQuestions ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">{t('upload.newTopic', lang)}</CardTitle>
-            <CardDescription>{t('upload.newTopicDesc', lang)}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <TopicForm topicName={topicName} onTopicNameChange={setTopicName} customInstructions={customInstructions} onCustomInstructionsChange={setCustomInstructions} language={lang} />
-            <PdfDropzone onExtracted={(text) => setNotes(prev => prev ? `${prev}\n\n${text}` : text)} language={lang} />
-            <NotesEditor value={notes} onChange={setNotes} language={lang} />
-            {error && (
-              <Alert variant="destructive">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>{t('common.attention', lang)}</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-            <Button onClick={handleGenerate} disabled={generating || !notes.trim() || !topicName.trim() || !settings.provider} className="w-full" size="lg">
-              {generating ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('upload.generating', lang)} {elapsedSeconds}s</>) : t('upload.generateQuestions', lang)}
-            </Button>
-            <p className="text-center text-xs text-muted-foreground">{t('upload.generationHelp', lang)}</p>
-            {!settings.provider && (
-              <Alert>
-                <Sparkles className="h-4 w-4 text-primary" />
-                <AlertTitle>{t('upload.aiNeeded', lang)}</AlertTitle>
-                <AlertDescription>{t('upload.configureProvider', lang)}</AlertDescription>
-              </Alert>
-            )}
-          </CardContent>
-        </Card>
+        <div className="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
+          <Card>
+            <CardHeader className="border-b border-border/50 pb-4">
+              <CardTitle className="text-lg">{t('upload.newTopic', lang)}</CardTitle>
+              <CardDescription>{t('upload.newTopicDesc', lang)}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6 pt-5">
+              <TopicForm topicName={topicName} onTopicNameChange={setTopicName} customInstructions={customInstructions} onCustomInstructionsChange={setCustomInstructions} language={lang} />
+              <div className="rounded-[18px] border border-border/55 bg-background/40 p-4">
+                <PdfDropzone onExtracted={(text) => setNotes(prev => prev ? `${prev}\n\n${text}` : text)} language={lang} />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="border-b border-border/50 pb-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <CardTitle className="text-lg">{t('upload.studyNotes', lang)}</CardTitle>
+                  <CardDescription>{t('upload.subtitle', lang)}</CardDescription>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="secondary">{settings.questionsPerGeneration} {t('settings.questionsPerGen', lang).toLowerCase()}</Badge>
+                  <Badge variant={settings.provider ? 'default' : 'secondary'}>{settings.provider ? t('upload.aiReady', lang) : t('upload.aiNeeded', lang)}</Badge>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6 pt-5">
+              <NotesEditor value={notes} onChange={setNotes} language={lang} />
+              {error && (
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>{t('common.attention', lang)}</AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+              <div className="rounded-[18px] border border-border/55 bg-background/45 p-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold">{t('upload.generateQuestions', lang)}</p>
+                    <p className="text-xs leading-5 text-muted-foreground">{t('upload.generationHelp', lang)}</p>
+                  </div>
+                  <Button onClick={handleGenerate} disabled={generating || !notes.trim() || !topicName.trim() || !settings.provider} className="w-full sm:w-auto" size="lg">
+                    {generating ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('upload.generating', lang)} {elapsedSeconds}s</>) : t('upload.generateQuestions', lang)}
+                  </Button>
+                </div>
+              </div>
+              {!settings.provider && (
+                <Alert>
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  <AlertTitle>{t('upload.aiNeeded', lang)}</AlertTitle>
+                  <AlertDescription>{t('upload.configureProvider', lang)}</AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       ) : (
         <Card>
-          <CardHeader>
+          <CardHeader className="border-b border-border/50 pb-4">
             <CardTitle className="text-lg flex items-center gap-2">
               {t('upload.generatedQuestions', lang)} <Badge>{generatedQuestions.length}</Badge>
             </CardTitle>
             <CardDescription>{t('upload.curateQuestionsDesc', lang)}</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-5">
             {error && <p className="mb-3 text-sm text-destructive">{error}</p>}
             <QuestionPreview questions={generatedQuestions} language={lang} onSave={handleSave} />
             <Button variant="ghost" className="w-full mt-3" onClick={() => setGeneratedQuestions(null)}>{t('upload.cancel', lang)}</Button>
