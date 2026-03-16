@@ -24,7 +24,7 @@ export function Sidebar({ currentPage, onNavigate, dueCount, language }: Sidebar
 
   return (
     <>
-      <aside className="hidden w-72 shrink-0 flex-col border-r border-border/60 bg-card/65 px-4 py-5 backdrop-blur-xl md:flex">
+      <aside className="hidden w-72 shrink-0 flex-col border-r border-border/40 bg-card/55 px-4 py-5 backdrop-blur-xl md:flex">
         <div className="mb-6 flex items-center gap-3 rounded-[24px] border border-border/70 bg-background/55 px-4 py-4 shadow-[0_18px_45px_-38px_rgba(15,23,42,0.7)]">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/12 text-primary">
             <GraduationCap className="h-6 w-6" />
@@ -41,12 +41,15 @@ export function Sidebar({ currentPage, onNavigate, dueCount, language }: Sidebar
               onClick={() => onNavigate(page)}
               aria-current={currentPage === page ? 'page' : undefined}
               className={cn(
-                'flex min-h-12 w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-[background-color,color,box-shadow,transform] duration-200',
+                'relative flex min-h-12 w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-200',
                 currentPage === page
-                  ? 'bg-primary/12 text-primary shadow-[inset_0_0_0_1px_rgba(79,128,255,0.14)]'
-                  : 'text-muted-foreground hover:bg-background/70 hover:text-foreground'
+                  ? 'bg-primary/10 text-primary shadow-[inset_0_0_0_1px_rgba(79,128,255,0.12)]'
+                  : 'text-muted-foreground hover:bg-background/60 hover:text-foreground'
               )}
             >
+              {currentPage === page && (
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-r-full bg-primary shadow-[0_0_8px_rgba(79,128,255,0.4)]" />
+              )}
               <div
                 className={cn(
                   'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-colors',

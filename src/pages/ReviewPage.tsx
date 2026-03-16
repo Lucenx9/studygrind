@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -28,6 +28,7 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
   const chat = useChat(settings);
   const lang = settings.language;
   const [retypeComplete, setRetypeComplete] = useState(false);
+  const feedbackRef = useRef<HTMLDivElement>(null);
   const loadDue = review.loadDue;
   const canUndo = review.canUndo;
   const phase = review.phase;
@@ -38,6 +39,13 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
   useEffect(() => {
     setRetypeComplete(false);
   }, [currentIndex]);
+
+  // Auto-scroll to feedback when answer is revealed
+  useEffect(() => {
+    if (phase === 'feedback' && feedbackRef.current) {
+      setTimeout(() => feedbackRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 150);
+    }
+  }, [phase]);
 
   useEffect(() => {
     loadDue();
@@ -202,7 +210,7 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
           />
         )}
         {review.phase === 'feedback' && review.isCorrect !== null && (
-          <div className="space-y-4">
+          <div ref={feedbackRef} className="space-y-4">
             <ExplanationCard explanation={q.explanation} isCorrect={review.isCorrect} language={lang} onOpenChat={settings.provider ? handleOpenChat : undefined} hasChatHistory={chat.hasHistory(q.id)} />
             {!review.isCorrect && !retypeComplete && (
               <RetypePrompt

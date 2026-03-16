@@ -70,12 +70,12 @@ export function McqQuestion({ question, onSubmit, disabled, language = 'it', ini
           <Badge variant="secondary" className="bg-primary/12 text-primary">
             {t('quiz.multipleChoice', language)}
           </Badge>
-          <h2 className="text-2xl font-semibold leading-snug tracking-[-0.025em] sm:text-[2rem]">
+          <h2 className="text-xl font-semibold leading-snug tracking-[-0.02em] sm:text-2xl">
             {question.question}
           </h2>
         </CardContent>
       </Card>
-      <div className="grid gap-3.5">
+      <div className="grid gap-2.5">
         {question.options.map((opt, idx) => (
           <OptionButton
             key={idx}

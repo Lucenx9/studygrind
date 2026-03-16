@@ -26,31 +26,31 @@ export function OptionButton({ label, index, selected, correctIndex, disabled, o
       onClick={onClick}
       disabled={disabled}
       aria-pressed={selected}
-      style={{ animationDelay: `${index * 60}ms` }}
+      style={{ animationDelay: `${index * 50}ms` }}
       className={cn(
-        'cursor-pointer animate-fade-in-up flex w-full items-center gap-4 rounded-[22px] border p-4 text-left transition-[border-color,background-color,transform,opacity,box-shadow] duration-200 active:scale-[0.99] sm:p-5',
-        !isRevealed && !selected && 'border-border/70 bg-card/65 hover:-translate-y-px hover:border-primary/35 hover:bg-primary/6 hover:shadow-[0_16px_30px_-26px_rgba(79,128,255,0.8)]',
-        !isRevealed && selected && 'border-primary bg-primary/10 ring-2 ring-primary/25 shadow-[0_16px_30px_-24px_rgba(79,128,255,0.6)]',
-        isRevealed && isCorrect && 'border-green-500 bg-green-50 dark:bg-green-500/12 animate-correct-pulse',
-        isWrong && 'border-red-500 bg-red-50 dark:bg-red-500/12 animate-shake',
-        isRevealed && !isCorrect && !isWrong && 'border-border/70 bg-card/55 opacity-45',
+        'cursor-pointer animate-fade-in-up flex w-full items-center gap-3.5 rounded-2xl border p-3 text-left transition-all duration-250 active:scale-[0.985] sm:p-4',
+        !isRevealed && !selected && 'border-border/60 bg-card/50 hover:-translate-y-0.5 hover:border-primary/30 hover:bg-primary/5 hover:shadow-[0_12px_28px_-20px_rgba(79,128,255,0.65)]',
+        !isRevealed && selected && 'border-primary/70 bg-primary/8 ring-2 ring-primary/20 shadow-[0_12px_28px_-18px_rgba(79,128,255,0.5)]',
+        isRevealed && isCorrect && 'border-green-500/60 bg-green-500/8 ring-2 ring-green-500/25 dark:bg-green-500/10 animate-correct-pulse',
+        isWrong && 'border-red-500/60 bg-red-500/8 ring-2 ring-red-500/25 dark:bg-red-500/10 animate-shake',
+        isRevealed && !isCorrect && !isWrong && 'border-border/40 bg-card/30 opacity-55',
         disabled && !isRevealed && 'cursor-not-allowed opacity-50',
       )}
     >
       <span className={cn(
-        'flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-sm font-semibold transition-colors',
-        !isRevealed && !selected && 'bg-secondary text-muted-foreground',
-        !isRevealed && selected && 'bg-primary text-primary-foreground',
-        isRevealed && isCorrect && 'bg-green-500 text-white',
-        isWrong && 'bg-red-500 text-white',
-        isRevealed && !isCorrect && !isWrong && 'bg-muted text-muted-foreground',
+        'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-bold transition-all duration-250',
+        !isRevealed && !selected && 'bg-secondary/80 text-muted-foreground',
+        !isRevealed && selected && 'bg-primary text-primary-foreground shadow-[0_4px_12px_-4px_rgba(79,128,255,0.5)]',
+        isRevealed && isCorrect && 'bg-green-500 text-white shadow-[0_4px_12px_-4px_rgba(34,197,94,0.5)]',
+        isWrong && 'bg-red-500 text-white shadow-[0_4px_12px_-4px_rgba(239,68,68,0.5)]',
+        isRevealed && !isCorrect && !isWrong && 'bg-muted/60 text-muted-foreground',
       )}>
-        {isRevealed && isCorrect ? <Check className="h-4 w-4" /> :
-         isWrong ? <X className="h-4 w-4" /> :
+        {isRevealed && isCorrect ? <Check className="h-4 w-4" strokeWidth={3} /> :
+         isWrong ? <X className="h-4 w-4" strokeWidth={3} /> :
          LETTERS[index]}
       </span>
 
-      <span className="flex-1 text-[15px] leading-relaxed sm:text-base">{cleanLabel}</span>
+      <span className="flex-1 text-sm leading-relaxed sm:text-[15px]">{cleanLabel}</span>
     </button>
   );
 }

@@ -90,7 +90,7 @@ export function ClozeQuestion({ question, onSubmit, disabled, language = 'it', i
           <Badge variant="secondary" className="bg-primary/12 text-primary">
             {t('quiz.fillBlank', language)}
           </Badge>
-          <h2 className="text-2xl font-semibold leading-snug tracking-[-0.025em] sm:text-[2rem]">{question.question}</h2>
+          <h2 className="text-xl font-semibold leading-snug tracking-[-0.02em] sm:text-2xl">{question.question}</h2>
         </CardContent>
       </Card>
       <div className="flex flex-col gap-3 sm:flex-row">
