@@ -209,6 +209,8 @@ export function DashboardPage({ language: lang, onNavigate }: DashboardPageProps
       value: String(dash.todayReviewed),
       icon: Target,
       iconClass: 'bg-[rgba(99,102,241,0.12)] text-[#818cf8]',
+      valueClass: 'text-[#818cf8]',
+      borderClass: 'border-l-[3px] border-l-[#818cf8]',
     },
     {
       key: 'accuracy',
@@ -216,6 +218,8 @@ export function DashboardPage({ language: lang, onNavigate }: DashboardPageProps
       value: `${Math.round(dash.todayAccuracy * 100)}%`,
       icon: Sparkles,
       iconClass: 'bg-[rgba(52,211,153,0.12)] text-[#34d399]',
+      valueClass: 'text-[#34d399]',
+      borderClass: 'border-l-[3px] border-l-[#34d399]',
     },
     {
       key: 'time',
@@ -223,6 +227,8 @@ export function DashboardPage({ language: lang, onNavigate }: DashboardPageProps
       value: `${Math.max(1, Math.round(dash.todayDuration / 60))}m`,
       icon: Clock3,
       iconClass: 'bg-[rgba(139,92,246,0.12)] text-[#c084fc]',
+      valueClass: 'text-[#c084fc]',
+      borderClass: 'border-l-[3px] border-l-[#c084fc]',
     },
     {
       key: 'streak',
@@ -230,6 +236,8 @@ export function DashboardPage({ language: lang, onNavigate }: DashboardPageProps
       value: String(dash.streak),
       icon: Flame,
       iconClass: 'bg-[rgba(251,191,36,0.12)] text-[#fbbf24]',
+      valueClass: 'text-[#fbbf24]',
+      borderClass: 'border-l-[3px] border-l-[#fbbf24]',
     },
   ];
 
@@ -259,14 +267,14 @@ export function DashboardPage({ language: lang, onNavigate }: DashboardPageProps
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {statItems.map(({ key, label, value, icon: Icon, iconClass }) => (
-          <Card key={key} className="sg-hover-card overflow-hidden">
+        {statItems.map(({ key, label, value, icon: Icon, iconClass, valueClass, borderClass }) => (
+          <Card key={key} className={`sg-hover-card overflow-hidden ${borderClass}`}>
             <CardContent className="flex items-center gap-4 px-5 py-5">
               <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${iconClass}`}>
                 <Icon className="h-5 w-5" strokeWidth={1.5} />
               </div>
               <div className="min-w-0">
-                <p className="text-[1.9rem] font-bold tracking-[-0.04em] tabular-nums">{value}</p>
+                <p className={`text-[1.9rem] font-bold tracking-[-0.04em] tabular-nums ${valueClass}`}>{value}</p>
                 <p className="mt-1 text-tertiary">{label}</p>
               </div>
             </CardContent>

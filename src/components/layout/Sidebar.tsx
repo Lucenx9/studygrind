@@ -29,14 +29,16 @@ function CompletionRing({ done, total, size = 44 }: { done: number; total: numbe
   const r = (size - 8) / 2;
   const c = 2 * Math.PI * r;
   const pct = total > 0 ? Math.min(done / total, 1) : 0;
-  const offset = c - pct * c;
+  const visualPct = pct === 0 ? 0.01 : pct;
+  const offset = c - visualPct * c;
   return (
     <svg width={size} height={size} className="-rotate-90" viewBox={`0 0 ${size} ${size}`}>
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="currentColor" strokeWidth="4" className="text-[color:var(--sg-border-1)]" />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="currentColor" strokeWidth="5" className="text-[color:var(--sg-surface-3)]" />
       <circle
         cx={size / 2} cy={size / 2} r={r} fill="none"
         stroke="url(#accentGrad)" strokeWidth="4" strokeLinecap="round"
         strokeDasharray={c} strokeDashoffset={offset}
+        className={pct === 0 ? 'opacity-90' : undefined}
         style={{ transition: 'stroke-dashoffset 0.6s ease' }}
       />
       <defs>
