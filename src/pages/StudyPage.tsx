@@ -1,10 +1,9 @@
-import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { useEffect, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ProgressBar } from '@/components/quiz/ProgressBar';
 import { McqQuestion } from '@/components/quiz/McqQuestion';
 import { ClozeQuestion } from '@/components/quiz/ClozeQuestion';
@@ -12,20 +11,23 @@ import { ExplanationCard } from '@/components/quiz/ExplanationCard';
 import { RatingButtons } from '@/components/quiz/RatingButtons';
 import { RetypePrompt } from '@/components/quiz/RetypePrompt';
 import { ChatPanel } from '@/components/chat/ChatPanel';
+import { Switch } from '@/components/ui/switch';
 import { useStudy } from '@/hooks/useStudy';
 import { useTopics } from '@/hooks/useTopics';
 import { useChat } from '@/hooks/useChat';
-import { BookOpen, Upload, Play } from 'lucide-react';
-import { getTopics } from '@/lib/storage';
-import { getIntervalPreview } from '@/lib/fsrs';
+import { getDueQuestions, getIntervalPreview } from '@/lib/fsrs';
+import { getQuestionsByTopic, getSessions, getTopics } from '@/lib/storage';
 import { t } from '@/lib/i18n';
 import type { Settings } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { BookOpen, Clock3, Search, Sparkles, Upload } from 'lucide-react';
 
 interface StudyPageProps {
   settings: Settings;
   onNavigate?: (page: 'upload') => void;
 }
+
+type TopicFilter = 'all' | 'active' | 'completed' | 'due';
 
 export function StudyPage({ settings, onNavigate }: StudyPageProps) {
   const { topics } = useTopics();
@@ -34,6 +36,8 @@ export function StudyPage({ settings, onNavigate }: StudyPageProps) {
   const lang = settings.language;
   const [retypeComplete, setRetypeComplete] = useState(false);
   const [selectedTopicId, setSelectedTopicId] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState<TopicFilter>('all');
   const loadTopic = study.loadTopic;
 
   useEffect(() => { setRetypeComplete(false); }, [study.currentIndex, selectedTopicId]);
@@ -44,7 +48,7 @@ export function StudyPage({ settings, onNavigate }: StudyPageProps) {
       return;
     }
 
-    if (selectedTopicId && topics.some(topic => topic.id === selectedTopicId)) {
+    if (selectedTopicId && topics.some((topic) => topic.id === selectedTopicId)) {
       return;
     }
 
@@ -53,27 +57,71 @@ export function StudyPage({ settings, onNavigate }: StudyPageProps) {
     loadTopic(nextTopicId);
   }, [loadTopic, selectedTopicId, topics]);
 
+  const topicCards = useMemo(() => {
+    const sessions = getSessions();
+    return topics.map((topic) => {
+      const questions = getQuestionsByTopic(topic.id);
+      const dueCount = getDueQuestions(questions).length;
+      const reviewedCount = questions.filter((question) => question.timesReviewed > 0).length;
+      const progress = questions.length > 0 ? Math.round((reviewedCount / questions.length) * 100) : 0;
+      const questionIds = new Set(questions.map((question) => question.id));
+      const lastSession = sessions
+        .filter((session) => session.ratings.some((rating) => questionIds.has(rating.questionId)))
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+      const status: TopicFilter =
+        dueCount > 0 ? 'due' :
+          progress >= 100 ? 'completed' :
+            reviewedCount > 0 ? 'active' :
+              'all';
+
+      return {
+        id: topic.id,
+        name: topic.name,
+        totalQuestions: questions.length,
+        dueCount,
+        progress,
+        status,
+        lastSessionLabel: lastSession
+          ? formatRelativeDate(new Date(lastSession.date), lang)
+          : (lang === 'it' ? 'Mai' : 'Never'),
+      };
+    });
+  }, [lang, topics]);
+
+  const filteredTopics = topicCards.filter((topic) => {
+    const matchesQuery = topic.name.toLowerCase().includes(searchQuery.trim().toLowerCase());
+    const matchesFilter = activeFilter === 'all'
+      ? true
+      : activeFilter === 'active'
+        ? topic.status === 'active'
+        : activeFilter === 'completed'
+          ? topic.status === 'completed'
+          : topic.dueCount > 0;
+    return matchesQuery && matchesFilter;
+  });
+
+  const selectedTopic = topicCards.find((topic) => topic.id === selectedTopicId) ?? null;
+
   const handleOpenChat = () => {
-    const q = study.currentQuestion;
-    if (!q || study.isCorrect === null) return;
-    const topic = getTopics().find(tp => tp.id === q.topicId);
-    const answerText = q.type === 'mcq' && typeof study.userAnswer === 'number'
-      ? q.options[study.userAnswer] ?? String(study.userAnswer)
+    const question = study.currentQuestion;
+    if (!question || study.isCorrect === null) return;
+    const topic = getTopics().find((item) => item.id === question.topicId);
+    const answerText = question.type === 'mcq' && typeof study.userAnswer === 'number'
+      ? question.options[study.userAnswer] ?? String(study.userAnswer)
       : String(study.userAnswer ?? '');
-    chat.openChat(q, answerText, study.isCorrect, topic?.notes ?? '', topic?.name ?? '');
+    chat.openChat(question, answerText, study.isCorrect, topic?.notes ?? '', topic?.name ?? '');
   };
 
-  /* ── Empty state ── */
   if (topics.length === 0) {
     return (
-      <div className="flex min-h-[68vh] items-center justify-center animate-fade-in-up">
+      <div className="flex min-h-[70vh] items-center justify-center animate-fade-in-up">
         <Card className="w-full max-w-2xl text-center">
-          <CardContent className="flex flex-col items-center gap-6 px-6 py-14 sm:px-10">
-            <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[rgba(99,102,241,0.1)]">
+          <CardContent className="flex flex-col items-center gap-6 px-6 py-12 sm:px-10">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[rgba(99,102,241,0.1)]">
               <BookOpen className="h-10 w-10 text-primary" strokeWidth={1.5} />
             </div>
             <div className="space-y-2">
-              <h2 className="text-[28px] font-bold tracking-[-0.025em]">
+              <h2 className="text-[28px] font-bold tracking-[-0.03em]">
                 {lang === 'it' ? 'Inizia il tuo percorso' : 'Start your journey'}
               </h2>
               <p className="mx-auto max-w-md text-base leading-7 text-muted-foreground">
@@ -95,91 +143,224 @@ export function StudyPage({ settings, onNavigate }: StudyPageProps) {
   }
 
   return (
-    <div className="animate-fade-in-up space-y-6">
-      {/* ── Header ── */}
-      <div>
-        <h1 className="text-[28px] font-bold tracking-[-0.025em]">{t('study.title', lang)}</h1>
-        <p className="mt-1 text-base text-muted-foreground">{t('study.subtitle', lang)}</p>
+    <div className="sg-page-enter space-y-6">
+      <div className="space-y-2">
+        <h1 className="sg-h1">{t('study.title', lang)}</h1>
+        <p className="sg-subtitle">{t('study.subtitle', lang)}</p>
       </div>
 
-      {/* ── Practice setup ── */}
-      <Card>
-        <CardContent className="space-y-6 px-6 py-6">
-          <div className="space-y-1">
-            <h2 className="text-lg font-semibold tracking-[-0.02em]">{t('study.practiceSetup', lang)}</h2>
-            <p className="text-sm leading-6 text-muted-foreground">{t('study.topicQueueDesc', lang)}</p>
-          </div>
+      {study.phase === 'idle' && (
+        <>
+          <Card>
+            <CardContent className="space-y-5 px-6 py-6">
+              <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+                <div className="space-y-4">
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      value={searchQuery}
+                      onChange={(event) => setSearchQuery(event.target.value)}
+                      placeholder={lang === 'it' ? 'Cerca un argomento...' : 'Search topics...'}
+                      className="pl-10"
+                    />
+                  </div>
 
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-            <div className="space-y-2">
-              <Label htmlFor="study-topic">{t('study.selectTopic', lang)}</Label>
-              <Select
-                value={selectedTopicId || undefined}
-                onValueChange={(v: string | null) => {
-                  if (!v) return;
-                  setSelectedTopicId(v);
-                  loadTopic(v);
-                }}
-              >
-                <SelectTrigger id="study-topic" className="w-full">
-                  <SelectValue placeholder={t('study.selectTopic', lang)} />
-                </SelectTrigger>
-                <SelectContent>
-                  {topics.map(tp => (
-                    <SelectItem key={tp.id} value={tp.id}>{tp.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="rounded-xl border border-border bg-[rgba(255,255,255,0.03)] p-4">
-              <div className="flex items-start gap-3">
-                <Switch id="count-review" checked={study.countTowardsReview} onCheckedChange={study.setCountTowardsReview} className="mt-0.5" />
-                <div className="space-y-1">
-                  <Label htmlFor="count-review">{t('study.countTowardsReview', lang)}</Label>
-                  <p className="text-sm leading-6 text-muted-foreground">{t('study.countTowardsReviewDesc', lang)}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { key: 'all' as const, label: lang === 'it' ? 'Tutti' : 'All', count: topicCards.length, dot: 'bg-primary' },
+                      { key: 'active' as const, label: lang === 'it' ? 'In corso' : 'Active', count: topicCards.filter((topic) => topic.status === 'active').length, dot: 'bg-sky-400' },
+                      { key: 'completed' as const, label: lang === 'it' ? 'Completati' : 'Completed', count: topicCards.filter((topic) => topic.status === 'completed').length, dot: 'bg-emerald-400' },
+                      { key: 'due' as const, label: lang === 'it' ? 'Da ripassare' : 'Due', count: topicCards.filter((topic) => topic.dueCount > 0).length, dot: 'bg-amber-400' },
+                    ].map((filter) => (
+                      <button
+                        key={filter.key}
+                        type="button"
+                        onClick={() => setActiveFilter(filter.key)}
+                        className={cn(
+                          'inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium transition-all',
+                          activeFilter === filter.key
+                            ? 'border-[rgba(99,102,241,0.25)] bg-[rgba(99,102,241,0.1)] text-foreground'
+                            : 'border-[color:var(--sg-border-1)] bg-[color:var(--sg-surface-2)] text-muted-foreground hover:text-foreground',
+                        )}
+                      >
+                        <span className={`h-2 w-2 rounded-full ${filter.dot}`} />
+                        <span>{filter.label}</span>
+                        <span className="rounded-full bg-[color:var(--sg-surface-1)] px-1.5 py-0.5 text-[11px] tabular-nums">
+                          {filter.count}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            </div>
-          </div>
 
-          {study.phase === 'idle' && study.questions.length > 0 && (
-            <div className="flex flex-col gap-4 rounded-xl border border-primary/15 bg-[rgba(99,102,241,0.06)] px-5 py-5 sm:flex-row sm:items-end sm:justify-between">
-              <div className="space-y-1">
-                <p className="text-4xl font-bold tracking-[-0.04em] tabular-nums text-primary">{study.questions.length}</p>
-                <p className="text-sm text-muted-foreground">{t('study.questionsInTopic', lang)}</p>
+                {selectedTopic && (
+                  <div className="rounded-[22px] border border-[rgba(99,102,241,0.16)] bg-[linear-gradient(135deg,rgba(99,102,241,0.1),rgba(139,92,246,0.04))] px-5 py-5">
+                    <div className="space-y-4">
+                      <div className="space-y-1">
+                        <p className="text-tertiary">{lang === 'it' ? 'Argomento selezionato' : 'Selected topic'}</p>
+                        <h2 className="text-xl font-semibold tracking-[-0.02em]">{selectedTopic.name}</h2>
+                      </div>
+
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="rounded-2xl border border-[color:var(--sg-border-1)] bg-[color:var(--sg-surface-1)] px-4 py-3">
+                          <p className="text-tertiary">{lang === 'it' ? 'Domande' : 'Cards'}</p>
+                          <p className="mt-2 text-2xl font-semibold tabular-nums">{selectedTopic.totalQuestions}</p>
+                        </div>
+                        <div className="rounded-2xl border border-[color:var(--sg-border-1)] bg-[color:var(--sg-surface-1)] px-4 py-3">
+                          <p className="text-tertiary">{lang === 'it' ? 'Da ripassare' : 'Due'}</p>
+                          <p className="mt-2 text-2xl font-semibold tabular-nums">{selectedTopic.dueCount}</p>
+                        </div>
+                      </div>
+
+                      <div className="rounded-2xl border border-[color:var(--sg-border-1)] bg-[color:var(--sg-surface-1)] p-4">
+                        <div className="flex items-start gap-3">
+                          <Switch
+                            id="count-review"
+                            checked={study.countTowardsReview}
+                            onCheckedChange={study.setCountTowardsReview}
+                            className="mt-0.5"
+                          />
+                          <div className="space-y-1">
+                            <Label htmlFor="count-review" className="font-semibold">
+                              {t('study.countTowardsReview', lang)}
+                            </Label>
+                            <p className="text-sm leading-6 text-muted-foreground">
+                              {t('study.countTowardsReviewDesc', lang)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <Button variant="accent" size="lg" onClick={study.start} className="w-full gap-2" disabled={study.questions.length === 0}>
+                        <Sparkles className="h-4 w-4" />
+                        {t('study.startStudying', lang)}
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
-              <Button variant="accent" onClick={study.start} size="lg" className="w-full gap-2 sm:w-auto">
-                <Play className="h-4 w-4" />
-                {t('study.startStudying', lang)}
-              </Button>
+            </CardContent>
+          </Card>
+
+          {filteredTopics.length > 0 ? (
+            <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(320px,1fr))]">
+              {filteredTopics.map((topic) => (
+                <Card
+                  key={topic.id}
+                  className={cn(
+                    'sg-hover-card',
+                    selectedTopicId === topic.id && 'border-[rgba(99,102,241,0.28)] bg-[rgba(99,102,241,0.06)]',
+                  )}
+                >
+                  <CardContent className="space-y-4 px-5 py-5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-1">
+                        <p className="text-base font-semibold">{topic.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {topic.totalQuestions} {lang === 'it' ? 'domande' : 'questions'} · {topic.dueCount} {lang === 'it' ? 'da ripassare' : 'due'}
+                        </p>
+                      </div>
+                      <Badge variant="secondary">
+                        {topic.status === 'completed'
+                          ? (lang === 'it' ? 'Completato' : 'Completed')
+                          : topic.dueCount > 0
+                            ? (lang === 'it' ? 'Attivo' : 'Active')
+                            : (lang === 'it' ? 'In corso' : 'In progress')}
+                      </Badge>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-tertiary">{lang === 'it' ? 'Learning Progress' : 'Learning Progress'}</span>
+                        <span className="text-xs font-semibold tabular-nums text-emerald-400">{topic.progress}%</span>
+                      </div>
+                      <div className="h-1.5 overflow-hidden rounded-full bg-[color:var(--sg-surface-3)]">
+                        <div className="h-full rounded-full bg-[linear-gradient(90deg,#34d399,#10b981)] transition-[width] duration-700" style={{ width: `${topic.progress}%` }} />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
+                      <span className="inline-flex items-center gap-2">
+                        <Clock3 className="h-4 w-4" />
+                        {lang === 'it' ? 'Ultima sessione' : 'Last session'}: {topic.lastSessionLabel}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedTopicId(topic.id);
+                          loadTopic(topic.id);
+                        }}
+                      >
+                        {lang === 'it' ? 'Ripassa' : 'Practice'}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
+          ) : (
+            <Card>
+              <CardContent className="px-6 py-10 text-center">
+                <p className="text-base font-medium">{lang === 'it' ? 'Nessun argomento trovato' : 'No topics found'}</p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {lang === 'it' ? 'Prova a cambiare ricerca o filtro.' : 'Try changing the search or filter.'}
+                </p>
+              </CardContent>
+            </Card>
           )}
-        </CardContent>
-      </Card>
+        </>
+      )}
 
-      {/* ── Active quiz ── */}
       {(study.phase === 'question' || study.phase === 'feedback') && study.currentQuestion && (
-        <div className={cn('mx-auto max-w-[860px]', chat.isOpen && 'xl:mr-[396px]')}>
-          <div className="sticky top-0 z-20 mb-6 rounded-2xl border border-border bg-[rgba(10,10,15,0.85)] px-4 py-4 shadow-[0_0_0_1px_rgba(255,255,255,0.06),0_8px_24px_rgba(0,0,0,0.4)] backdrop-blur-xl">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <Badge variant="secondary">{topics.find(tp => tp.id === study.currentQuestion?.topicId)?.name}</Badge>
-              <div className="rounded-full border border-border bg-[rgba(255,255,255,0.03)] px-3 py-1 text-sm font-semibold">
-                <span className="text-primary">{study.currentIndex + 1}</span>
-                <span className="text-muted-foreground"> / {study.questions.length}</span>
+        <div className={cn('mx-auto max-w-[920px] space-y-6', chat.isOpen && 'xl:mr-[396px]')}>
+          <div className="sticky top-3 z-20 rounded-[20px] border border-[color:var(--sg-border-1)] bg-[color:var(--sg-surface-overlay)] px-4 py-4 shadow-[var(--sg-overlay-shadow)] backdrop-blur-2xl">
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="secondary">{topics.find((topic) => topic.id === study.currentQuestion?.topicId)?.name}</Badge>
+                <Badge variant="outline" className="ml-auto">
+                  {study.currentQuestion.type === 'mcq' ? t('quiz.multipleChoice', lang) : t('quiz.fillBlank', lang)}
+                </Badge>
               </div>
+              <ProgressBar
+                current={study.currentIndex}
+                total={study.questions.length}
+                results={study.results}
+                label={lang === 'it'
+                  ? `Domanda ${study.currentIndex + 1} di ${study.questions.length}`
+                  : `Question ${study.currentIndex + 1} of ${study.questions.length}`}
+              />
             </div>
-            <ProgressBar current={study.currentIndex} total={study.questions.length} results={study.results} />
           </div>
+
           <div className="space-y-5">
             {study.currentQuestion.type === 'mcq' ? (
-              <McqQuestion key={study.currentQuestion.id} question={study.currentQuestion} onSubmit={(i, c) => study.submitAnswer(i, c)} disabled={study.phase === 'feedback'} language={lang} />
+              <McqQuestion
+                key={study.currentQuestion.id}
+                question={study.currentQuestion}
+                onSubmit={(answer, correct) => study.submitAnswer(answer, correct)}
+                disabled={study.phase === 'feedback'}
+                language={lang}
+              />
             ) : (
-              <ClozeQuestion key={study.currentQuestion.id} question={study.currentQuestion} onSubmit={(a, c) => study.submitAnswer(a, c)} disabled={study.phase === 'feedback'} language={lang} />
+              <ClozeQuestion
+                key={study.currentQuestion.id}
+                question={study.currentQuestion}
+                onSubmit={(answer, correct) => study.submitAnswer(answer, correct)}
+                disabled={study.phase === 'feedback'}
+                language={lang}
+              />
             )}
+
             {study.phase === 'feedback' && study.isCorrect !== null && (
               <div className="space-y-4">
-                <ExplanationCard explanation={study.currentQuestion.explanation} isCorrect={study.isCorrect} language={lang} onOpenChat={settings.provider ? handleOpenChat : undefined} hasChatHistory={chat.hasHistory(study.currentQuestion.id)} />
+                <ExplanationCard
+                  explanation={study.currentQuestion.explanation}
+                  isCorrect={study.isCorrect}
+                  language={lang}
+                  onOpenChat={settings.provider ? handleOpenChat : undefined}
+                  hasChatHistory={chat.hasHistory(study.currentQuestion.id)}
+                />
                 {!study.isCorrect && !retypeComplete && (
                   <RetypePrompt
                     correctAnswer={study.currentQuestion.type === 'mcq' ? study.currentQuestion.options[study.currentQuestion.correct].replace(/^[A-D]\)\s*/, '') : study.currentQuestion.acceptableAnswers[0]}
@@ -196,7 +377,31 @@ export function StudyPage({ settings, onNavigate }: StudyPageProps) {
         </div>
       )}
 
-      <ChatPanel isOpen={chat.isOpen} history={chat.history} loading={chat.loading} canSendMore={chat.canSendMore} messagesRemaining={chat.messagesRemaining} language={lang} onSend={chat.sendMessage} onClose={chat.closeChat} />
+      <ChatPanel
+        isOpen={chat.isOpen}
+        history={chat.history}
+        loading={chat.loading}
+        canSendMore={chat.canSendMore}
+        messagesRemaining={chat.messagesRemaining}
+        language={lang}
+        onSend={chat.sendMessage}
+        onClose={chat.closeChat}
+      />
     </div>
   );
+}
+
+function formatRelativeDate(date: Date, language: Settings['language']): string {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+
+  if (diffDays === 0) return language === 'it' ? 'Oggi' : 'Today';
+  if (diffDays === 1) return language === 'it' ? 'Ieri' : 'Yesterday';
+  if (diffDays < 7) return language === 'it' ? `${diffDays} giorni fa` : `${diffDays} days ago`;
+
+  return date.toLocaleDateString(language === 'it' ? 'it-IT' : 'en-US', {
+    day: 'numeric',
+    month: 'short',
+  });
 }
