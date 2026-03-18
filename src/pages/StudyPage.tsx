@@ -244,13 +244,14 @@ export function StudyPage({ settings, onNavigate }: StudyPageProps) {
 
           {filteredTopics.length > 0 ? (
             <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(320px,1fr))]">
-              {filteredTopics.map((topic) => (
+              {filteredTopics.map((topic, index) => (
                 <Card
                   key={topic.id}
                   className={cn(
-                    'sg-hover-card',
+                    'sg-hover-card animate-stagger-in',
                     selectedTopicId === topic.id && 'border-[rgba(99,102,241,0.28)] bg-[rgba(99,102,241,0.06)]',
                   )}
+                  style={{ animationDelay: `${index * 60}ms` }}
                 >
                   <CardContent className="space-y-4 px-5 py-5">
                     <div className="flex items-start justify-between gap-3">

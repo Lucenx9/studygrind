@@ -271,8 +271,12 @@ export function DashboardPage({ language: lang, onNavigate }: DashboardPageProps
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {statItems.map(({ key, label, value, icon: Icon, iconClass, valueClass, borderClass }) => (
-          <Card key={key} className={`sg-hover-card overflow-hidden ${borderClass}`}>
+        {statItems.map(({ key, label, value, icon: Icon, iconClass, valueClass, borderClass }, index) => (
+          <Card
+            key={key}
+            className={`sg-hover-card animate-stagger-in overflow-hidden ${borderClass}`}
+            style={{ animationDelay: `${index * 60}ms` }}
+          >
             <CardContent className="flex items-center gap-4 px-5 py-5">
               <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${iconClass}`}>
                 <Icon className="h-5 w-5" strokeWidth={1.5} />
@@ -468,14 +472,18 @@ export function DashboardPage({ language: lang, onNavigate }: DashboardPageProps
                   {dash.topicStats
                     .slice()
                     .sort((a, b) => (dueByTopic.get(b.topic.id) ?? 0) - (dueByTopic.get(a.topic.id) ?? 0) || b.total - a.total)
-                    .map(({ topic, total, accuracy }) => {
+                    .map(({ topic, total, accuracy }, index) => {
                       const topicQuestions = questions.filter((question) => question.topicId === topic.id);
                       const reviewedCount = topicQuestions.filter((question) => question.timesReviewed > 0).length;
                       const progress = total > 0 ? Math.round((reviewedCount / total) * 100) : 0;
                       const due = dueByTopic.get(topic.id) ?? 0;
 
                       return (
-                        <div key={topic.id} className="grid gap-3 rounded-[18px] border border-[color:var(--sg-border-1)] bg-[color:var(--sg-surface-2)] px-4 py-4 lg:grid-cols-[minmax(0,1.6fr)_90px_80px_180px_120px] lg:items-center">
+                        <div
+                          key={topic.id}
+                          className="animate-stagger-in grid gap-3 rounded-[18px] border border-[color:var(--sg-border-1)] bg-[color:var(--sg-surface-2)] px-4 py-4 lg:grid-cols-[minmax(0,1.6fr)_90px_80px_180px_120px] lg:items-center"
+                          style={{ animationDelay: `${index * 60}ms` }}
+                        >
                           <div className="min-w-0">
                             <p className="truncate text-base font-semibold">{topic.name}</p>
                             <p className="mt-1 text-xs text-muted-foreground">

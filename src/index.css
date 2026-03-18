@@ -344,6 +344,11 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes staggerFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 @keyframes progressFill {
   from { width: 0; }
 }
@@ -364,6 +369,10 @@
 
 .animate-slide-down {
   animation: slideDown 0.3s ease-out both;
+}
+
+.animate-stagger-in {
+  animation: staggerFadeIn 0.25s ease-out both;
 }
 
 .animate-progress-fill {
@@ -499,6 +508,7 @@
   .animate-pulse-glow,
   .animate-shimmer,
   .animate-slide-down,
+  .animate-stagger-in,
   .animate-progress-fill {
     animation: none !important;
   }
