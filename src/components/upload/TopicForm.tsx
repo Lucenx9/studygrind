@@ -19,9 +19,11 @@ export function TopicForm({
   language,
 }: TopicFormProps) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="space-y-2">
-        <Label htmlFor="topic-name">{t('upload.topicName', language)}</Label>
+        <Label htmlFor="topic-name" className="text-tertiary">
+          {t('upload.topicName', language)}
+        </Label>
         <Input
           id="topic-name"
           value={topicName}
@@ -30,7 +32,7 @@ export function TopicForm({
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="custom-instructions">
+        <Label htmlFor="custom-instructions" className="text-tertiary">
           {t('upload.customInstructions', language)} <span className="text-muted-foreground">({t('upload.optional', language)})</span>
         </Label>
         <Textarea
@@ -38,7 +40,7 @@ export function TopicForm({
           value={customInstructions}
           onChange={e => onCustomInstructionsChange(e.target.value)}
           placeholder={t('upload.customInstructionsPlaceholder', language)}
-          className="min-h-[60px]"
+          className="min-h-[96px]"
         />
       </div>
     </div>

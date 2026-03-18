@@ -37,17 +37,17 @@ export function QuestionPreview({ questions, language, onSave }: QuestionPreview
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="space-y-5">
+      <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
           {t('upload.selected', language).replace('{n}', String(selected.size)).replace('{total}', String(questions.length))}
         </p>
-        <Button variant="ghost" size="sm" onClick={toggleAll}>
+        <Button variant="outline" size="sm" onClick={toggleAll}>
           {selected.size === questions.length ? t('upload.deselectAll', language) : t('upload.selectAll', language)}
         </Button>
       </div>
 
-      <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+      <div className="max-h-[480px] space-y-3 overflow-y-auto pr-1">
         {questions.map((q, i) => (
           <Card
             key={q.id}
@@ -60,12 +60,12 @@ export function QuestionPreview({ questions, language, onSave }: QuestionPreview
                 toggle(q.id);
               }
             }}
-            className={`cursor-pointer transition-[opacity,border-color,background-color,box-shadow] ${selected.has(q.id) ? 'border-primary/30 bg-primary/6 shadow-[0_18px_36px_-30px_rgba(79,128,255,0.6)]' : 'opacity-65'}`}
+            className={`cursor-pointer transition-[opacity,border-color,background-color,box-shadow,transform] ${selected.has(q.id) ? 'border-primary/30 bg-[rgba(99,102,241,0.06)] shadow-[0_18px_36px_-30px_rgba(79,128,255,0.6)]' : 'opacity-65 hover:opacity-100'}`}
             onClick={() => toggle(q.id)}
           >
             <CardContent className="flex items-start gap-3 px-4 py-4">
               <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border ${
-                selected.has(q.id) ? 'bg-primary border-primary' : 'border-border'
+                selected.has(q.id) ? 'border-primary bg-primary' : 'border-[color:var(--sg-border-2)] bg-[color:var(--sg-surface-1)]'
               }`}>
                 {selected.has(q.id) && <Check className="h-3 w-3 text-primary-foreground" />}
               </div>
@@ -86,6 +86,7 @@ export function QuestionPreview({ questions, language, onSave }: QuestionPreview
       <Button
         onClick={() => onSave(Array.from(selected))}
         disabled={selected.size === 0}
+        variant="accent"
         className="w-full"
         size="lg"
       >

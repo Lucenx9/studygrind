@@ -95,8 +95,10 @@ export function PdfDropzone({ onExtracted, language }: PdfDropzoneProps) {
         onKeyDown={handleKeyDown}
         aria-label={t('pdf.dropHere', language)}
         className={cn(
-          'flex cursor-pointer flex-col items-center justify-center gap-3 rounded-[20px] border-2 border-dashed p-6 text-center transition-[border-color,background-color,transform] duration-200',
-          dragging ? 'border-primary bg-primary/6' : 'border-border/65 bg-background/55 hover:border-primary/34 hover:bg-accent/38',
+          'flex cursor-pointer flex-col items-center justify-center gap-4 rounded-[22px] border-2 border-dashed p-6 text-center transition-[border-color,background-color,transform,box-shadow] duration-200',
+          dragging
+            ? 'border-primary bg-[rgba(99,102,241,0.08)] shadow-[0_18px_42px_-28px_rgba(99,102,241,0.7)]'
+            : 'border-[color:var(--sg-border-2)] bg-[color:var(--sg-surface-1)] hover:border-primary/34 hover:bg-[rgba(99,102,241,0.03)]',
           loading && 'pointer-events-none opacity-60',
         )}
       >
@@ -108,11 +110,16 @@ export function PdfDropzone({ onExtracted, language }: PdfDropzoneProps) {
           </>
         ) : (
           <>
-            <div className="flex h-14 w-14 items-center justify-center rounded-[18px] bg-primary/10 text-primary">
-              <FileUp className="h-7 w-7" />
+            <div className={cn(
+              'flex h-16 w-16 items-center justify-center rounded-[20px] bg-[rgba(99,102,241,0.12)] text-primary',
+              dragging && 'animate-bounce',
+            )}>
+              <FileUp className="h-8 w-8" />
             </div>
-            <p className="text-sm font-medium text-foreground">{t('pdf.dropHere', language)}</p>
-            <p className="text-xs leading-6 text-muted-foreground">{t('pdf.extractedBelow', language)}</p>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-foreground">{t('pdf.dropHere', language)}</p>
+              <p className="text-xs leading-6 text-muted-foreground">{t('pdf.extractedBelow', language)}</p>
+            </div>
           </>
         )}
       </div>
