@@ -20,8 +20,48 @@ import type { Grade } from '@/lib/fsrs';
 import { getQuestionsByTopic, getSessions, getTopics } from '@/lib/storage';
 import { t } from '@/lib/i18n';
 import type { Settings } from '@/lib/types';
-import { cn } from '@/lib/utils';
+import { cn, formatRelativeDate } from '@/lib/utils';
 import { BookOpen, Clock3, Search, Sparkles, Upload } from 'lucide-react';
+
+const TOPIC_GRADIENTS = [
+  'from-indigo-500 to-violet-500',
+  'from-emerald-500 to-teal-500',
+  'from-amber-500 to-orange-500',
+  'from-rose-500 to-pink-500',
+  'from-sky-500 to-blue-500',
+  'from-lime-500 to-green-500',
+];
+
+function topicColor(name: string): string {
+  let hash = 0;
+  for (const char of name) hash = ((hash << 5) - hash + char.charCodeAt(0)) | 0;
+  return TOPIC_GRADIENTS[Math.abs(hash) % TOPIC_GRADIENTS.length];
+}
+
+function MiniRing({ percent, size = 32 }: { percent: number; size?: number }) {
+  const r = (size - 6) / 2;
+  const c = 2 * Math.PI * r;
+  const pct = Math.min(Math.max(percent / 100, 0), 1);
+  const offset = c - (pct === 0 ? 0.01 : pct) * c;
+  return (
+    <svg width={size} height={size} className="-rotate-90" viewBox={`0 0 ${size} ${size}`}>
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="currentColor" strokeWidth="3" className="text-[color:var(--sg-surface-3)]" />
+      <circle
+        cx={size / 2} cy={size / 2} r={r} fill="none"
+        stroke="url(#miniRingGrad)" strokeWidth="3" strokeLinecap="round"
+        strokeDasharray={c} strokeDashoffset={offset}
+        className={pct === 0 ? 'opacity-90' : undefined}
+        style={{ transition: 'stroke-dashoffset 0.6s ease' }}
+      />
+      <defs>
+        <linearGradient id="miniRingGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#34d399" />
+          <stop offset="100%" stopColor="#10b981" />
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+}
 
 interface StudyPageProps {
   settings: Settings;
@@ -258,43 +298,32 @@ export function StudyPage({ settings, onNavigate }: StudyPageProps) {
                 <Card
                   key={topic.id}
                   className={cn(
-                    'sg-hover-card animate-stagger-in',
+                    'sg-hover-card animate-stagger-in overflow-hidden',
                     selectedTopicId === topic.id && 'border-[rgba(99,102,241,0.28)] bg-[rgba(99,102,241,0.06)]',
                   )}
                   style={{ animationDelay: `${index * 60}ms` }}
                 >
+                  <div className={`h-2 bg-gradient-to-r ${topicColor(topic.name)}`} />
                   <CardContent className="space-y-4 px-5 py-5">
                     <div className="flex items-start justify-between gap-3">
-                      <div className="space-y-1">
-                        <p className="text-base font-semibold">{topic.name}</p>
+                      <div className="space-y-1 min-w-0">
+                        <p className="text-base font-semibold truncate">{topic.name}</p>
                         <p className="text-sm text-muted-foreground">
-                          {topic.totalQuestions} {lang === 'it' ? 'domande' : 'questions'} · {topic.dueCount} {lang === 'it' ? 'da ripassare' : 'due'}
+                          {topic.totalQuestions} {lang === 'it' ? 'domande' : 'questions'}
                         </p>
                       </div>
-                      <Badge variant="secondary">
-                        {topic.status === 'completed'
-                          ? (lang === 'it' ? 'Completato' : 'Completed')
-                          : topic.dueCount > 0
-                            ? (lang === 'it' ? 'Attivo' : 'Active')
-                            : (lang === 'it' ? 'In corso' : 'In progress')}
-                      </Badge>
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-tertiary">{lang === 'it' ? 'Learning Progress' : 'Learning Progress'}</span>
-                        <span className="text-xs font-semibold tabular-nums text-emerald-400">{topic.progress}%</span>
-                      </div>
-                      <div className="h-1.5 overflow-hidden rounded-full bg-[color:var(--sg-surface-3)]">
-                        <div className="h-full rounded-full bg-[linear-gradient(90deg,#34d399,#10b981)] transition-[width] duration-700" style={{ width: `${topic.progress}%` }} />
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-[11px] font-semibold tabular-nums text-emerald-400">{topic.progress}%</span>
+                        <MiniRing percent={topic.progress} />
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
-                      <span className="inline-flex items-center gap-2">
-                        <Clock3 className="h-4 w-4" />
-                        {lang === 'it' ? 'Ultima sessione' : 'Last session'}: {topic.lastSessionLabel}
-                      </span>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Clock3 className="h-3.5 w-3.5 shrink-0" />
+                      <span>{topic.lastSessionLabel}</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
                       <Button
                         variant="outline"
                         size="sm"
@@ -305,6 +334,18 @@ export function StudyPage({ settings, onNavigate }: StudyPageProps) {
                       >
                         {lang === 'it' ? 'Ripassa' : 'Practice'}
                       </Button>
+                      {topic.dueCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedTopicId(topic.id);
+                            loadTopic(topic.id);
+                          }}
+                          className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(251,191,36,0.3)] bg-[rgba(251,191,36,0.1)] px-2.5 py-1 text-xs font-semibold tabular-nums text-[#fbbf24] transition-colors hover:bg-[rgba(251,191,36,0.18)]"
+                        >
+                          Due: {topic.dueCount}
+                        </button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -418,17 +459,3 @@ export function StudyPage({ settings, onNavigate }: StudyPageProps) {
   );
 }
 
-function formatRelativeDate(date: Date, language: Settings['language']): string {
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
-
-  if (diffDays === 0) return language === 'it' ? 'Oggi' : 'Today';
-  if (diffDays === 1) return language === 'it' ? 'Ieri' : 'Yesterday';
-  if (diffDays < 7) return language === 'it' ? `${diffDays} giorni fa` : `${diffDays} days ago`;
-
-  return date.toLocaleDateString(language === 'it' ? 'it-IT' : 'en-US', {
-    day: 'numeric',
-    month: 'short',
-  });
-}
