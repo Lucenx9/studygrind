@@ -19,7 +19,9 @@ export function useSettings() {
   // Apply theme
   useEffect(() => {
     document.documentElement.classList.toggle('dark', settings.theme === 'dark');
-  }, [settings.theme]);
+    document.documentElement.style.colorScheme = settings.theme;
+    document.documentElement.lang = settings.language;
+  }, [settings.language, settings.theme]);
 
   const isConfigured = settings.provider !== null;
 

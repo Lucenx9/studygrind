@@ -1,5 +1,13 @@
 import { set as idbSet, del as idbDel, entries as idbEntries, clear as idbClear } from 'idb-keyval';
 import type { Topic, Question, ReviewSession, DailyActivity, Settings, ChatHistory } from './types';
+import {
+  sanitizeChatHistories,
+  sanitizeDailyActivities,
+  sanitizeQuestions,
+  sanitizeReviewSessions,
+  sanitizeSettings,
+  sanitizeTopics,
+} from './validation';
 
 const KEYS = {
   topics: 'studygrind_topics',
@@ -10,6 +18,19 @@ const KEYS = {
   chatHistories: 'studygrind_chat_histories',
 } as const;
 
+type StorageKey = (typeof KEYS)[keyof typeof KEYS];
+
+interface StoredDataMap {
+  [KEYS.topics]: Topic[];
+  [KEYS.questions]: Question[];
+  [KEYS.sessions]: ReviewSession[];
+  [KEYS.activities]: DailyActivity[];
+  [KEYS.settings]: Settings;
+  [KEYS.chatHistories]: ChatHistory[];
+}
+
+const STORAGE_KEYS = new Set<StorageKey>(Object.values(KEYS));
+
 // ---------------------------------------------------------------------------
 // In-memory cache — synchronous reads, IndexedDB persistence
 // Strategy B: cache serves reads, IndexedDB is source of truth after init
@@ -17,6 +38,40 @@ const KEYS = {
 
 const cache = new Map<string, unknown>();
 let initialized = false;
+
+function isStorageKey(key: string): key is StorageKey {
+  return STORAGE_KEYS.has(key as StorageKey);
+}
+
+function reviveStoredValue(key: string, value: unknown): unknown {
+  if ((key === 'due' || key === 'last_review') && typeof value === 'string') {
+    const date = new Date(value);
+    return Number.isFinite(date.getTime()) ? date : value;
+  }
+
+  return value;
+}
+
+function sanitizeStoredValue<K extends StorageKey>(key: K, value: unknown): StoredDataMap[K] | null {
+  switch (key) {
+    case KEYS.topics:
+      return sanitizeTopics(value) as StoredDataMap[K] | null;
+    case KEYS.questions:
+      return sanitizeQuestions(value) as StoredDataMap[K] | null;
+    case KEYS.sessions:
+      return sanitizeReviewSessions(value) as StoredDataMap[K] | null;
+    case KEYS.activities:
+      return sanitizeDailyActivities(value) as StoredDataMap[K] | null;
+    case KEYS.settings:
+      return sanitizeSettings(value) as StoredDataMap[K] | null;
+    case KEYS.chatHistories:
+      return sanitizeChatHistories(value) as StoredDataMap[K] | null;
+  }
+}
+
+function readStorageJson(raw: string): unknown {
+  return JSON.parse(raw, reviveStoredValue);
+}
 
 /** Must be called and awaited before React renders (in main.tsx) */
 export async function initStorage(): Promise<void> {
@@ -26,8 +81,11 @@ export async function initStorage(): Promise<void> {
   try {
     const allEntries = await idbEntries();
     for (const [key, value] of allEntries) {
-      if (typeof key === 'string') {
-        cache.set(key, value);
+      if (typeof key === 'string' && isStorageKey(key)) {
+        const sanitized = sanitizeStoredValue(key, value);
+        if (sanitized !== null) {
+          cache.set(key, sanitized);
+        }
       }
     }
   } catch {
@@ -38,18 +96,16 @@ export async function initStorage(): Promise<void> {
   try {
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key && key.startsWith('studygrind_') && !cache.has(key)) {
+      if (key && isStorageKey(key) && !cache.has(key)) {
         try {
           const raw = localStorage.getItem(key);
           if (raw) {
-            const value = JSON.parse(raw, (k, v) => {
-              if ((k === 'due' || k === 'last_review') && typeof v === 'string') {
-                return new Date(v);
-              }
-              return v;
-            });
-            cache.set(key, value);
-            idbSet(key, value).catch(() => {});
+            const parsed = readStorageJson(raw);
+            const sanitized = sanitizeStoredValue(key, parsed);
+            if (sanitized !== null) {
+              cache.set(key, sanitized);
+              idbSet(key, sanitized).catch(() => {});
+            }
           }
         } catch {
           // skip non-JSON values
@@ -67,45 +123,54 @@ function notifyStorageChange(): void {
   window.dispatchEvent(new Event('studygrind:data-changed'));
 }
 
-function get<T>(key: string, fallback: T): T {
+function get<K extends StorageKey>(key: K, fallback: StoredDataMap[K]): StoredDataMap[K] {
   if (initialized) {
     const value = cache.get(key);
-    return (value !== undefined ? value : fallback) as T;
+    const sanitized = sanitizeStoredValue(key, value);
+    if (sanitized !== null) {
+      return sanitized;
+    }
+    cache.set(key, fallback);
+    return fallback;
   }
-  // Pre-init fallback: read from localStorage (only during app bootstrap)
+
   try {
     const raw = localStorage.getItem(key);
     if (!raw) return fallback;
-    return JSON.parse(raw, (k, v) => {
-      if ((k === 'due' || k === 'last_review') && typeof v === 'string') {
-        return new Date(v);
-      }
-      return v;
-    }) as T;
+
+    const sanitized = sanitizeStoredValue(key, readStorageJson(raw));
+    return sanitized ?? fallback;
   } catch {
     return fallback;
   }
 }
 
-function set<T>(key: string, value: T): boolean {
+function set<K extends StorageKey>(key: K, value: StoredDataMap[K]): boolean {
   try {
-    // Update in-memory cache immediately (synchronous)
-    cache.set(key, value);
+    const sanitized = sanitizeStoredValue(key, value);
+    if (sanitized === null) {
+      window.dispatchEvent(new CustomEvent('studygrind:storage-error', {
+        detail: { message: 'Invalid data could not be saved.' },
+      }));
+      return false;
+    }
+
+    cache.set(key, sanitized);
     notifyStorageChange();
 
-    // Persist to IndexedDB (fire-and-forget)
-    idbSet(key, value).catch(error => {
+    idbSet(key, sanitized).catch(error => {
       console.error('IndexedDB write failed:', error);
       window.dispatchEvent(new CustomEvent('studygrind:storage-error', {
         detail: { message: 'Unable to persist data. Storage may be full.' },
       }));
     });
 
-    // Also write to localStorage as fallback (best-effort, may fail on quota)
     try {
-      localStorage.setItem(key, JSON.stringify(value));
+      localStorage.setItem(key, JSON.stringify(sanitized));
     } catch {
-      // localStorage full — IndexedDB is the primary store now, this is fine
+      window.dispatchEvent(new CustomEvent('studygrind:storage-error', {
+        detail: { message: 'Unable to persist data. Storage may be full.' },
+      }));
     }
 
     return true;
@@ -129,7 +194,7 @@ function remove(key: string): boolean {
 
 // Topics
 export function getTopics(): Topic[] {
-  return get<Topic[]>(KEYS.topics, []);
+  return get(KEYS.topics, []);
 }
 
 export function saveTopic(topic: Topic): boolean {
@@ -148,7 +213,7 @@ export function deleteTopic(topicId: string): boolean {
 
 // Questions
 export function getQuestions(): Question[] {
-  return get<Question[]>(KEYS.questions, []);
+  return get(KEYS.questions, []);
 }
 
 export function getQuestionsByTopic(topicId: string): Question[] {
@@ -179,7 +244,7 @@ export function updateQuestion(question: Question): boolean {
 
 // Review sessions
 export function getSessions(): ReviewSession[] {
-  return get<ReviewSession[]>(KEYS.sessions, []);
+  return get(KEYS.sessions, []);
 }
 
 export function saveSession(session: ReviewSession): boolean {
@@ -201,7 +266,7 @@ export function saveSessionsBulk(sessions: ReviewSession[]): boolean {
 
 // Daily activity
 export function getActivities(): DailyActivity[] {
-  return get<DailyActivity[]>(KEYS.activities, []);
+  return get(KEYS.activities, []);
 }
 
 export function recordActivity(date: string, questionsReviewed: number, accuracy: number): boolean {
@@ -221,7 +286,7 @@ export function recordActivity(date: string, questionsReviewed: number, accuracy
 
 // Settings
 export function getSettings(): Settings {
-  return get<Settings>(KEYS.settings, {
+  return get(KEYS.settings, {
     provider: null,
     language: 'it',
     theme: 'dark',
@@ -235,7 +300,7 @@ export function saveSettings(settings: Settings): boolean {
 
 // Chat histories
 export function getChatHistories(): ChatHistory[] {
-  return get<ChatHistory[]>(KEYS.chatHistories, []);
+  return get(KEYS.chatHistories, []);
 }
 
 export function getChatHistory(questionId: string): ChatHistory | null {

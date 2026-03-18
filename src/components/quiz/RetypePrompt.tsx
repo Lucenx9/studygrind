@@ -67,7 +67,7 @@ export function RetypePrompt({ correctAnswer, language, onComplete }: RetypeProm
           onChange={e => handleChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={correctAnswer}
-          aria-label={correctAnswer}
+          aria-label={t('quiz.correctAnswer', language)}
           className={cn(
             'min-h-12 transition-colors duration-200',
             matched && 'border-green-500 bg-green-50 dark:bg-green-500/12',

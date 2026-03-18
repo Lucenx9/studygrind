@@ -90,7 +90,12 @@ export default function App() {
 
     // Show onboarding if no topics and not dismissed before
     const topics = getTopics();
-    const dismissed = localStorage.getItem(ONBOARDING_KEY);
+    let dismissed: string | null = null;
+    try {
+      dismissed = localStorage.getItem(ONBOARDING_KEY);
+    } catch {
+      dismissed = '1';
+    }
     if (topics.length === 0 && !dismissed) {
       setShowOnboarding(true);
     }
@@ -107,7 +112,7 @@ export default function App() {
 
     // Show toast when localStorage writes fail (quota exceeded etc.)
     const storageErrorHandler = () => {
-      toast.error('Storage full — data may not be saved. Export your data as backup.');
+      toast.error(t('common.storageFull', settings.language));
     };
     window.addEventListener('studygrind:storage-error', storageErrorHandler);
 
@@ -116,12 +121,16 @@ export default function App() {
       window.removeEventListener('studygrind:storage-error', storageErrorHandler);
       clearInterval(interval);
     };
-  }, []);
+  }, [settings.language]);
 
   const navigate = (p: Page) => setPage(p);
 
   const dismissOnboarding = () => {
-    localStorage.setItem(ONBOARDING_KEY, '1');
+    try {
+      localStorage.setItem(ONBOARDING_KEY, '1');
+    } catch {
+      toast.error(t('common.storageFull', settings.language));
+    }
     setShowOnboarding(false);
   };
 
@@ -147,7 +156,7 @@ export default function App() {
             </>
           )}
         </Suspense>
-        <ReloadPrompt />
+        <ReloadPrompt language={settings.language} />
       </AppErrorBoundary>
     </Layout>
   );

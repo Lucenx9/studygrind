@@ -4,6 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="StudyGrind — AI-powered spaced repetition quiz app with FSRS scheduling" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://openrouter.ai https://api.openai.com https://auth.openai.com https://accounts.google.com https://oauth2.googleapis.com https://api.anthropic.com https://console.anthropic.com https://generativelanguage.googleapis.com; worker-src 'self' blob:; manifest-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'"
+    />
     <title>StudyGrind</title>
 
     <!-- Favicon -->
@@ -21,10 +25,16 @@
     <!-- Prevent dark mode FOUC: apply theme before React hydrates -->
     <script>
       try {
-        var s = localStorage.getItem('studygrind_settings');
-        if (s && JSON.parse(s).theme === 'dark') document.documentElement.classList.add('dark');
-        else if (!s) document.documentElement.classList.add('dark'); // default is dark
-      } catch (e) { document.documentElement.classList.add('dark'); }
+        var rawSettings = localStorage.getItem('studygrind_settings');
+        var parsedSettings = rawSettings ? JSON.parse(rawSettings) : null;
+        var theme = parsedSettings && typeof parsedSettings === 'object' ? parsedSettings.theme : null;
+        var language = parsedSettings && typeof parsedSettings === 'object' ? parsedSettings.language : null;
+        document.documentElement.lang = language === 'en' ? 'en' : 'it';
+        if (theme !== 'light') document.documentElement.classList.add('dark');
+      } catch (e) {
+        document.documentElement.lang = 'it';
+        document.documentElement.classList.add('dark');
+      }
     </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>

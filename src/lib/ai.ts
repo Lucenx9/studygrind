@@ -1,4 +1,5 @@
 import type { ProviderConfig } from './types';
+import { isRecord } from './validation';
 
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
@@ -9,6 +10,19 @@ export class TruncationError extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'TruncationError';
+  }
+}
+
+export class AiRequestError extends Error {
+  code: 'auth' | 'rate_limit' | 'server' | 'timeout' | 'network' | 'request' | 'invalid_response';
+
+  constructor(
+    code: 'auth' | 'rate_limit' | 'server' | 'timeout' | 'network' | 'request' | 'invalid_response',
+    message?: string,
+  ) {
+    super(message ?? code);
+    this.name = 'AiRequestError';
+    this.code = code;
   }
 }
 
@@ -99,18 +113,82 @@ function getAuthHeaders(config: ProviderConfig): Record<string, string> {
 
 const API_TIMEOUT_MS = 120_000; // 2 minutes
 
-function fetchWithTimeout(url: string, options: RequestInit): Promise<Response> {
+async function fetchWithTimeout(url: string, options: RequestInit): Promise<Response> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
-  return fetch(url, { ...options, signal: controller.signal })
-    .finally(() => clearTimeout(timeout));
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new AiRequestError('timeout');
+    }
+    if (error instanceof TypeError) {
+      throw new AiRequestError('network');
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
-function throwApiError(provider: string, status: number, body: string): never {
-  if (status === 401 || status === 403) throw new Error(`${provider}: Invalid API key (${status})`);
-  if (status === 429) throw new Error(`${provider}: Rate limited. Wait a moment and try again.`);
-  if (status >= 500) throw new Error(`${provider}: Server error (${status}). Try again later.`);
-  throw new Error(`${provider} error (${status}): ${body.slice(0, 200)}`);
+function throwApiError(_provider: string, status: number): never {
+  if (status === 401 || status === 403) throw new AiRequestError('auth');
+  if (status === 429) throw new AiRequestError('rate_limit');
+  if (status >= 500) throw new AiRequestError('server');
+  throw new AiRequestError('request');
+}
+
+async function parseJsonResponse(response: Response): Promise<unknown> {
+  try {
+    return (await response.json()) as unknown;
+  } catch {
+    throw new AiRequestError('invalid_response');
+  }
+}
+
+function isAnthropicResponse(value: unknown): value is {
+  content: Array<{ text: string }>;
+  stop_reason?: string;
+} {
+  return isRecord(value) &&
+    Array.isArray(value.content) &&
+    value.content.every(item => isRecord(item) && typeof item.text === 'string') &&
+    (value.stop_reason === undefined || typeof value.stop_reason === 'string');
+}
+
+function isGoogleResponse(value: unknown): value is {
+  candidates: Array<{
+    finishReason?: string;
+    content: {
+      parts: Array<{ text: string }>;
+    };
+  }>;
+} {
+  return isRecord(value) &&
+    Array.isArray(value.candidates) &&
+    value.candidates.every(candidate =>
+      isRecord(candidate) &&
+      (candidate.finishReason === undefined || typeof candidate.finishReason === 'string') &&
+      isRecord(candidate.content) &&
+      Array.isArray(candidate.content.parts) &&
+      candidate.content.parts.every(part => isRecord(part) && typeof part.text === 'string'),
+    );
+}
+
+function isOpenAIResponse(value: unknown): value is {
+  choices: Array<{
+    finish_reason?: string;
+    message: { content: string };
+  }>;
+} {
+  return isRecord(value) &&
+    Array.isArray(value.choices) &&
+    value.choices.every(choice =>
+      isRecord(choice) &&
+      (choice.finish_reason === undefined || typeof choice.finish_reason === 'string') &&
+      isRecord(choice.message) &&
+      typeof choice.message.content === 'string',
+    );
 }
 
 // Anthropic
@@ -131,9 +209,11 @@ async function callAnthropic(config: ProviderConfig, messages: ChatMessage[]): P
     }),
   });
 
-  if (!res.ok) throwApiError('Anthropic', res.status, await res.text());
-  const data = await res.json();
-  if (!data?.content?.[0]?.text) throw new Error('Anthropic returned an empty response');
+  if (!res.ok) throwApiError('Anthropic', res.status);
+  const data = await parseJsonResponse(res);
+  if (!isAnthropicResponse(data) || !data.content[0]?.text) {
+    throw new AiRequestError('invalid_response');
+  }
   if (data.stop_reason === 'max_tokens') {
     throw new TruncationError('Anthropic response was truncated (max_tokens reached)');
   }
@@ -162,9 +242,11 @@ async function callGoogle(config: ProviderConfig, messages: ChatMessage[]): Prom
     body: JSON.stringify(body),
   });
 
-  if (!res.ok) throwApiError('Google', res.status, await res.text());
-  const data = await res.json();
-  if (!data?.candidates?.[0]?.content?.parts?.[0]?.text) throw new Error('Google returned an empty response');
+  if (!res.ok) throwApiError('Google', res.status);
+  const data = await parseJsonResponse(res);
+  if (!isGoogleResponse(data) || !data.candidates[0]?.content.parts[0]?.text) {
+    throw new AiRequestError('invalid_response');
+  }
   const finishReason = data.candidates[0].finishReason;
   if (finishReason === 'MAX_TOKENS') {
     throw new TruncationError('Google response was truncated (MAX_TOKENS reached)');
@@ -183,9 +265,11 @@ async function callOpenAI(config: ProviderConfig, messages: ChatMessage[]): Prom
     body: JSON.stringify({ model: config.model, messages, temperature: 0.7, max_tokens: 16384 }),
   });
 
-  if (!res.ok) throwApiError('API', res.status, await res.text());
-  const data = await res.json();
-  if (!data?.choices?.[0]?.message?.content) throw new Error('API returned an empty response');
+  if (!res.ok) throwApiError('API', res.status);
+  const data = await parseJsonResponse(res);
+  if (!isOpenAIResponse(data) || !data.choices[0]?.message.content) {
+    throw new AiRequestError('invalid_response');
+  }
   if (data.choices[0].finish_reason === 'length') {
     throw new TruncationError('API response was truncated (max_tokens reached)');
   }

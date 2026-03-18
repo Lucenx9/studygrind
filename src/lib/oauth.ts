@@ -1,5 +1,6 @@
 // OAuth 2.0 PKCE flow for browser-based authentication
 // Client IDs are configurable — users need to register their own OAuth apps
+import { isRecord } from './validation';
 
 interface OAuthEndpoints {
   authorize: string;
@@ -30,6 +31,7 @@ const ENDPOINTS: Record<string, OAuthEndpoints> = {
 };
 
 const OAUTH_SESSION_KEYS = ['oauth_verifier', 'oauth_state', 'oauth_provider'] as const;
+const OAUTH_TIMEOUT_MS = 30_000;
 
 function generateCodeVerifier(): string {
   const array = new Uint8Array(32);
@@ -50,6 +52,49 @@ async function generateCodeChallenge(verifier: string): Promise<string> {
     .replace(/=/g, '');
 }
 
+async function fetchWithTimeout(url: string, options: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), OAUTH_TIMEOUT_MS);
+
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function persistOAuthSession(
+  provider: 'openai' | 'google' | 'anthropic',
+  verifier: string,
+  state: string,
+): void {
+  try {
+    sessionStorage.setItem('oauth_verifier', verifier);
+    sessionStorage.setItem('oauth_state', state);
+    sessionStorage.setItem('oauth_provider', provider);
+  } catch {
+    clearOAuthSession();
+    throw new Error('Unable to start OAuth because session storage is unavailable.');
+  }
+}
+
+function parseTokenResponse(value: unknown): { accessToken: string; expiresAt: string; email?: string } | null {
+  if (
+    !isRecord(value) ||
+    typeof value.access_token !== 'string' ||
+    typeof value.expires_in !== 'number' ||
+    !Number.isFinite(value.expires_in)
+  ) {
+    return null;
+  }
+
+  return {
+    accessToken: value.access_token,
+    expiresAt: new Date(Date.now() + value.expires_in * 1000).toISOString(),
+    email: typeof value.email === 'string' ? value.email : undefined,
+  };
+}
+
 export async function startOAuthFlow(
   provider: 'openai' | 'google' | 'anthropic',
 ): Promise<{ accessToken: string; expiresAt: string; email?: string }> {
@@ -66,10 +111,7 @@ export async function startOAuthFlow(
   const redirectUri = `${window.location.origin}/oauth/callback`;
   const state = crypto.randomUUID();
 
-  // Store verifier for the callback
-  sessionStorage.setItem('oauth_verifier', verifier);
-  sessionStorage.setItem('oauth_state', state);
-  sessionStorage.setItem('oauth_provider', provider);
+  persistOAuthSession(provider, verifier, state);
 
   const params = new URLSearchParams({
     response_type: 'code',
@@ -138,7 +180,7 @@ export async function startOAuthFlow(
       }
 
       try {
-        const tokenRes = await fetch(endpoints.token, {
+        const tokenRes = await fetchWithTimeout(endpoints.token, {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: new URLSearchParams({
@@ -154,12 +196,15 @@ export async function startOAuthFlow(
           throw new Error(`Token exchange failed: ${tokenRes.status}`);
         }
 
-        const tokens = await tokenRes.json();
-        const expiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString();
+        const rawTokens = (await tokenRes.json()) as unknown;
+        const tokens = parseTokenResponse(rawTokens);
+        if (!tokens) {
+          throw new Error('OAuth token response was invalid.');
+        }
 
         finish(() => resolve({
-          accessToken: tokens.access_token,
-          expiresAt,
+          accessToken: tokens.accessToken,
+          expiresAt: tokens.expiresAt,
           email: tokens.email,
         }));
       } catch (err) {
@@ -173,16 +218,20 @@ export async function startOAuthFlow(
 
 function clearOAuthSession(): void {
   for (const key of OAUTH_SESSION_KEYS) {
-    sessionStorage.removeItem(key);
+    try {
+      sessionStorage.removeItem(key);
+    } catch {
+      // ignore sessionStorage cleanup failures
+    }
   }
 }
 
 function isOAuthCallbackMessage(
   value: unknown,
 ): value is { type: 'oauth_callback'; code?: string; state?: string; error?: string } {
-  if (!value || typeof value !== 'object') return false;
+  if (!isRecord(value)) return false;
 
-  const candidate = value as Record<string, unknown>;
+  const candidate = value;
   return (
     candidate.type === 'oauth_callback' &&
     (candidate.code === undefined || typeof candidate.code === 'string') &&

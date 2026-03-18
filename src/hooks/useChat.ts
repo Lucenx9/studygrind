@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import type { ChatMessage, ChatHistory, Question, Settings } from '@/lib/types';
 import { t } from '@/lib/i18n';
 import { getChatHistory, saveChatHistory } from '@/lib/storage';
-import { chatCompletion } from '@/lib/ai';
+import { chatCompletion, AiRequestError, TruncationError } from '@/lib/ai';
 
 export const MAX_MESSAGES = 20;
 export const WARN_THRESHOLD = 4;
@@ -166,9 +166,15 @@ export function useChat(settings: Settings) {
       saveChatHistory(finalHistory);
     } catch (err) {
       const fallbackMessage = t('chat.replyError', settings.language);
+      const detail =
+        err instanceof TruncationError
+          ? t('error.responseTruncated', settings.language)
+          : err instanceof AiRequestError
+            ? getAiErrorMessage(err, settings.language)
+            : t('error.invalidResponse', settings.language);
       const errorMsg: ChatMessage = {
         role: 'assistant',
-        content: err instanceof Error && err.message ? `${fallbackMessage}\n\n${err.message}` : fallbackMessage,
+        content: `${fallbackMessage}\n\n${detail}`,
         timestamp: new Date().toISOString(),
       };
       const errorHistory: ChatHistory = {
@@ -205,4 +211,23 @@ export function useChat(settings: Settings) {
     canSendMore: messageCount < MAX_MESSAGES,
     messagesRemaining: MAX_MESSAGES - messageCount,
   };
+}
+
+function getAiErrorMessage(error: AiRequestError, language: Settings['language']): string {
+  switch (error.code) {
+    case 'auth':
+      return t('error.invalidCredentials', language);
+    case 'rate_limit':
+      return t('error.rateLimited', language);
+    case 'server':
+      return t('error.serverUnavailable', language);
+    case 'timeout':
+      return t('error.requestTimedOut', language);
+    case 'network':
+      return t('error.network', language);
+    case 'request':
+      return t('error.requestFailed', language);
+    case 'invalid_response':
+      return t('error.invalidResponse', language);
+  }
 }

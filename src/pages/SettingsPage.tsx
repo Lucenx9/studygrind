@@ -158,8 +158,14 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
 
   const handleClearAll = () => {
     clearAllData();
-    localStorage.removeItem('studygrind_onboarding_done');
-    localStorage.removeItem('studygrind_active_session');
+    try {
+      localStorage.removeItem('studygrind_onboarding_done');
+      localStorage.removeItem('studygrind_active_session');
+    } catch {
+      window.dispatchEvent(new CustomEvent('studygrind:storage-error', {
+        detail: { message: 'Unable to clear all local data.' },
+      }));
+    }
     setClearDialogOpen(false);
     window.location.reload();
   };
@@ -346,8 +352,8 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
                   <div className="space-y-2">
                     <Label>{t('settings.provider', lang)}</Label>
                     <Select value={directProvider} onValueChange={(v: string | null) => {
-                      if (!v) return;
-                      setDirectProvider(v as DirectProvider);
+                      if (v !== 'openai' && v !== 'anthropic' && v !== 'google') return;
+                      setDirectProvider(v);
                       setDirectModel('');
                       setDirectModels([]);
                     }}>
@@ -444,7 +450,10 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
                         <Label>{t('settings.language', lang)}</Label>
                         <p className="text-xs leading-5 text-muted-foreground">{t('settings.languageDescLong', lang)}</p>
                       </div>
-                      <Select value={settings.language} onValueChange={(v: string | null) => { if (v) onUpdate({ language: v as 'it' | 'en' }); }}>
+                      <Select value={settings.language} onValueChange={(v: string | null) => {
+                        if (v !== 'it' && v !== 'en') return;
+                        onUpdate({ language: v });
+                      }}>
                         <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="it">Italiano</SelectItem>

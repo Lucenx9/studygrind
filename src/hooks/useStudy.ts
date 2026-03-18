@@ -64,7 +64,7 @@ export function useStudy() {
       newResults[prev.currentIndex] = correct ? 'correct' : 'wrong';
       return {
         ...prev,
-        phase: 'feedback' as StudyPhase,
+        phase: 'feedback',
         userAnswer: answer,
         isCorrect: correct,
         results: newResults,
@@ -93,7 +93,7 @@ export function useStudy() {
       return {
         ...prev,
         currentIndex: next,
-        phase: isLast ? 'idle' as StudyPhase : 'question' as StudyPhase,
+        phase: isLast ? 'idle' : 'question',
         userAnswer: null,
         isCorrect: null,
       };

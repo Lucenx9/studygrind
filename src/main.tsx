@@ -12,7 +12,12 @@ async function bootstrap() {
     console.error('Storage initialization failed, continuing with in-memory fallbacks.', error)
   }
 
-  createRoot(document.getElementById('root')!).render(
+  const rootElement = document.getElementById('root')
+  if (!rootElement) {
+    throw new Error('Root element not found.')
+  }
+
+  createRoot(rootElement).render(
     <StrictMode>
       <App />
     </StrictMode>,

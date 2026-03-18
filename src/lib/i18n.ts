@@ -262,8 +262,21 @@ const translations = {
   'common.preparingStudyFlow': { it: 'Sto preparando il tuo flusso di studio...', en: 'Preparing your study flow...' },
   'common.unexpectedError': { it: 'Si è verificato un errore imprevisto.', en: 'An unexpected error occurred.' },
   'common.reloadApp': { it: 'Ricarica l’app', en: 'Reload app' },
+  'common.storageFull': { it: 'Lo spazio locale è pieno o non disponibile. Esporta i dati come backup.', en: 'Local storage is full or unavailable. Export your data as a backup.' },
+  'common.offlineReady': { it: 'App pronta per l’uso offline', en: 'App ready for offline use' },
+  'common.updateAvailable': { it: 'Nuova versione disponibile', en: 'A new version is available' },
+  'common.update': { it: 'Aggiorna', en: 'Update' },
   'common.appTagline': { it: 'Ripasso con FSRS e AI', en: 'FSRS and AI-powered study' },
   'common.unknown': { it: 'Sconosciuto', en: 'Unknown' },
+  'error.invalidCredentials': { it: 'Credenziali non valide o accesso negato.', en: 'Invalid credentials or access denied.' },
+  'error.rateLimited': { it: 'Limite di richieste raggiunto. Attendi un momento e riprova.', en: 'Rate limit reached. Wait a moment and try again.' },
+  'error.serverUnavailable': { it: 'Il provider è temporaneamente non disponibile. Riprova più tardi.', en: 'The provider is temporarily unavailable. Try again later.' },
+  'error.requestTimedOut': { it: 'La richiesta ha impiegato troppo tempo. Riprova.', en: 'The request took too long. Please try again.' },
+  'error.network': { it: 'Errore di rete. Controlla la connessione e riprova.', en: 'Network error. Check your connection and try again.' },
+  'error.requestFailed': { it: 'Il provider ha rifiutato la richiesta. Controlla il modello selezionato e riprova.', en: 'The provider rejected the request. Check the selected model and try again.' },
+  'error.invalidResponse': { it: 'Il provider ha restituito una risposta non valida o incompleta.', en: 'The provider returned an invalid or incomplete response.' },
+  'error.responseTruncated': { it: 'La risposta del provider è stata troncata. Riduci la richiesta e riprova.', en: 'The provider response was truncated. Reduce the request and try again.' },
+  'upload.generationFailed': { it: 'Impossibile generare le domande in questo momento. Controlla il provider e riprova.', en: 'Could not generate questions right now. Check your provider and try again.' },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

@@ -36,6 +36,7 @@ export function Sidebar({ currentPage, onNavigate, dueCount, language }: Sidebar
         </div>
 
         <button
+          type="button"
           onClick={() => onNavigate('review')}
           className="mb-4 rounded-[20px] border border-primary/12 bg-primary/6 px-4 py-4 text-left transition-colors hover:bg-primary/8"
         >
@@ -57,6 +58,7 @@ export function Sidebar({ currentPage, onNavigate, dueCount, language }: Sidebar
           {NAV_KEYS.map(({ page, key, icon: Icon }) => (
             <button
               key={page}
+              type="button"
               onClick={() => onNavigate(page)}
               aria-current={currentPage === page ? 'page' : undefined}
               className={cn(
@@ -93,6 +95,7 @@ export function Sidebar({ currentPage, onNavigate, dueCount, language }: Sidebar
           {NAV_KEYS.map(({ page, key, icon: Icon }) => (
             <button
               key={page}
+              type="button"
               onClick={() => onNavigate(page)}
               aria-current={currentPage === page ? 'page' : undefined}
               className={cn(

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Eye, EyeOff } from 'lucide-react';
@@ -12,11 +12,12 @@ interface NotesEditorProps {
 
 export function NotesEditor({ value, onChange, language }: NotesEditorProps) {
   const [preview, setPreview] = useState(false);
+  const notesId = useId();
 
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <label className="text-sm font-medium">{t('upload.studyNotes', language)}</label>
+        <label htmlFor={notesId} className="text-sm font-medium">{t('upload.studyNotes', language)}</label>
         <Button
           variant="ghost"
           size="sm"
@@ -33,6 +34,7 @@ export function NotesEditor({ value, onChange, language }: NotesEditorProps) {
         </div>
       ) : (
         <Textarea
+          id={notesId}
           value={value}
           onChange={e => onChange(e.target.value)}
           placeholder={t('upload.pasteNotes', language)}

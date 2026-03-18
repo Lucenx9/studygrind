@@ -6,6 +6,7 @@ import type { Grade } from '@/lib/fsrs';
 import { getQuestions, updateQuestion, saveSession, recordActivity } from '@/lib/storage';
 import { toDateKey } from '@/lib/utils';
 import { v4 as uuid } from 'uuid';
+import { isRecord } from '@/lib/validation';
 
 const SESSION_KEY = 'studygrind_active_session';
 const MAX_UNDO_STACK = 50;
@@ -28,32 +29,38 @@ function saveActiveSession(data: SavedSession | null): void {
     else localStorage.removeItem(SESSION_KEY);
   } catch (error) {
     console.error('Unable to persist the active review session.', error);
+    window.dispatchEvent(new CustomEvent('studygrind:storage-error', {
+      detail: { message: 'Unable to persist the active review session.' },
+    }));
   }
 }
 
 function parseSavedSession(raw: unknown): SavedSession | null {
-  if (!raw || typeof raw !== 'object') return null;
+  if (!isRecord(raw)) return null;
 
-  const candidate = raw as Record<string, unknown>;
-  const questionIds = Array.isArray(candidate.questionIds)
-    ? candidate.questionIds.filter((id): id is string => typeof id === 'string')
+  const candidate = raw;
+  const questionIdsRaw = Array.isArray(candidate.questionIds) ? candidate.questionIds : null;
+  const resultsRaw = Array.isArray(candidate.results) ? candidate.results : null;
+  const ratingsRaw = Array.isArray(candidate.ratings) ? candidate.ratings : null;
+  const questionIds = questionIdsRaw
+    ? questionIdsRaw.filter((id): id is string => typeof id === 'string')
     : null;
-  const results = Array.isArray(candidate.results)
-    ? candidate.results.filter(
+  const results = resultsRaw
+    ? resultsRaw.filter(
         (result): result is QuestionResult =>
           result === 'correct' || result === 'wrong' || result === null,
       )
     : null;
-  const ratings = Array.isArray(candidate.ratings)
-    ? candidate.ratings.filter(
+  const ratings = ratingsRaw
+    ? ratingsRaw.filter(
         (
           rating,
         ): rating is ReviewState['ratings'][number] =>
           !!rating &&
-          typeof rating === 'object' &&
-          typeof (rating as Record<string, unknown>).questionId === 'string' &&
-          typeof (rating as Record<string, unknown>).correct === 'boolean' &&
-          [1, 2, 3, 4].includes((rating as Record<string, unknown>).rating as number),
+          isRecord(rating) &&
+          typeof rating.questionId === 'string' &&
+          typeof rating.correct === 'boolean' &&
+          (rating.rating === 1 || rating.rating === 2 || rating.rating === 3 || rating.rating === 4),
       )
     : null;
 
@@ -61,9 +68,12 @@ function parseSavedSession(raw: unknown): SavedSession | null {
     !questionIds ||
     !results ||
     !ratings ||
-    questionIds.length !== (candidate.questionIds as unknown[]).length ||
-    results.length !== (candidate.results as unknown[]).length ||
-    ratings.length !== (candidate.ratings as unknown[]).length ||
+    questionIdsRaw === null ||
+    resultsRaw === null ||
+    ratingsRaw === null ||
+    questionIds.length !== questionIdsRaw.length ||
+    results.length !== resultsRaw.length ||
+    ratings.length !== ratingsRaw.length ||
     typeof candidate.currentIndex !== 'number' ||
     !Number.isInteger(candidate.currentIndex) ||
     candidate.currentIndex < 0 ||
@@ -172,7 +182,8 @@ export function useReview() {
       if (validSet.size > 0) {
         const savedQuestions = saved.questionIds
           .filter(id => validSet.has(id))
-          .map(id => questionMap.get(id)!);
+          .map(id => questionMap.get(id))
+          .filter((question): question is Question => question !== undefined);
 
         let newIndex = saved.currentIndex;
         let newResults = saved.results;
@@ -287,7 +298,7 @@ export function useReview() {
 
       return {
         ...prev,
-        phase: 'feedback' as ReviewPhase,
+        phase: 'feedback',
         userAnswer: answer,
         isCorrect: correct,
         correctCount: nextCorrectCount,
@@ -372,7 +383,7 @@ export function useReview() {
       return {
         ...prev,
         ratings: newRatings,
-        phase: isLast ? 'summary' as ReviewPhase : 'question' as ReviewPhase,
+        phase: isLast ? 'summary' : 'question',
         currentIndex: nextIndex,
         userAnswer: null,
         isCorrect: null,

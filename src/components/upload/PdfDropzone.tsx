@@ -119,8 +119,11 @@ export function PdfDropzone({ onExtracted, language }: PdfDropzoneProps) {
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      {warnings.map((warning, i) => (
-        <div key={i} className="flex items-start gap-2 rounded-[18px] bg-yellow-500/10 p-3 text-sm">
+      {warnings.map((warning) => (
+        <div
+          key={warning.type === 'page-limit' ? `page-limit:${warning.maxPages}:${warning.totalPages}` : warning.type}
+          className="flex items-start gap-2 rounded-[18px] bg-yellow-500/10 p-3 text-sm"
+        >
           <AlertTriangle className="h-4 w-4 shrink-0 text-yellow-600 dark:text-yellow-400 mt-0.5" />
           <p className="text-yellow-700 dark:text-yellow-300">
             {warning.type === 'page-limit'

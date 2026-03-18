@@ -7,8 +7,8 @@ import { NotesEditor } from '@/components/upload/NotesEditor';
 import { PdfDropzone } from '@/components/upload/PdfDropzone';
 import { TopicForm } from '@/components/upload/TopicForm';
 import { QuestionPreview } from '@/components/upload/QuestionPreview';
-import { chatCompletion, buildQuizPrompt, TruncationError } from '@/lib/ai';
-import { parseQuizResponse } from '@/lib/quiz-parser';
+import { chatCompletion, buildQuizPrompt, TruncationError, AiRequestError } from '@/lib/ai';
+import { parseQuizResponse, QuizParseError } from '@/lib/quiz-parser';
 import { saveQuestions, saveTopic, getQuestionsByTopic } from '@/lib/storage';
 import { useTopics } from '@/hooks/useTopics';
 import { t } from '@/lib/i18n';
@@ -106,7 +106,7 @@ export function UploadPage({ settings }: UploadPageProps) {
       setGeneratedQuestions(questions);
     } catch (err) {
       if (!isMountedRef.current) return;
-      setError(err instanceof Error ? err.message : 'Failed');
+      setError(getGenerationErrorMessage(err, lang));
     } finally {
       if (isMountedRef.current) {
         setGenerating(false);
@@ -255,4 +255,35 @@ export function UploadPage({ settings }: UploadPageProps) {
       )}
     </div>
   );
+}
+
+function getGenerationErrorMessage(error: unknown, language: Settings['language']): string {
+  if (error instanceof TruncationError) {
+    return t('error.responseTruncated', language);
+  }
+
+  if (error instanceof QuizParseError) {
+    return t('error.invalidResponse', language);
+  }
+
+  if (error instanceof AiRequestError) {
+    switch (error.code) {
+      case 'auth':
+        return t('error.invalidCredentials', language);
+      case 'rate_limit':
+        return t('error.rateLimited', language);
+      case 'server':
+        return t('error.serverUnavailable', language);
+      case 'timeout':
+        return t('error.requestTimedOut', language);
+      case 'network':
+        return t('error.network', language);
+      case 'request':
+        return t('error.requestFailed', language);
+      case 'invalid_response':
+        return t('error.invalidResponse', language);
+    }
+  }
+
+  return t('upload.generationFailed', language);
 }

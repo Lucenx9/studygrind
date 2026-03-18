@@ -1,6 +1,7 @@
 import { v4 as uuid } from 'uuid';
 import { createNewCard } from './fsrs';
 import type { Question, QuestionRaw } from './types';
+import { isRecord } from './validation';
 
 type QuestionCandidate = Partial<QuestionRaw> & {
   acceptableAnswers?: unknown;
@@ -13,6 +14,13 @@ type QuestionCandidate = Partial<QuestionRaw> & {
 };
 
 const OPTION_PREFIX_RE = /^[[(]?(?:[A-D]|[1-4])(?:[.):\]])?\s*/i;
+
+export class QuizParseError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'QuizParseError';
+  }
+}
 
 export function parseQuizResponse(raw: string, topicId: string): Question[] {
   let lastError: Error | null = null;
@@ -32,7 +40,7 @@ export function parseQuizResponse(raw: string, topicId: string): Question[] {
     }
   }
 
-  throw lastError ?? new Error('Failed to parse quiz response');
+  throw new QuizParseError(lastError?.message ?? 'Failed to parse quiz response');
 }
 
 function extractQuestionArray(parsed: unknown): unknown[] {
@@ -40,14 +48,13 @@ function extractQuestionArray(parsed: unknown): unknown[] {
     return parsed;
   }
 
-  if (!parsed || typeof parsed !== 'object') {
+  if (!isRecord(parsed)) {
     throw new Error('Response is not an array');
   }
 
-  const record = parsed as Record<string, unknown>;
-  for (const key of ['questions', 'quiz', 'items']) {
-    if (Array.isArray(record[key])) {
-      return record[key];
+  for (const key of ['questions', 'quiz', 'items'] as const) {
+    if (Array.isArray(parsed[key])) {
+      return parsed[key];
     }
   }
 
@@ -165,9 +172,9 @@ function balanceJson(raw: string): string {
 }
 
 function normalizeQuestion(candidate: unknown): QuestionRaw | null {
-  if (!candidate || typeof candidate !== 'object') return null;
+  if (!isRecord(candidate)) return null;
 
-  const raw = candidate as QuestionCandidate;
+  const raw: QuestionCandidate = candidate;
   const questionText = typeof raw.question === 'string' ? raw.question.trim() : '';
   const explanationText = typeof raw.explanation === 'string' ? raw.explanation.trim() : '';
   if (
@@ -268,10 +275,10 @@ function rebalanceCorrectPositions(questions: QuestionRaw[]): QuestionRaw[] {
     const oldPattern = new RegExp(`(?<=^|[\\s(])${oldLetter}(?=[).:,\\s]|$)`, 'g');
     const newPattern = new RegExp(`(?<=^|[\\s(])${newLetter}(?=[).:,\\s]|$)`, 'g');
     // Two-pass swap via placeholder to avoid collision
-    const placeholder = '\x00SWAP\x00';
+    const placeholder = '__STUDYGRIND_SWAP__';
     explanation = explanation.replace(oldPattern, placeholder);
     explanation = explanation.replace(newPattern, swappedLetter);
-    explanation = explanation.replace(new RegExp(placeholder.replace(/\x00/g, '\\x00'), 'g'), newLetter);
+    explanation = explanation.replace(new RegExp(placeholder, 'g'), newLetter);
 
     return { ...q, options: newOptions, correct: targetPos, explanation };
   });

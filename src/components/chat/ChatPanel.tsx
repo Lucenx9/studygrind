@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
@@ -21,23 +21,66 @@ interface ChatPanelProps {
 
 export function ChatPanel({ isOpen, history, loading, canSendMore, messagesRemaining, language, onSend, onClose }: ChatPanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [history?.messages.length, loading]);
+  }, [history?.messages.length, isOpen, loading]);
+
+  useEffect(() => {
+    if (isOpen) {
+      panelRef.current?.focus();
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [isOpen, onClose]);
+
+  const messageKeys = useMemo(() => {
+    const counts = new Map<string, number>();
+
+    return (history?.messages ?? []).map(message => {
+      const baseKey = `${message.role}:${message.timestamp}:${message.content}`;
+      const occurrence = (counts.get(baseKey) ?? 0) + 1;
+      counts.set(baseKey, occurrence);
+      return `${baseKey}:${occurrence}`;
+    });
+  }, [history?.messages]);
 
   return (
     <>
       {isOpen && (
-        <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[1px] md:hidden" onClick={onClose} />
+        <button
+          type="button"
+          aria-label={t('chat.close', language)}
+          className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[1px] md:hidden"
+          onClick={onClose}
+        />
       )}
 
       <div
+        ref={panelRef}
+        tabIndex={-1}
+        role="dialog"
+        inert={!isOpen}
+        aria-modal={isOpen || undefined}
+        aria-hidden={!isOpen}
+        aria-labelledby="chat-panel-title"
         className={cn(
           'fixed right-0 top-0 z-50 flex h-full w-full max-w-full flex-col border-l border-border/65 bg-popover/94 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.8)] backdrop-blur-xl transition-transform duration-300 md:w-[408px]',
-          isOpen ? 'translate-x-0' : 'translate-x-full',
+          isOpen ? 'translate-x-0' : 'translate-x-full pointer-events-none',
         )}
       >
         <div className="flex items-center justify-between border-b border-border/60 px-5 py-4 pt-[max(1rem,env(safe-area-inset-top))]">
@@ -46,7 +89,7 @@ export function ChatPanel({ isOpen, history, loading, canSendMore, messagesRemai
               <MessageCircle className="h-4 w-4" />
             </div>
             <div>
-              <span className="text-sm font-semibold tracking-[-0.01em]">{t('chat.socraticTutor', language)}</span>
+              <span id="chat-panel-title" className="text-sm font-semibold tracking-[-0.01em]">{t('chat.socraticTutor', language)}</span>
               {history && (
                 <div className="text-xs text-muted-foreground">
                   {t('chat.level', language)} {history.socraticLevel}/3
@@ -64,7 +107,7 @@ export function ChatPanel({ isOpen, history, loading, canSendMore, messagesRemai
           </Button>
         </div>
 
-        <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
+        <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5" aria-live="polite" aria-busy={loading}>
           {(!history || history.messages.length === 0) && (
             <div className="rounded-[20px] border border-border/60 bg-background/45 px-5 py-8 text-center text-sm text-muted-foreground">
               <MessageCircle className="mx-auto mb-3 h-8 w-8 opacity-25" />
@@ -73,8 +116,8 @@ export function ChatPanel({ isOpen, history, loading, canSendMore, messagesRemai
             </div>
           )}
 
-          {history?.messages.map((msg, i) => (
-            <ChatMessage key={i} message={msg} />
+          {history?.messages.map((msg, index) => (
+            <ChatMessage key={messageKeys[index]} message={msg} />
           ))}
 
           {loading && (

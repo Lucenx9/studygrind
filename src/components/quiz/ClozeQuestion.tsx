@@ -62,7 +62,7 @@ export function ClozeQuestion({ question, onSubmit, disabled, language = 'it', i
   }, [voice.interim, revealed]);
 
   const handleSubmit = () => {
-    if (!answer.trim() || revealed) return;
+    if (!answer.trim() || revealed || disabled) return;
     const correct = checkClozeAnswer(answer, question.acceptableAnswers);
     setIsCorrect(correct);
     setRevealed(true);
