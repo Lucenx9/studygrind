@@ -57,7 +57,10 @@ export function StudyPage({ settings, onNavigate }: StudyPageProps) {
     const q = study.currentQuestion;
     if (!q || study.isCorrect === null) return;
     const topic = getTopics().find(tp => tp.id === q.topicId);
-    chat.openChat(q, String(study.userAnswer ?? ''), study.isCorrect, topic?.notes ?? '');
+    const answerText = q.type === 'mcq' && typeof study.userAnswer === 'number'
+      ? q.options[study.userAnswer] ?? String(study.userAnswer)
+      : String(study.userAnswer ?? '');
+    chat.openChat(q, answerText, study.isCorrect, topic?.notes ?? '', topic?.name ?? '');
   };
 
   if (topics.length === 0) {

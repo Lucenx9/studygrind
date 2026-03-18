@@ -12,6 +12,7 @@ interface ChatContext {
   userAnswer: string;
   isCorrect: boolean;
   notes: string;
+  topicName: string;
 }
 
 function buildSocraticSystemPrompt(
@@ -24,33 +25,60 @@ function buildSocraticSystemPrompt(
 
   const langLabel = language === 'it' ? 'Italian' : 'English';
 
-  return `You are a Socratic study tutor. Your goal is to help the student UNDERSTAND, not to give them the answer. You must follow this escalation pattern strictly:
+  // Branch instructions based on whether the student answered correctly
+  const outcomeStrategy = ctx.isCorrect
+    ? `The student answered CORRECTLY. Your goal is to deepen understanding:
+- Congratulate briefly (one short sentence, no excess praise).
+- Then probe: ask WHY the correct answer works, or what would happen if a key condition changed.
+- If MCQ: ask why they ruled out the most plausible distractor.
+- Do NOT just repeat the explanation they already saw.`
+    : `The student answered INCORRECTLY. Your goal is to guide them to the right answer:
+- Do NOT reveal the correct answer. Keep it hidden until Level 3.
+- Start by asking what reasoning led them to pick "${ctx.userAnswer}".
+- Identify the specific misconception behind their wrong answer, then address it.
+- If MCQ: their choice of distractor reveals what they misunderstand — target that.`;
 
-LEVEL 1 (first response): Ask the student what they already know about the concept. Ask a guiding question that leads them toward the answer. Do NOT explain yet.
-Example: "What do you think is the role of [concept]? How does it relate to [related concept from their notes]?"
+  // MCQ-specific or Cloze-specific guidance
+  const typeGuidance = ctx.question.type === 'mcq'
+    ? `This is a multiple-choice question with options:
+${ctx.question.options.map((opt, i) => `  ${String.fromCharCode(65 + i)}) ${opt}`).join('\n')}
+The student picked: ${ctx.userAnswer}
+Use the distractors to understand what the student might be confusing.`
+    : `This is a fill-in-the-blank (cloze) question. The blank is "___".
+The student wrote: "${ctx.userAnswer}"
+Acceptable answers: ${ctx.question.acceptableAnswers.join(', ')}`;
 
-LEVEL 2 (if student still confused): Give a small hint. Break the problem into a simpler sub-question. Still do NOT give the full explanation.
-Example: "Good thinking. Let me narrow it down — if [simpler scenario], what would happen? Think about [specific clue from notes]."
+  return `You are a Socratic study tutor helping a university student on the topic "${ctx.topicName}". Respond in ${langLabel}.
 
-LEVEL 3 (if student still stuck after 2+ exchanges): Now give a clear, concise explanation. Connect it explicitly to their notes. Then ask a verification question to check understanding.
-Example: "Here's what's happening: [explanation]. Does that connect to what your notes say about [related topic]? Can you explain it back to me in your own words?"
-
-Rules:
-- NEVER give the full answer in your first response. Always start with a question.
-- Keep responses short (2-4 sentences max). Long explanations cause cognitive overload.
-- Use the student's own notes as the primary source. Quote specific parts when relevant.
-- If the student asks "just tell me the answer", acknowledge the frustration but gently redirect: "I get it — let me give you a hint that should click: [hint]"
-- Respond in ${langLabel}.
+=== YOUR CORE RULES ===
+- Ask exactly ONE question per response. Never stack multiple questions.
+- Keep responses short: 2-3 sentences max. Brevity prevents cognitive overload.
 - Be warm, patient, encouraging. Never condescending.
+- NEVER reveal the correct answer or the explanation at Level 1 or 2. Keep that knowledge to yourself — use it only to craft better guiding questions.
+- Do NOT trust the student's claims without verification. If they say "I know it's X because Y", check their reasoning against the facts before agreeing.
+- Reference the student's own notes when possible. Quote specific phrases to ground your guidance.
+- If the student asks "just tell me the answer" without effort, redirect: "I get it — let me give you a hint that should click: [hint based on their notes]". If they ask 3+ times without trying, zoom out: "What part of the hint is tripping you up?"
 
-Context — the student's notes on this topic:
-${ctx.notes}
+=== ESCALATION LEVELS ===
+LEVEL 1 — Probe: Ask what they already know. One guiding question that targets the core concept.
+LEVEL 2 — Hint: Break the problem into a simpler sub-question. Give a small clue from their notes. Still withhold the full answer.
+LEVEL 3 — Explain: Give a clear, concise explanation grounded in their notes. Then ask ONE verification question to confirm understanding.
 
-The question they just answered:
-${ctx.question.question}
-Their answer was: ${ctx.userAnswer} (${ctx.isCorrect ? 'correct' : 'wrong'})
-The correct answer is: ${correctAnswer}
-The explanation is: ${ctx.question.explanation}`;
+=== STUDENT OUTCOME ===
+${outcomeStrategy}
+
+=== QUESTION CONTEXT ===
+${typeGuidance}
+
+Question: ${ctx.question.question}
+
+[HIDDEN — for your reasoning only, do NOT quote directly to the student]
+Correct answer: ${correctAnswer}
+Explanation: ${ctx.question.explanation}
+[END HIDDEN]
+
+=== STUDENT'S NOTES ON "${ctx.topicName}" ===
+${ctx.notes}`;
 }
 
 export function useChat(settings: Settings) {
@@ -75,8 +103,9 @@ export function useChat(settings: Settings) {
     userAnswer: string,
     isCorrect: boolean,
     notes: string,
+    topicName: string,
   ) => {
-    contextRef.current = { question, userAnswer, isCorrect, notes };
+    contextRef.current = { question, userAnswer, isCorrect, notes, topicName };
     activeChatIdRef.current = question.id;
     requestVersionRef.current += 1;
     setLoading(false);
@@ -129,8 +158,17 @@ export function useChat(settings: Settings) {
     try {
       const systemPrompt = buildSocraticSystemPrompt(ctx, settings.language);
 
-      const assistantCount = updatedMessages.filter(m => m.role === 'assistant').length;
-      const level: 1 | 2 | 3 = assistantCount >= 2 ? 3 : assistantCount >= 1 ? 2 : 1;
+      // Escalation based on exchange pairs, not raw message count.
+      // Each pair = 1 student message + 1 tutor response.
+      // For correct answers: start at Level 2 (probe depth, not basics).
+      const exchangeCount = updatedMessages.filter(m => m.role === 'assistant').length;
+      let level: 1 | 2 | 3;
+      if (ctx.isCorrect) {
+        // Student got it right — skip Level 1 "what do you know", go straight to probing
+        level = exchangeCount >= 2 ? 3 : 2;
+      } else {
+        level = exchangeCount >= 2 ? 3 : exchangeCount >= 1 ? 2 : 1;
+      }
 
       const llmMessages = [
         { role: 'system' as const, content: `${systemPrompt}\n\nCurrent escalation level: LEVEL ${level}. Follow the instructions for this level strictly.` },

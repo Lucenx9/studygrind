@@ -60,7 +60,11 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
     const q = review.currentQuestion;
     if (!q || review.isCorrect === null) return;
     const topic = getTopics().find(t => t.id === q.topicId);
-    chat.openChat(q, String(review.userAnswer ?? ''), review.isCorrect, topic?.notes ?? '');
+    // For MCQ, pass the actual option text instead of the numeric index
+    const answerText = q.type === 'mcq' && typeof review.userAnswer === 'number'
+      ? q.options[review.userAnswer] ?? String(review.userAnswer)
+      : String(review.userAnswer ?? '');
+    chat.openChat(q, answerText, review.isCorrect, topic?.notes ?? '', topic?.name ?? '');
   };
 
   if (review.phase === 'idle') {
