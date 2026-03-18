@@ -161,6 +161,9 @@ export function Sidebar({ currentPage, onNavigate, dueCount, totalDueToday, lang
             <Settings className="h-5 w-5 shrink-0" strokeWidth={1.5} />
             <span className="truncate">{t('nav.settings', language)}</span>
           </button>
+          <p className="mt-3 px-3 text-center text-[10px] text-muted-foreground/50">
+            {language === 'it' ? 'Premi ? per le scorciatoie' : 'Press ? for shortcuts'}
+          </p>
         </div>
       </aside>
 

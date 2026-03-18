@@ -1,7 +1,8 @@
-import { lazy, Suspense, useState, useEffect, Component } from 'react';
+import { lazy, Suspense, useState, useEffect, useCallback, Component } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import type { Page } from '@/components/layout/Sidebar';
+import { KeyboardHelp } from '@/components/layout/KeyboardHelp';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
@@ -86,6 +87,22 @@ export default function App() {
   const [dueCount, setDueCount] = useState(0);
   const [totalDueToday, setTotalDueToday] = useState(0);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        setShowKeyboardHelp((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
+  const closeKeyboardHelp = useCallback(() => setShowKeyboardHelp(false), []);
 
   // Sync <html lang> attribute when language changes (WCAG, screen readers)
   useEffect(() => {
@@ -179,6 +196,7 @@ export default function App() {
           )}
         </Suspense>
         <ReloadPrompt language={settings.language} />
+        {showKeyboardHelp && <KeyboardHelp language={settings.language} onClose={closeKeyboardHelp} />}
       </AppErrorBoundary>
     </Layout>
   );
