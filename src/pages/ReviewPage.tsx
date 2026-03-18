@@ -169,6 +169,10 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
 
   return (
     <div className={cn('mx-auto max-w-[860px]', chat.isOpen && 'xl:mr-[396px]')}>
+      {/* Screen reader announcement for question transitions (WCAG 4.1.3) */}
+      <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+        {t('review.questionOf', lang).replace('{current}', String(review.currentIndex + 1)).replace('{total}', String(review.dueQuestions.length))}
+      </div>
       <div className="sticky top-0 z-20 mb-6 rounded-[20px] border border-border/65 bg-background/82 px-4 py-4 shadow-[0_18px_40px_-34px_rgba(15,23,42,0.72)] backdrop-blur-xl">
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-2">

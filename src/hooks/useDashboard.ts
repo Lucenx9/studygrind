@@ -79,18 +79,25 @@ export function useDashboard() {
         totalReviewed.reduce((sum, q) => sum + q.timesReviewed, 0)
       : 0;
 
-    // Study streak
-    const sortedDates = [...new Set(activities.map(a => a.date))].sort().reverse();
+    // Study streak — Duolingo-style: streak persists through today even if
+    // the user hasn't studied yet. It only breaks if yesterday was missed.
+    // We start checking from today; if today has no activity we try yesterday
+    // as the chain start so the streak doesn't reset mid-day.
+    const activityDates = new Set(activities.map(a => a.date));
     let streak = 0;
     const d = new Date();
-    for (const dateStr of sortedDates) {
-      const expected = toDateKey(d);
-      if (dateStr === expected) {
-        streak++;
-        d.setDate(d.getDate() - 1);
-      } else {
-        break;
-      }
+    const todayStr = toDateKey(d);
+    if (activityDates.has(todayStr)) {
+      // User studied today — count today and walk backwards
+      streak = 1;
+      d.setDate(d.getDate() - 1);
+    } else {
+      // No study today yet — start checking from yesterday
+      d.setDate(d.getDate() - 1);
+    }
+    while (activityDates.has(toDateKey(d))) {
+      streak++;
+      d.setDate(d.getDate() - 1);
     }
 
     // Weakest topics (sorted by accuracy, then by again count)

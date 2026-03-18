@@ -265,19 +265,21 @@ function rebalanceCorrectPositions(questions: QuestionRaw[]): QuestionRaw[] {
     newOptions[q.correct] = newOptions[targetPos];
     newOptions[targetPos] = correctText;
 
-    // Update letter references in explanation to match new positions
+    // Update letter references in explanation to match new positions.
+    // Uses capture-group approach instead of lookbehind for Safari < 16.4 compat.
     const oldLetter = String.fromCharCode(65 + q.correct); // e.g. "B"
     const newLetter = String.fromCharCode(65 + targetPos); // e.g. "D"
     const swappedLetter = String.fromCharCode(65 + q.correct); // letter that moved to old position
     let explanation = q.explanation;
-    // Replace "B is correct" → "D is correct", "B)" → "D)", etc.
-    // Use word-boundary-aware replacement to avoid mangling words like "Both"
-    const oldPattern = new RegExp(`(?<=^|[\\s(])${oldLetter}(?=[).:,\\s]|$)`, 'g');
-    const newPattern = new RegExp(`(?<=^|[\\s(])${newLetter}(?=[).:,\\s]|$)`, 'g');
+    // Match a single letter (A-D) preceded by start-of-string, whitespace, or "("
+    // and followed by ")", ".", ":", ",", whitespace, or end-of-string.
+    // Capture the prefix so we can restore it in the replacement.
+    const oldPattern = new RegExp(`(^|[\\s(])${oldLetter}(?=[).:,\\s]|$)`, 'g');
+    const newPattern = new RegExp(`(^|[\\s(])${newLetter}(?=[).:,\\s]|$)`, 'g');
     // Two-pass swap via placeholder to avoid collision
     const placeholder = '__STUDYGRIND_SWAP__';
-    explanation = explanation.replace(oldPattern, placeholder);
-    explanation = explanation.replace(newPattern, swappedLetter);
+    explanation = explanation.replace(oldPattern, `$1${placeholder}`);
+    explanation = explanation.replace(newPattern, `$1${swappedLetter}`);
     explanation = explanation.replace(new RegExp(placeholder, 'g'), newLetter);
 
     return { ...q, options: newOptions, correct: targetPos, explanation };

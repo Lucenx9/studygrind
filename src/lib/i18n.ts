@@ -21,6 +21,7 @@ const translations = {
   'review.uploadNotes': { it: 'Carica appunti', en: 'Upload notes' },
   'review.undo': { it: 'Annulla ultima valutazione', en: 'Undo last rating' },
   'review.undoShortcut': { it: 'Annulla (Ctrl+Z)', en: 'Undo (Ctrl+Z)' },
+  'review.questionOf': { it: 'Domanda {current} di {total}', en: 'Question {current} of {total}' },
 
   // --- Study page ---
   'study.title': { it: 'Studio', en: 'Study' },

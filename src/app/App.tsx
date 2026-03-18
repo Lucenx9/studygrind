@@ -85,6 +85,11 @@ export default function App() {
   const [dueCount, setDueCount] = useState(0);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
+  // Sync <html lang> attribute when language changes (WCAG, screen readers)
+  useEffect(() => {
+    document.documentElement.lang = settings.language === 'en' ? 'en' : 'it';
+  }, [settings.language]);
+
   useEffect(() => {
     document.title = 'StudyGrind';
 

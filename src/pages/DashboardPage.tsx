@@ -310,6 +310,7 @@ export function DashboardPage({ language: lang, onNavigate }: DashboardPageProps
                 }
 
                 const maxCount = Math.max(...days.map(x => x.count), 1);
+                const totalReviewed = days.reduce((sum, x) => sum + x.count, 0);
                 const colors = ['bg-secondary', 'bg-emerald-200/70 dark:bg-emerald-950', 'bg-emerald-400/75 dark:bg-emerald-700', 'bg-emerald-500 dark:bg-emerald-600', 'bg-emerald-700 dark:bg-emerald-500'];
                 const weekLabels = lang === 'it'
                   ? ['L', 'Ma', 'Me', 'G', 'V', 'S', 'D']
@@ -318,9 +319,13 @@ export function DashboardPage({ language: lang, onNavigate }: DashboardPageProps
                 const weeks: typeof days[] = [];
                 for (let i = 0; i < days.length; i += 7) weeks.push(days.slice(i, i + 7));
 
+                const heatmapLabel = lang === 'it'
+                  ? `Attività degli ultimi 90 giorni: ${totalReviewed} domande revisionate`
+                  : `Study activity over the last 90 days: ${totalReviewed} questions reviewed`;
+
                 return (
-                  <div className="flex gap-[4px]">
-                    <div className="mr-2 flex flex-col gap-[4px]">
+                  <div role="img" aria-label={heatmapLabel} className="flex gap-[4px]">
+                    <div className="mr-2 flex flex-col gap-[4px]" aria-hidden="true">
                       {weekLabels.map((label, index) => (
                         <div key={index} className="flex h-3.5 w-5 items-center justify-end pr-0.5 text-[9px] text-muted-foreground">
                           {label}
