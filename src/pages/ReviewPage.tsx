@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -12,13 +12,19 @@ import { SessionSummary } from '@/components/quiz/SessionSummary';
 import { ChatPanel } from '@/components/chat/ChatPanel';
 import { useReview } from '@/hooks/useReview';
 import { useChat } from '@/hooks/useChat';
-import { BookOpen, PartyPopper, Play, Upload, Undo2 } from 'lucide-react';
+import { BookOpen, Clock3, PartyPopper, Play, Upload, Undo2 } from 'lucide-react';
 import { getQuestions, getTopics } from '@/lib/storage';
 import { getIntervalPreview } from '@/lib/fsrs';
 import type { Grade } from '@/lib/fsrs';
 import { t } from '@/lib/i18n';
 import type { Settings } from '@/lib/types';
 import { cn } from '@/lib/utils';
+
+function formatTimer(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
 
 interface ReviewPageProps {
   onNavigate: (page: 'upload' | 'study' | 'dashboard') => void;
@@ -36,6 +42,30 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
   const phase = review.phase;
   const undo = review.undo;
   const currentIndex = review.currentIndex;
+
+  // Session timer
+  const sessionStart = useRef<number>(0);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  useEffect(() => {
+    if (phase === 'question' && sessionStart.current === 0) {
+      sessionStart.current = Date.now();
+    }
+    if (phase === 'idle' || phase === 'summary') {
+      sessionStart.current = 0;
+      setElapsedSeconds(0);
+    }
+  }, [phase]);
+
+  useEffect(() => {
+    if (phase !== 'question' && phase !== 'feedback') return;
+    const id = setInterval(() => {
+      if (sessionStart.current > 0) {
+        setElapsedSeconds(Math.floor((Date.now() - sessionStart.current) / 1000));
+      }
+    }, 1000);
+    return () => clearInterval(id);
+  }, [phase]);
 
   useEffect(() => { setRetypeComplete(false); }, [currentIndex]);
   useEffect(() => { loadDue(); }, [loadDue]);
@@ -205,7 +235,12 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
   const currentTopic = getTopics().find((topic) => topic.id === question.topicId);
 
   return (
-    <div className={cn('mx-auto max-w-[920px] space-y-6', chat.isOpen && 'xl:mr-[396px]')}>
+    <div className={cn(
+      'mx-auto max-w-[920px] space-y-6',
+      chat.isOpen && 'xl:mr-[396px]',
+      review.phase === 'feedback' && review.isCorrect === true && 'flash-correct',
+      review.phase === 'feedback' && review.isCorrect === false && 'flash-wrong',
+    )}>
       <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
         {t('review.questionOf', lang).replace('{current}', String(review.currentIndex + 1)).replace('{total}', String(review.dueQuestions.length))}
       </div>
@@ -226,9 +261,13 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
               </Button>
             )}
             {currentTopic && <Badge variant="secondary">{currentTopic.name}</Badge>}
-            <Badge variant="outline" className="ml-auto">
+            <Badge variant="outline">
               {question.type === 'mcq' ? t('quiz.multipleChoice', lang) : t('quiz.fillBlank', lang)}
             </Badge>
+            <div className="ml-auto flex items-center gap-1.5 rounded-full border border-[color:var(--sg-border-1)] bg-[color:var(--sg-surface-2)] px-2.5 py-1 text-[12px] tabular-nums text-muted-foreground">
+              <Clock3 className="h-3 w-3" />
+              <span>{formatTimer(elapsedSeconds)}</span>
+            </div>
           </div>
           <ProgressBar
             current={review.currentIndex}

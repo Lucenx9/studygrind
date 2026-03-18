@@ -513,6 +513,18 @@
   animation: questionEnter 0.25s ease-out both;
 }
 
+/* Correct/wrong flash feedback */
+@keyframes correctFlash {
+  0% { background-color: rgba(52, 211, 153, 0.12); }
+  100% { background-color: transparent; }
+}
+@keyframes wrongFlash {
+  0% { background-color: rgba(248, 113, 113, 0.1); }
+  100% { background-color: transparent; }
+}
+.flash-correct { animation: correctFlash 0.5s ease-out; }
+.flash-wrong { animation: wrongFlash 0.5s ease-out; }
+
 /* Accessibility: respect reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-in-up,
@@ -526,7 +538,9 @@
   .animate-stagger-in,
   .animate-progress-fill,
   .animate-question-exit,
-  .animate-question-enter {
+  .animate-question-enter,
+  .flash-correct,
+  .flash-wrong {
     animation: none !important;
   }
 }

@@ -329,7 +329,12 @@ export function StudyPage({ settings, onNavigate }: StudyPageProps) {
       )}
 
       {(study.phase === 'question' || study.phase === 'feedback') && study.currentQuestion && (
-        <div className={cn('mx-auto max-w-[920px] space-y-6', chat.isOpen && 'xl:mr-[396px]')}>
+        <div className={cn(
+          'mx-auto max-w-[920px] space-y-6',
+          chat.isOpen && 'xl:mr-[396px]',
+          study.phase === 'feedback' && study.isCorrect === true && 'flash-correct',
+          study.phase === 'feedback' && study.isCorrect === false && 'flash-wrong',
+        )}>
           <div className="sticky top-3 z-20 rounded-[20px] border border-[color:var(--sg-border-1)] bg-[color:var(--sg-surface-overlay)] px-4 py-4 shadow-[var(--sg-overlay-shadow)] backdrop-blur-2xl">
             <div className="space-y-3">
               <div className="flex flex-wrap items-center gap-2">
