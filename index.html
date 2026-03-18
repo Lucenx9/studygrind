@@ -18,8 +18,22 @@
     <meta name="format-detection" content="telephone=no" />
   </head>
   <body>
-    <!-- Prevent dark mode FOUC with an external script so strict CSPs can allow it. -->
-    <script src="/study/theme-init.js"></script>
+    <script>
+      try {
+        const rawSettings = localStorage.getItem('studygrind_settings');
+        const parsedSettings = rawSettings ? JSON.parse(rawSettings) : null;
+        const theme = parsedSettings && typeof parsedSettings === 'object' ? parsedSettings.theme : null;
+        const language = parsedSettings && typeof parsedSettings === 'object' ? parsedSettings.language : null;
+
+        document.documentElement.lang = language === 'en' ? 'en' : 'it';
+        if (theme !== 'light') {
+          document.documentElement.classList.add('dark');
+        }
+      } catch {
+        document.documentElement.lang = 'it';
+        document.documentElement.classList.add('dark');
+      }
+    </script>
     <noscript>
       <div style="padding:2rem;text-align:center;font-family:system-ui,sans-serif;color:#e2e8f0">
         <h1>StudyGrind</h1>
