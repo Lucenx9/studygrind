@@ -63,7 +63,7 @@ function ActivityChart({
     <div className="space-y-5">
       <div className="flex h-60 items-end gap-3">
         {entries.map((entry, index) => {
-          const height = Math.max((entry.count / max) * 100, entry.count > 0 ? 10 : 4);
+          const height = entry.count > 0 ? Math.max((entry.count / max) * 100, 10) : 0;
           return (
             <div key={entry.date} className="flex flex-1 flex-col items-center gap-3">
               <span className="text-xs font-semibold tabular-nums text-muted-foreground">
@@ -72,12 +72,16 @@ function ActivityChart({
               <div className="relative flex h-44 w-full items-end justify-center rounded-[18px] border border-[color:var(--sg-border-1)] bg-[color:var(--sg-surface-2)]/70 px-1.5 pb-1.5 pt-4">
                 <div className="absolute inset-x-1.5 top-1/2 h-px border-t border-dashed border-[color:var(--sg-border-1)] opacity-60" />
                 <div className="absolute inset-x-1.5 top-1/4 h-px border-t border-dashed border-[color:var(--sg-border-1)] opacity-35" />
-                <div
-                  className={`w-full rounded-[14px] bg-[linear-gradient(180deg,#8b5cf6_0%,#6366f1_100%)] shadow-[0_14px_30px_-18px_rgba(99,102,241,0.72)] transition-[height,filter,transform] duration-700 ease-out ${
-                    entry.isToday ? 'animate-pulse-glow' : ''
-                  }`}
-                  style={{ height: `${height}%`, animationDelay: `${index * 50}ms` }}
-                />
+                {height > 0 ? (
+                  <div
+                    className={`w-full rounded-[14px] bg-[linear-gradient(180deg,#8b5cf6_0%,#6366f1_100%)] shadow-[0_14px_30px_-18px_rgba(99,102,241,0.72)] transition-[height,filter,transform] duration-700 ease-out ${
+                      entry.isToday ? 'animate-pulse-glow' : ''
+                    }`}
+                    style={{ height: `${height}%`, animationDelay: `${index * 50}ms` }}
+                  />
+                ) : (
+                  <div className="absolute left-1/2 top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[color:var(--sg-border-2)]" />
+                )}
               </div>
               <div className="text-center">
                 <p className={`text-[11px] font-semibold uppercase tracking-[0.05em] ${entry.isToday ? 'text-primary' : 'text-muted-foreground'}`}>
@@ -387,19 +391,19 @@ export function DashboardPage({ language: lang, onNavigate }: DashboardPageProps
                         key={date}
                         className={`rounded-2xl border px-3 py-4 text-center transition-all duration-200 ${
                           isToday
-                            ? 'border-[rgba(99,102,241,0.18)] bg-[linear-gradient(180deg,rgba(99,102,241,0.18),rgba(139,92,246,0.08))] text-white animate-pulse-glow'
+                            ? 'border-[rgba(99,102,241,0.18)] ring-1 ring-primary/30 bg-[linear-gradient(180deg,rgba(99,102,241,0.18),rgba(139,92,246,0.08))] animate-pulse-glow'
                             : 'border-[color:var(--sg-border-1)] bg-[color:var(--sg-surface-2)]'
                         }`}
                       >
-                        <p className={`text-[11px] font-semibold uppercase tracking-[0.05em] ${isToday ? 'text-white/70' : 'text-tertiary'}`}>
+                        <p className={`text-[11px] font-semibold uppercase tracking-[0.05em] ${isToday ? 'text-primary-foreground/70' : 'text-tertiary'}`}>
                           {isToday ? t('dash.today', lang) : formatWeekday(day, lang)}
                         </p>
-                        <p className={`mt-2 text-2xl font-semibold tracking-[-0.04em] tabular-nums ${isToday ? 'text-white' : 'text-foreground'}`}>
+                        <p className={`mt-2 text-2xl font-semibold tracking-[-0.04em] tabular-nums ${isToday ? 'text-primary-foreground' : 'text-foreground'}`}>
                           {count}
                         </p>
                         <div className="mt-2 flex items-center justify-center gap-1">
-                          <span className={`h-1.5 w-1.5 rounded-full ${count > 0 ? (isToday ? 'bg-white' : 'bg-primary') : 'bg-transparent'}`} />
-                          <span className={`text-[11px] ${isToday ? 'text-white/72' : 'text-muted-foreground'}`}>
+                          <span className={`h-1.5 w-1.5 rounded-full ${count > 0 ? (isToday ? 'bg-primary-foreground/80' : 'bg-primary') : 'bg-transparent'}`} />
+                          <span className={`text-[11px] ${isToday ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
                             {lang === 'it' ? 'domande' : 'cards'}
                           </span>
                         </div>
