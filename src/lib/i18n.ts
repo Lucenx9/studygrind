@@ -154,6 +154,11 @@ const translations = {
   'dash.acc': { it: 'prec', en: 'acc' },
   'dash.questionsShort': { it: 'Dom', en: 'Qs' },
   'dash.questionsWord': { it: 'domande', en: 'questions' },
+  'dash.morning': { it: 'Buongiorno', en: 'Good morning' },
+  'dash.afternoon': { it: 'Buon pomeriggio', en: 'Good afternoon' },
+  'dash.evening': { it: 'Buonasera', en: 'Good evening' },
+  'dash.questionsInQueue': { it: 'domande in coda', en: 'questions in queue' },
+  'dash.allCaughtUpShort': { it: 'nessun ripasso in coda', en: 'no reviews pending' },
 
   // --- FSRS states ---
   'state.new': { it: 'Nuove', en: 'New' },

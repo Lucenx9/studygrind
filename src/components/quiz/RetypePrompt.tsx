@@ -57,7 +57,7 @@ export function RetypePrompt({ correctAnswer, language, onComplete }: RetypeProm
   };
 
   return (
-    <div className="animate-fade-in-up space-y-3 rounded-[24px] border border-primary/20 bg-primary/6 p-5">
+    <div className="animate-fade-in-up space-y-3 rounded-xl border border-[rgba(99,102,241,0.2)] bg-[rgba(99,102,241,0.05)] p-5">
       <p ref={headingRef} tabIndex={-1} className="text-sm font-medium text-primary outline-none">
         {t('quiz.retypeToContinue', language)}
       </p>

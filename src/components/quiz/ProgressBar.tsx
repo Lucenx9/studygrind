@@ -5,33 +5,38 @@ interface ProgressBarProps {
 }
 
 export function ProgressBar({ current, total, results }: ProgressBarProps) {
-  const currentStep = total > 0 ? Math.min(current + 1, total) : 0;
+  const pct = total > 0 ? Math.min(((current + (results?.[current] ? 1 : 0)) / total) * 100, 100) : 0;
 
   return (
-    <div className="flex items-center gap-4">
-      <div className="flex min-w-0 flex-1 gap-1.5">
+    <div className="space-y-2">
+      {/* Thin gradient bar */}
+      <div className="h-1 w-full overflow-hidden rounded-full bg-[rgba(255,255,255,0.06)]">
+        <div
+          className="h-full rounded-full transition-all duration-600 ease-out"
+          style={{
+            width: `${pct}%`,
+            background: 'linear-gradient(90deg, #6366f1, #8b5cf6)',
+          }}
+        />
+      </div>
+      {/* Segment dots for individual question status */}
+      <div className="flex gap-1">
         {Array.from({ length: total }, (_, i) => {
           const result = results?.[i];
           const isCurrent = i === current;
-          const isPast = i < current;
 
-          let color = 'bg-muted';
-          if (result === 'correct') color = 'bg-green-500';
-          else if (result === 'wrong') color = 'bg-red-400';
-          else if (isCurrent) color = 'bg-primary';
-          else if (isPast) color = 'bg-primary/35';
+          let bg = 'bg-[rgba(255,255,255,0.08)]';
+          if (result === 'correct') bg = 'bg-[#34d399]';
+          else if (result === 'wrong') bg = 'bg-[#f87171]';
+          else if (isCurrent) bg = 'bg-primary';
 
           return (
             <div
               key={i}
-              className={`h-2.5 flex-1 rounded-full transition-[background-color,transform] duration-300 ${color}`}
+              className={`h-1.5 flex-1 rounded-full transition-[background-color] duration-300 ${bg}`}
             />
           );
         })}
-      </div>
-      <div className="rounded-full border border-border/60 bg-background/80 px-3 py-1.5 text-sm font-semibold shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]">
-        <span className="text-primary">{currentStep}</span>
-        <span className="text-muted-foreground"> / {total}</span>
       </div>
     </div>
   );

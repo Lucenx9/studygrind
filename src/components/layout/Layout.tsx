@@ -23,8 +23,8 @@ export function Layout({ currentPage, onNavigate, dueCount, language, children }
       <Toaster
         position="bottom-right"
         toastOptions={{
-          className: 'rounded-[18px] border border-border/75 bg-card/95 text-card-foreground shadow-[0_18px_42px_-30px_rgba(15,23,42,0.68)] backdrop-blur-xl',
-          duration: 3000,
+          className: 'rounded-xl border border-border bg-[rgba(10,10,15,0.92)] text-card-foreground shadow-[0_4px_24px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.06)] backdrop-blur-2xl',
+          duration: 3500,
         }}
       />
     </div>

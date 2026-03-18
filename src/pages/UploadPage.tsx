@@ -36,7 +36,6 @@ export function UploadPage({ settings }: UploadPageProps) {
   const isMountedRef = useRef(true);
   const lang = settings.language;
 
-  // Timer for generation progress — timestamp-based to avoid drift when tab is backgrounded
   const generationStartRef = useRef<number>(0);
   useEffect(() => {
     if (generating) {
@@ -53,9 +52,7 @@ export function UploadPage({ settings }: UploadPageProps) {
   }, [generating]);
 
   useEffect(() => {
-    return () => {
-      isMountedRef.current = false;
-    };
+    return () => { isMountedRef.current = false; };
   }, []);
 
   const buildRetryMessages = (reason: string) => {
@@ -85,7 +82,6 @@ export function UploadPage({ settings }: UploadPageProps) {
 
       for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
         setCurrentAttempt(attempt + 1);
-        // On truncation retry, halve the question count
         const currentMessages = attempt === 0
           ? baseMessages
           : lastError instanceof TruncationError
@@ -127,37 +123,41 @@ export function UploadPage({ settings }: UploadPageProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="animate-fade-in-up space-y-6">
+      {/* ── Header ── */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/12 text-primary">
-            <Upload className="h-6 w-6" />
+        <div>
+          <div className="flex items-center gap-3">
+            <Upload className="h-7 w-7 text-primary" strokeWidth={1.5} />
+            <h1 className="text-[28px] font-bold tracking-[-0.025em]">{t('upload.title', lang)}</h1>
           </div>
-          <div className="space-y-1">
-            <h1 className="text-3xl font-semibold tracking-[-0.03em]">{t('upload.title', lang)}</h1>
-            <p className="max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">{t('upload.subtitle', lang)}</p>
-          </div>
+          <p className="mt-1 text-base text-muted-foreground">{t('upload.subtitle', lang)}</p>
         </div>
-        <Badge variant={settings.provider ? 'default' : 'secondary'} className="w-fit gap-1 self-start sm:self-auto">
+        <Badge
+          variant={settings.provider ? 'default' : 'secondary'}
+          className={`w-fit gap-1.5 self-start sm:self-auto ${settings.provider ? 'sg-btn-accent border-0 text-white' : ''}`}
+        >
+          {settings.provider && <span className="h-2 w-2 rounded-full bg-[#34d399] animate-pulse" />}
           <Sparkles className="h-3.5 w-3.5" />
           {settings.provider ? t('upload.aiReady', lang) : t('upload.aiNeeded', lang)}
         </Badge>
       </div>
 
+      {/* ── Existing topics ── */}
       {topics.length > 0 && (
         <Card>
-          <CardHeader className="border-b border-border/50 pb-4">
-            <CardTitle className="text-lg">{t('upload.manageTopics', lang)}</CardTitle>
+          <CardHeader className="border-b border-border pb-4">
+            <CardTitle className="text-lg font-semibold">{t('upload.manageTopics', lang)}</CardTitle>
             <CardDescription>{t('upload.yourTopics', lang)}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 pt-5">
             {topics.map(topic => {
               const qCount = getQuestionsByTopic(topic.id).length;
               return (
-                <div key={topic.id} className="flex items-center justify-between gap-4 rounded-[18px] border border-border/55 bg-background/45 px-4 py-4">
+                <div key={topic.id} className="flex items-center justify-between gap-4 rounded-xl border border-border bg-[rgba(255,255,255,0.03)] px-4 py-4 transition-all duration-200 hover:border-[rgba(255,255,255,0.12)]">
                   <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-primary/10 text-primary">
-                      <BookOpen className="h-4 w-4" />
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[rgba(99,102,241,0.1)]">
+                      <BookOpen className="h-4 w-4 text-primary" strokeWidth={1.5} />
                     </div>
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold">{topic.name}</p>
@@ -169,7 +169,7 @@ export function UploadPage({ settings }: UploadPageProps) {
                     size="icon-sm"
                     onClick={() => { removeTopic(topic.id); toast(t('upload.topicDeleted', lang)); }}
                     aria-label={t('upload.deleteTopic', lang).replace('{topic}', topic.name)}
-                    className="shrink-0 text-destructive hover:text-destructive"
+                    className="shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -180,31 +180,36 @@ export function UploadPage({ settings }: UploadPageProps) {
         </Card>
       )}
 
+      {/* ── Create / Generate ── */}
       {!generatedQuestions ? (
         <div className="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
+          {/* Left: Topic form + PDF */}
           <Card>
-            <CardHeader className="border-b border-border/50 pb-4">
-              <CardTitle className="text-lg">{t('upload.newTopic', lang)}</CardTitle>
+            <CardHeader className="border-b border-border pb-4">
+              <CardTitle className="text-lg font-semibold">{t('upload.newTopic', lang)}</CardTitle>
               <CardDescription>{t('upload.newTopicDesc', lang)}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6 pt-5">
               <TopicForm topicName={topicName} onTopicNameChange={setTopicName} customInstructions={customInstructions} onCustomInstructionsChange={setCustomInstructions} language={lang} />
-              <div className="rounded-[18px] border border-border/55 bg-background/40 p-4">
+              <div className="rounded-xl border-2 border-dashed border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.02)] p-4 transition-colors hover:border-primary/30 hover:bg-[rgba(99,102,241,0.03)]">
                 <PdfDropzone onExtracted={(text) => setNotes(prev => prev ? `${prev}\n\n${text}` : text)} language={lang} />
               </div>
             </CardContent>
           </Card>
 
+          {/* Right: Notes editor */}
           <Card>
-            <CardHeader className="border-b border-border/50 pb-4">
+            <CardHeader className="border-b border-border pb-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <CardTitle className="text-lg">{t('upload.studyNotes', lang)}</CardTitle>
+                  <CardTitle className="text-lg font-semibold">{t('upload.studyNotes', lang)}</CardTitle>
                   <CardDescription>{t('upload.subtitle', lang)}</CardDescription>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="secondary">{settings.questionsPerGeneration} {t('settings.questionsPerGen', lang).toLowerCase()}</Badge>
-                  <Badge variant={settings.provider ? 'default' : 'secondary'}>{settings.provider ? t('upload.aiReady', lang) : t('upload.aiNeeded', lang)}</Badge>
+                  <Badge variant={settings.provider ? 'default' : 'secondary'} className={settings.provider ? 'sg-btn-accent border-0 text-white' : ''}>
+                    {settings.provider ? t('upload.aiReady', lang) : t('upload.aiNeeded', lang)}
+                  </Badge>
                 </div>
               </div>
             </CardHeader>
@@ -217,14 +222,32 @@ export function UploadPage({ settings }: UploadPageProps) {
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
-              <div className="rounded-[18px] border border-border/55 bg-background/45 p-4">
+              {/* Generate action */}
+              <div className="rounded-xl border border-border bg-[rgba(255,255,255,0.03)] p-4">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="space-y-1">
                     <p className="text-sm font-semibold">{t('upload.generateQuestions', lang)}</p>
                     <p className="text-xs leading-5 text-muted-foreground">{t('upload.generationHelp', lang)}</p>
                   </div>
-                  <Button onClick={handleGenerate} disabled={generating || !notes.trim() || !topicName.trim() || !settings.provider} className="w-full sm:w-auto" size="lg">
-                    {generating ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('upload.generating', lang)} {elapsedSeconds}s{currentAttempt > 1 && <span className="ml-1 text-xs opacity-75">({t('upload.attempt', lang).replace('{current}', String(currentAttempt)).replace('{max}', String(MAX_ATTEMPTS))})</span>}</>) : t('upload.generateQuestions', lang)}
+                  <Button
+                    variant={generating ? 'default' : 'accent'}
+                    onClick={handleGenerate}
+                    disabled={generating || !notes.trim() || !topicName.trim() || !settings.provider}
+                    className={`w-full sm:w-auto gap-2 ${generating ? 'animate-shimmer bg-gradient-to-r from-primary via-[#8b5cf6] to-primary' : ''}`}
+                    size="lg"
+                  >
+                    {generating ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        {t('upload.generating', lang)} {elapsedSeconds}s
+                        {currentAttempt > 1 && <span className="ml-1 text-xs opacity-75">({t('upload.attempt', lang).replace('{current}', String(currentAttempt)).replace('{max}', String(MAX_ATTEMPTS))})</span>}
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4" />
+                        {t('upload.generateQuestions', lang)}
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>
@@ -240,9 +263,9 @@ export function UploadPage({ settings }: UploadPageProps) {
         </div>
       ) : (
         <Card>
-          <CardHeader className="border-b border-border/50 pb-4">
-            <CardTitle className="text-lg flex items-center gap-2">
-              {t('upload.generatedQuestions', lang)} <Badge>{generatedQuestions.length}</Badge>
+          <CardHeader className="border-b border-border pb-4">
+            <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+              {t('upload.generatedQuestions', lang)} <Badge className="sg-btn-accent border-0 text-white">{generatedQuestions.length}</Badge>
             </CardTitle>
             <CardDescription>{t('upload.curateQuestionsDesc', lang)}</CardDescription>
           </CardHeader>

@@ -41,37 +41,52 @@
 }
 
 .dark {
-    --background: oklch(0.176 0.014 260);
-    --foreground: oklch(0.960 0.005 250);
-    --card: oklch(0.214 0.018 260);
-    --card-foreground: oklch(0.960 0.005 250);
-    --popover: oklch(0.22 0.018 260);
-    --popover-foreground: oklch(0.960 0.005 250);
-    --primary: oklch(0.69 0.165 260);
+    /* Premium dark theme — #0a0a0f base with cool blue-violet undertone */
+    --background: oklch(0.085 0.012 275);
+    --foreground: oklch(0.97 0.003 250 / 92%);
+    --card: oklch(1 0 0 / 3%);
+    --card-foreground: oklch(0.97 0.003 250 / 92%);
+    --popover: oklch(0.13 0.015 275);
+    --popover-foreground: oklch(0.97 0.003 250 / 92%);
+    --primary: oklch(0.585 0.22 264);
     --primary-foreground: oklch(1 0 0);
-    --secondary: oklch(0.245 0.018 260);
-    --secondary-foreground: oklch(0.960 0.005 250);
-    --muted: oklch(0.25 0.018 260);
-    --muted-foreground: oklch(0.66 0.018 255);
-    --accent: oklch(0.262 0.022 260);
-    --accent-foreground: oklch(0.960 0.005 250);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0.004 255 / 10%);
-    --input: oklch(1 0.004 255 / 14%);
-    --ring: oklch(0.69 0.165 260);
-    --chart-1: oklch(0.809 0.105 251.813);
-    --chart-2: oklch(0.623 0.214 259.815);
-    --chart-3: oklch(0.546 0.245 262.881);
-    --chart-4: oklch(0.488 0.243 264.376);
-    --chart-5: oklch(0.424 0.199 265.638);
-    --sidebar: oklch(0.19 0.016 260);
-    --sidebar-foreground: oklch(0.960 0.005 250);
-    --sidebar-primary: oklch(0.680 0.190 260);
+    --secondary: oklch(1 0 0 / 5%);
+    --secondary-foreground: oklch(0.97 0.003 250 / 92%);
+    --muted: oklch(1 0 0 / 5%);
+    --muted-foreground: oklch(1 0 0 / 50%);
+    --accent: oklch(1 0 0 / 8%);
+    --accent-foreground: oklch(0.97 0.003 250 / 92%);
+    --destructive: oklch(0.65 0.20 20);
+    --border: oklch(1 0 0 / 6%);
+    --input: oklch(1 0 0 / 8%);
+    --ring: oklch(0.585 0.22 264);
+    --chart-1: oklch(0.585 0.22 264);
+    --chart-2: oklch(0.76 0.17 163);
+    --chart-3: oklch(0.60 0.24 292);
+    --chart-4: oklch(0.83 0.16 84);
+    --chart-5: oklch(0.70 0.13 250);
+    --sidebar: oklch(0.095 0.012 275);
+    --sidebar-foreground: oklch(0.97 0.003 250 / 92%);
+    --sidebar-primary: oklch(0.585 0.22 264);
     --sidebar-primary-foreground: oklch(1 0 0);
-    --sidebar-accent: oklch(0.280 0.025 260);
-    --sidebar-accent-foreground: oklch(0.960 0.005 250);
-    --sidebar-border: oklch(1 0.005 255 / 12%);
-    --sidebar-ring: oklch(0.680 0.190 260);
+    --sidebar-accent: oklch(1 0 0 / 8%);
+    --sidebar-accent-foreground: oklch(0.97 0.003 250 / 92%);
+    --sidebar-border: oklch(1 0 0 / 6%);
+    --sidebar-ring: oklch(0.585 0.22 264);
+
+    /* Extended palette */
+    --sg-success: oklch(0.76 0.17 163);
+    --sg-warning: oklch(0.83 0.16 84);
+    --sg-info: oklch(0.70 0.13 250);
+    --sg-accent-start: oklch(0.585 0.22 264);
+    --sg-accent-end: oklch(0.60 0.24 292);
+    --sg-text-tertiary: oklch(1 0 0 / 35%);
+    --sg-surface-1: oklch(1 0 0 / 3%);
+    --sg-surface-2: oklch(1 0 0 / 5%);
+    --sg-surface-3: oklch(1 0 0 / 8%);
+    --sg-border-1: oklch(1 0 0 / 6%);
+    --sg-border-2: oklch(1 0 0 / 8%);
+    --sg-border-3: oklch(1 0 0 / 12%);
 }
 
 @theme inline {
@@ -107,6 +122,9 @@
     --color-card: var(--card);
     --color-foreground: var(--foreground);
     --color-background: var(--background);
+    --color-sg-success: var(--sg-success);
+    --color-sg-warning: var(--sg-warning);
+    --color-sg-info: var(--sg-info);
     --radius-sm: calc(var(--radius) * 0.6);
     --radius-md: calc(var(--radius) * 0.8);
     --radius-lg: var(--radius);
@@ -139,9 +157,10 @@
 }
 
 .dark body {
+  background-color: oklch(0.085 0.012 275);
   background-image:
-    radial-gradient(circle at top center, oklch(0.62 0.12 262 / 0.11), transparent 36%),
-    radial-gradient(circle at 100% 0%, oklch(0.28 0.028 252 / 0.52), transparent 30%);
+    radial-gradient(ellipse 80% 50% at 50% -2%, oklch(0.585 0.22 264 / 0.07), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 0%, oklch(0.60 0.24 292 / 0.05), transparent);
 }
 
 /* StudyGrind animations */
@@ -208,13 +227,84 @@
 .bounce-dot:nth-child(2) { animation-delay: 0.16s; }
 .bounce-dot:nth-child(3) { animation-delay: 0.32s; }
 
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 var(--sg-accent-start, oklch(0.585 0.22 264 / 0.4)); }
+  50% { box-shadow: 0 0 16px 4px var(--sg-accent-start, oklch(0.585 0.22 264 / 0.15)); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes progressFill {
+  from { width: 0; }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+.animate-slide-down {
+  animation: slideDown 0.3s ease-out both;
+}
+
+.animate-progress-fill {
+  animation: progressFill 0.6s ease-out both;
+}
+
+/* Premium accent gradient for CTAs */
+.sg-btn-accent {
+  background: linear-gradient(135deg, var(--sg-accent-start, #6366f1), var(--sg-accent-end, #8b5cf6));
+  color: white;
+  border: none;
+}
+.sg-btn-accent:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 0 20px oklch(0.585 0.22 264 / 0.3);
+}
+
+/* Custom scrollbar */
+.dark ::-webkit-scrollbar { width: 6px; height: 6px; }
+.dark ::-webkit-scrollbar-track { background: transparent; }
+.dark ::-webkit-scrollbar-thumb { background: oklch(1 0 0 / 15%); border-radius: 3px; }
+.dark ::-webkit-scrollbar-thumb:hover { background: oklch(1 0 0 / 25%); }
+
+/* Text tertiary overline utility */
+.text-tertiary {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--sg-text-tertiary, oklch(1 0 0 / 35%));
+}
+
+/* Card surface utilities with box shadow depth */
+.sg-card-shadow {
+  box-shadow: 0 0 0 1px oklch(1 0 0 / 6%), 0 2px 8px oklch(0 0 0 / 30%);
+}
+
 /* Accessibility: respect reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-in-up,
   .animate-shake,
   .animate-correct-pulse,
   .animate-slide-in-question,
-  .animate-celebrate {
+  .animate-celebrate,
+  .animate-pulse-glow,
+  .animate-shimmer,
+  .animate-slide-down,
+  .animate-progress-fill {
     animation: none !important;
   }
 }

@@ -22,6 +22,8 @@ const buttonVariants = cva(
           "hover:bg-accent/55 hover:text-foreground aria-expanded:bg-accent/55 aria-expanded:text-foreground dark:hover:bg-muted/42",
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/16 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/18 dark:hover:bg-destructive/26 dark:focus-visible:ring-destructive/35",
+        accent:
+          "sg-btn-accent shadow-[0_12px_24px_-18px_oklch(0.585_0.22_264_/_0.5)] hover:shadow-[0_16px_28px_-14px_oklch(0.585_0.22_264_/_0.4)]",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {

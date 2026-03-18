@@ -15,7 +15,7 @@ import { ChatPanel } from '@/components/chat/ChatPanel';
 import { useStudy } from '@/hooks/useStudy';
 import { useTopics } from '@/hooks/useTopics';
 import { useChat } from '@/hooks/useChat';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, Upload, Play } from 'lucide-react';
 import { getTopics } from '@/lib/storage';
 import { getIntervalPreview } from '@/lib/fsrs';
 import { t } from '@/lib/i18n';
@@ -63,20 +63,28 @@ export function StudyPage({ settings, onNavigate }: StudyPageProps) {
     chat.openChat(q, answerText, study.isCorrect, topic?.notes ?? '', topic?.name ?? '');
   };
 
+  /* ── Empty state ── */
   if (topics.length === 0) {
     return (
-      <div className="flex min-h-[68vh] items-center justify-center">
+      <div className="flex min-h-[68vh] items-center justify-center animate-fade-in-up">
         <Card className="w-full max-w-2xl text-center">
-          <CardContent className="flex flex-col items-center gap-5 px-6 py-10 sm:px-10">
-            <div className="flex h-20 w-20 items-center justify-center rounded-[28px] bg-primary/10 text-primary">
-              <BookOpen className="h-10 w-10" />
+          <CardContent className="flex flex-col items-center gap-6 px-6 py-14 sm:px-10">
+            <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[rgba(99,102,241,0.1)]">
+              <BookOpen className="h-10 w-10 text-primary" strokeWidth={1.5} />
             </div>
-            <div className="space-y-3">
-              <h2 className="text-3xl font-semibold tracking-[-0.03em]">{t('study.noTopicsYet', lang)}</h2>
-              <p className="mx-auto max-w-xl text-sm leading-7 text-muted-foreground sm:text-base">{t('study.noTopicsDesc', lang)}</p>
+            <div className="space-y-2">
+              <h2 className="text-[28px] font-bold tracking-[-0.025em]">
+                {lang === 'it' ? 'Inizia il tuo percorso' : 'Start your journey'}
+              </h2>
+              <p className="mx-auto max-w-md text-base leading-7 text-muted-foreground">
+                {lang === 'it'
+                  ? 'Carica i tuoi appunti e genera domande con l\'AI'
+                  : 'Upload your notes and generate questions with AI'}
+              </p>
             </div>
             {onNavigate && (
-              <Button size="lg" onClick={() => onNavigate('upload')}>
+              <Button variant="accent" size="lg" onClick={() => onNavigate('upload')} className="gap-2">
+                <Upload className="h-4 w-4" />
                 {t('study.uploadNotes', lang)}
               </Button>
             )}
@@ -87,19 +95,14 @@ export function StudyPage({ settings, onNavigate }: StudyPageProps) {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-4">
-        <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/12 text-primary">
-            <BookOpen className="h-6 w-6" />
-          </div>
-          <div className="space-y-1">
-            <h1 className="text-3xl font-semibold tracking-[-0.03em]">{t('study.title', lang)}</h1>
-            <p className="max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">{t('study.subtitle', lang)}</p>
-          </div>
-        </div>
+    <div className="animate-fade-in-up space-y-6">
+      {/* ── Header ── */}
+      <div>
+        <h1 className="text-[28px] font-bold tracking-[-0.025em]">{t('study.title', lang)}</h1>
+        <p className="mt-1 text-base text-muted-foreground">{t('study.subtitle', lang)}</p>
       </div>
 
+      {/* ── Practice setup ── */}
       <Card>
         <CardContent className="space-y-6 px-6 py-6">
           <div className="space-y-1">
@@ -129,7 +132,7 @@ export function StudyPage({ settings, onNavigate }: StudyPageProps) {
               </Select>
             </div>
 
-            <div className="rounded-[22px] border border-border/70 bg-background/55 p-4">
+            <div className="rounded-xl border border-border bg-[rgba(255,255,255,0.03)] p-4">
               <div className="flex items-start gap-3">
                 <Switch id="count-review" checked={study.countTowardsReview} onCheckedChange={study.setCountTowardsReview} className="mt-0.5" />
                 <div className="space-y-1">
@@ -141,12 +144,13 @@ export function StudyPage({ settings, onNavigate }: StudyPageProps) {
           </div>
 
           {study.phase === 'idle' && study.questions.length > 0 && (
-            <div className="flex flex-col gap-4 rounded-[22px] border border-primary/15 bg-primary/8 px-5 py-5 sm:flex-row sm:items-end sm:justify-between">
-              <div className="space-y-2">
-                <p className="text-4xl font-semibold tracking-[-0.04em] text-primary">{study.questions.length}</p>
-                <p className="text-sm font-medium text-muted-foreground">{t('study.questionsInTopic', lang)}</p>
+            <div className="flex flex-col gap-4 rounded-xl border border-primary/15 bg-[rgba(99,102,241,0.06)] px-5 py-5 sm:flex-row sm:items-end sm:justify-between">
+              <div className="space-y-1">
+                <p className="text-4xl font-bold tracking-[-0.04em] tabular-nums text-primary">{study.questions.length}</p>
+                <p className="text-sm text-muted-foreground">{t('study.questionsInTopic', lang)}</p>
               </div>
-              <Button onClick={study.start} size="lg" className="w-full sm:w-auto">
+              <Button variant="accent" onClick={study.start} size="lg" className="w-full gap-2 sm:w-auto">
+                <Play className="h-4 w-4" />
                 {t('study.startStudying', lang)}
               </Button>
             </div>
@@ -154,12 +158,13 @@ export function StudyPage({ settings, onNavigate }: StudyPageProps) {
         </CardContent>
       </Card>
 
+      {/* ── Active quiz ── */}
       {(study.phase === 'question' || study.phase === 'feedback') && study.currentQuestion && (
         <div className={cn('mx-auto max-w-[860px]', chat.isOpen && 'xl:mr-[396px]')}>
-          <div className="sticky top-0 z-20 mb-6 rounded-[20px] border border-border/65 bg-background/82 px-4 py-4 shadow-[0_18px_40px_-34px_rgba(15,23,42,0.72)] backdrop-blur-xl">
+          <div className="sticky top-0 z-20 mb-6 rounded-2xl border border-border bg-[rgba(10,10,15,0.85)] px-4 py-4 shadow-[0_0_0_1px_rgba(255,255,255,0.06),0_8px_24px_rgba(0,0,0,0.4)] backdrop-blur-xl">
             <div className="mb-3 flex items-center justify-between gap-3">
               <Badge variant="secondary">{topics.find(tp => tp.id === study.currentQuestion?.topicId)?.name}</Badge>
-              <div className="rounded-full border border-border/60 bg-background/78 px-3 py-1 text-sm font-semibold">
+              <div className="rounded-full border border-border bg-[rgba(255,255,255,0.03)] px-3 py-1 text-sm font-semibold">
                 <span className="text-primary">{study.currentIndex + 1}</span>
                 <span className="text-muted-foreground"> / {study.questions.length}</span>
               </div>

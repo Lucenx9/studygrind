@@ -65,9 +65,9 @@ export function McqQuestion({ question, onSubmit, disabled, language = 'it', ini
       className="animate-slide-in-question space-y-5 outline-none"
       aria-label={t('quiz.multipleChoice', language)}
     >
-      <Card className="border-primary/15 bg-card/92">
-        <CardContent className="space-y-4 px-6 py-6">
-          <Badge variant="secondary" className="bg-primary/12 text-primary">
+      <Card className="border-border">
+        <CardContent className="space-y-4 px-6 py-8 sm:px-8">
+          <Badge variant="secondary" className="bg-[rgba(99,102,241,0.1)] text-primary border-0">
             {t('quiz.multipleChoice', language)}
           </Badge>
           <h2 className="text-xl font-semibold leading-snug tracking-[-0.02em] sm:text-2xl">

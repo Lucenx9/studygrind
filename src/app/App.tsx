@@ -23,10 +23,10 @@ const WelcomeWizard = lazy(async () => ({ default: (await import('@/components/o
 function PageFallback({ language }: { language: Language }) {
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
-      <Card className="w-full max-w-md border-border/70 bg-card/88">
+      <Card className="w-full max-w-md">
         <CardContent className="flex flex-col items-center gap-4 px-6 py-8 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/12 text-primary">
-            <Loader2 className="h-5 w-5 animate-spin" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[rgba(99,102,241,0.1)]">
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
           </div>
           <div className="space-y-1">
             <p className="text-sm font-medium">{t('common.loadingWorkspace', language)}</p>
@@ -41,7 +41,7 @@ function PageFallback({ language }: { language: Language }) {
 function ErrorFallback({ language }: { language: Language }) {
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
-      <Card className="w-full max-w-md border-destructive/25 bg-card/92">
+      <Card className="w-full max-w-md border-[rgba(248,113,113,0.25)]">
         <CardContent className="flex flex-col items-center gap-4 px-6 py-8 text-center">
           <div className="space-y-1">
             <p className="text-sm font-medium">{t('common.unexpectedError', language)}</p>

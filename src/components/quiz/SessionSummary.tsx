@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Clock, Trophy } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { CheckCircle, Clock, Trophy, ArrowRight } from 'lucide-react';
 import { t, type Language } from '@/lib/i18n';
 import confetti from 'canvas-confetti';
 
@@ -17,12 +17,12 @@ function AccuracyRing({ value, reducedMotion }: { value: number; reducedMotion: 
   const radius = 40;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (value / 100) * circumference;
-  const color = value >= 80 ? '#22c55e' : value >= 60 ? '#eab308' : '#ef4444';
+  const color = value >= 80 ? '#34d399' : value >= 60 ? '#fbbf24' : '#f87171';
 
   return (
     <div className="relative w-32 h-32 mx-auto">
       <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r={radius} fill="none" stroke="currentColor" strokeWidth="5" className="text-muted/30" />
+        <circle cx="50" cy="50" r={radius} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="5" />
         <circle
           cx="50" cy="50" r={radius} fill="none"
           stroke={color} strokeWidth="5" strokeLinecap="round"
@@ -31,7 +31,7 @@ function AccuracyRing({ value, reducedMotion }: { value: number; reducedMotion: 
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-3xl font-bold">{value}%</span>
+        <span className="text-3xl font-bold tabular-nums">{value}%</span>
       </div>
     </div>
   );
@@ -49,7 +49,6 @@ export function SessionSummary({ totalQuestions, correctAnswers, durationSeconds
     ? t('session.goodWork', language)
     : t('session.keepPracticing', language);
 
-  // Fire confetti on mount — intensity scales with accuracy
   useEffect(() => {
     if (!reducedMotion && accuracy >= 50) {
       const intensity = accuracy >= 90 ? 1 : accuracy >= 70 ? 0.6 : 0.3;
@@ -57,61 +56,60 @@ export function SessionSummary({ totalQuestions, correctAnswers, durationSeconds
         particleCount: Math.round(100 * intensity),
         spread: 70 + 30 * intensity,
         origin: { y: 0.6 },
-        colors: ['#22c55e', '#3b82f6', '#eab308', '#a855f7'],
+        colors: ['#34d399', '#6366f1', '#fbbf24', '#8b5cf6'],
       });
     }
   }, [accuracy, reducedMotion]);
 
   return (
-    <div className="space-y-8">
-      <div className="text-center space-y-3">
-        <Trophy className="h-16 w-16 mx-auto text-yellow-500 animate-celebrate" />
-        <h2 className="text-3xl font-bold tracking-tight animate-fade-in-up">{t('session.complete', language)}</h2>
-        <p className="text-muted-foreground text-base animate-fade-in-up" style={{ animationDelay: '100ms' }}>{message}</p>
+    <div className="animate-fade-in-up mx-auto max-w-2xl space-y-8">
+      {/* Progress bar — full at 100% emerald */}
+      <div className="h-1 w-full overflow-hidden rounded-full bg-[rgba(255,255,255,0.06)]">
+        <div
+          className="h-full rounded-full animate-progress-fill"
+          style={{ width: '100%', background: '#34d399' }}
+        />
       </div>
 
+      {/* Celebration hero */}
+      <div className="text-center space-y-3">
+        <Trophy className="h-16 w-16 mx-auto text-[#fbbf24] animate-celebrate" />
+        <h2 className="text-[28px] font-bold tracking-[-0.025em] animate-fade-in-up">
+          {t('session.complete', language)}
+        </h2>
+        <p className="text-base text-muted-foreground animate-fade-in-up" style={{ animationDelay: '100ms' }}>
+          {message}
+        </p>
+      </div>
+
+      {/* Accuracy ring */}
       <div className="animate-fade-in-up" style={{ animationDelay: '200ms' }}>
         <AccuracyRing value={accuracy} reducedMotion={reducedMotion} />
       </div>
 
-      <div className="grid gap-4 animate-fade-in-up sm:grid-cols-3" style={{ animationDelay: '300ms' }}>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-1 text-sm text-muted-foreground">
-              <CheckCircle className="h-4 w-4 text-green-500" /> {t('session.correct', language)}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-semibold tracking-[-0.03em]">{correctAnswers}/{totalQuestions}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-1 text-sm text-muted-foreground">
-              <CheckCircle className="h-4 w-4 text-primary" /> {t('session.accuracy', language)}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-semibold tracking-[-0.03em]">{accuracy}%</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-1 text-sm text-muted-foreground">
-              <Clock className="h-4 w-4 text-blue-500" /> {t('session.time', language)}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-semibold tracking-[-0.03em]">{minutes}:{String(seconds).padStart(2, '0')}</p>
-          </CardContent>
-        </Card>
+      {/* Stat chips */}
+      <div className="flex flex-wrap items-center justify-center gap-3 animate-fade-in-up" style={{ animationDelay: '300ms' }}>
+        <Badge variant="secondary" className="gap-1.5 px-3 py-1.5 text-sm">
+          <CheckCircle className="h-3.5 w-3.5 text-[#34d399]" />
+          {language === 'it' ? 'Corrette' : 'Correct'}: {correctAnswers}/{totalQuestions}
+        </Badge>
+        <Badge variant="secondary" className="gap-1.5 px-3 py-1.5 text-sm">
+          <Clock className="h-3.5 w-3.5 text-[#60a5fa]" />
+          {language === 'it' ? 'Tempo' : 'Time'}: {minutes}:{String(seconds).padStart(2, '0')}
+        </Badge>
+        <Badge variant="secondary" className="gap-1.5 px-3 py-1.5 text-sm">
+          {language === 'it' ? 'Domande' : 'Questions'}: {totalQuestions}
+        </Badge>
       </div>
 
-      <div className="animate-fade-in-up" style={{ animationDelay: '400ms' }}>
-        <Button onClick={onClose} className="w-full" size="lg">
-          {t('session.done', language)}
+      {/* CTAs */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:justify-center animate-fade-in-up" style={{ animationDelay: '400ms' }}>
+        <Button variant="accent" onClick={onClose} size="lg" className="gap-2">
+          {language === 'it' ? 'Torna alla dashboard' : 'Back to dashboard'}
+          <ArrowRight className="h-4 w-4" />
+        </Button>
+        <Button variant="outline" onClick={onClose} size="lg">
+          {language === 'it' ? 'Ripassa altro' : 'Review more'}
         </Button>
       </div>
     </div>
