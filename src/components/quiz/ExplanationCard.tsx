@@ -50,13 +50,15 @@ export function ExplanationCard({ explanation, isCorrect, language, onOpenChat, 
             {onOpenChat && (
               <Button
                 variant={isCorrect ? 'outline' : 'accent'}
-                size="sm"
-                className="w-full justify-between gap-3 rounded-xl"
+                size={isCorrect ? 'sm' : 'default'}
+                className={isCorrect ? 'w-fit gap-2 rounded-xl' : 'w-full justify-between gap-3 rounded-xl'}
                 onClick={onOpenChat}
               >
                 <span className="flex items-center gap-2">
                   {isCorrect ? <MessageCircle className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
-                  {isCorrect ? t('chat.exploreDeeper', language) : t('chat.helpMeThink', language)}
+                  {isCorrect
+                    ? (language === 'it' ? 'Approfondisci' : 'Go deeper')
+                    : t('chat.helpMeThink', language)}
                 </span>
                 {hasChatHistory && <Badge variant="secondary" className="text-[10px]">{t('chat.resume', language)}</Badge>}
               </Button>

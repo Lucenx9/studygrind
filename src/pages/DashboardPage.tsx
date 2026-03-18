@@ -130,23 +130,23 @@ function Heatmap({
 
   return (
     <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_220px]">
-      <div className="overflow-x-auto">
-        <div className="flex min-w-max gap-[6px]">
-          <div className="mr-1 flex flex-col gap-[6px] pt-[22px]">
+      <div className="min-h-[140px] overflow-x-auto">
+        <div className="flex min-w-max gap-[5px]">
+          <div className="mr-1 flex flex-col gap-[5px] pt-[22px]">
             {weekdayLabels.map((label) => (
-              <div key={label} className="flex h-3.5 w-4 items-center justify-end text-[10px] text-muted-foreground">
+              <div key={label} className="flex h-4 w-4 items-center justify-end text-[11px] text-muted-foreground">
                 {label}
               </div>
             ))}
           </div>
           {cells.map((week, weekIndex) => (
-            <div key={weekIndex} className="flex flex-col gap-[6px]">
+            <div key={weekIndex} className="flex flex-col gap-[5px]">
               {week.map((cell) => {
                 const intensity = cell.count > 0 ? Math.ceil((cell.count / maxCount) * 4) : 0;
                 return (
                   <div
                     key={cell.date}
-                    className={`h-3.5 w-3.5 rounded-[4px] border border-[color:var(--sg-border-1)] ${intensityClasses[intensity]}`}
+                    className={`h-4 w-4 rounded-[4px] border border-[color:var(--sg-border-1)] ${intensityClasses[intensity]}`}
                     title={`${cell.date}: ${cell.count} ${t('dash.questionsWord', language)}`}
                   />
                 );
