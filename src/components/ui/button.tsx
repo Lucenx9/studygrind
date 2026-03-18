@@ -13,7 +13,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "sg-btn-accent text-primary-foreground shadow-[0_16px_36px_-22px_rgba(99,102,241,0.75)] hover:shadow-[0_18px_42px_-18px_rgba(99,102,241,0.72)]",
+          "sg-btn-accent text-primary-foreground shadow-[0_16px_36px_-22px_rgba(99,102,241,0.75)] hover:shadow-[0_18px_42px_-18px_rgba(99,102,241,0.72)] active:scale-[0.97] active:shadow-none",
         outline:
           "border-[color:var(--sg-border-2)] bg-[color:var(--sg-surface-1)] text-foreground shadow-none backdrop-blur-xl hover:border-[color:var(--sg-border-3)] hover:bg-[color:var(--sg-surface-2)] hover:text-foreground aria-expanded:bg-[color:var(--sg-surface-2)] aria-expanded:text-foreground",
         secondary:
@@ -23,7 +23,7 @@ const buttonVariants = cva(
         destructive:
           "border-[color:var(--sg-error)] bg-[color:var(--sg-error-soft)] text-[color:var(--sg-error)] hover:bg-[rgba(248,113,113,0.16)] focus-visible:border-[color:var(--sg-error)] focus-visible:ring-[rgba(248,113,113,0.2)] dark:hover:bg-[rgba(248,113,113,0.2)]",
         accent:
-          "sg-btn-accent text-primary-foreground shadow-[0_18px_38px_-22px_rgba(99,102,241,0.85)] hover:shadow-[0_20px_44px_-20px_rgba(99,102,241,0.82)]",
+          "sg-btn-accent text-primary-foreground shadow-[0_18px_38px_-22px_rgba(99,102,241,0.85)] hover:shadow-[0_20px_44px_-20px_rgba(99,102,241,0.82)] active:scale-[0.97] active:shadow-none",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {

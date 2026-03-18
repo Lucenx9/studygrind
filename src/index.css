@@ -545,6 +545,15 @@
   }
 }
 
+/* Uniform focus ring for custom interactive elements */
+[role="button"]:focus-visible,
+[role="checkbox"]:focus-visible,
+[tabindex="0"]:focus-visible {
+  outline: 2px solid var(--sg-accent);
+  outline-offset: 2px;
+  border-radius: inherit;
+}
+
 /* Mobile PWA fixes */
 html, body {
   overscroll-behavior-y: contain;

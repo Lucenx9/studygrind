@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useDashboard } from '@/hooks/useDashboard';
 import { getDueQuestions } from '@/lib/fsrs';
 import { t, type Language } from '@/lib/i18n';
@@ -296,29 +297,37 @@ export function DashboardPage({ language: lang, onNavigate }: DashboardPageProps
         )}
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {statItems.map(({ key, label, value, icon: Icon, iconClass, valueClass, borderClass, trend }, index) => (
-          <Card
-            key={key}
-            className={`sg-hover-card animate-stagger-in overflow-hidden ${borderClass}`}
-            style={{ animationDelay: `${index * 60}ms` }}
-          >
-            <CardContent className="flex items-center gap-4 px-5 py-5">
-              <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${iconClass}`}>
-                <Icon className="h-5 w-5" strokeWidth={1.5} />
-              </div>
-              <div className="min-w-0">
-                <p className={`text-[1.9rem] font-bold tracking-[-0.04em] tabular-nums ${valueClass}`}>
-                  {value}
-                  {trend === 'up' && <span className="ml-1 text-[11px] text-[#34d399]">{'\u2191'}</span>}
-                  {trend === 'down' && <span className="ml-1 text-[11px] text-[#f87171]">{'\u2193'}</span>}
-                </p>
-                <p className="mt-1 text-tertiary">{label}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </section>
+      {dash.todayReviewed === 0 && dash.streak === 0 && sessions.length === 0 && dash.totalQuestions > 0 ? (
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {Array.from({ length: 4 }, (_, i) => (
+            <Skeleton key={i} className="h-24" />
+          ))}
+        </section>
+      ) : (
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {statItems.map(({ key, label, value, icon: Icon, iconClass, valueClass, borderClass, trend }, index) => (
+            <Card
+              key={key}
+              className={`sg-hover-card animate-stagger-in overflow-hidden ${borderClass}`}
+              style={{ animationDelay: `${index * 60}ms` }}
+            >
+              <CardContent className="flex items-center gap-4 px-5 py-5">
+                <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${iconClass}`}>
+                  <Icon className="h-5 w-5" strokeWidth={1.5} />
+                </div>
+                <div className="min-w-0">
+                  <p className={`text-[1.9rem] font-bold tracking-[-0.04em] tabular-nums ${valueClass}`}>
+                    {value}
+                    {trend === 'up' && <span className="ml-1 text-[11px] text-[#34d399]">{'\u2191'}</span>}
+                    {trend === 'down' && <span className="ml-1 text-[11px] text-[#f87171]">{'\u2193'}</span>}
+                  </p>
+                  <p className="mt-1 text-tertiary">{label}</p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </section>
+      )}
 
       {dash.totalQuestions === 0 && onNavigate ? (
         <Card className="overflow-hidden border-[rgba(99,102,241,0.14)] bg-[linear-gradient(135deg,rgba(99,102,241,0.12),rgba(139,92,246,0.04))]">

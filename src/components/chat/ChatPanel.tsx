@@ -107,7 +107,7 @@ export function ChatPanel({ isOpen, history, loading, canSendMore, messagesRemai
           </Button>
         </div>
 
-        <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5" aria-live="polite" aria-busy={loading}>
+        <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5 [&::-webkit-scrollbar]:w-[5px] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--sg-scrollbar-thumb)]" aria-live="polite" aria-busy={loading}>
           {(!history || history.messages.length === 0) && (
             <div className="rounded-[20px] border border-border/60 bg-background/45 px-5 py-8 text-center text-sm text-muted-foreground">
               <MessageCircle className="mx-auto mb-3 h-8 w-8 opacity-25" />
