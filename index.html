@@ -22,20 +22,8 @@
     <meta name="format-detection" content="telephone=no" />
   </head>
   <body>
-    <!-- Prevent dark mode FOUC: apply theme before React hydrates -->
-    <script>
-      try {
-        var rawSettings = localStorage.getItem('studygrind_settings');
-        var parsedSettings = rawSettings ? JSON.parse(rawSettings) : null;
-        var theme = parsedSettings && typeof parsedSettings === 'object' ? parsedSettings.theme : null;
-        var language = parsedSettings && typeof parsedSettings === 'object' ? parsedSettings.language : null;
-        document.documentElement.lang = language === 'en' ? 'en' : 'it';
-        if (theme !== 'light') document.documentElement.classList.add('dark');
-      } catch (e) {
-        document.documentElement.lang = 'it';
-        document.documentElement.classList.add('dark');
-      }
-    </script>
+    <!-- Prevent dark mode FOUC with an external script so strict CSPs can allow it. -->
+    <script src="/study/theme-init.js"></script>
     <noscript>
       <div style="padding:2rem;text-align:center;font-family:system-ui,sans-serif;color:#e2e8f0">
         <h1>StudyGrind</h1>
