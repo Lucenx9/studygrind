@@ -65,17 +65,20 @@ export function McqQuestion({ question, onSubmit, disabled, language = 'it', ini
       className="animate-slide-in-question space-y-5 outline-none"
       aria-label={t('quiz.multipleChoice', language)}
     >
-      <Card className="border-border">
-        <CardContent className="space-y-4 px-6 py-8 sm:px-8">
-          <Badge variant="secondary" className="bg-[rgba(99,102,241,0.1)] text-primary border-0">
+      <Card className="mx-auto max-w-[800px]">
+        <CardContent className="space-y-5 px-6 py-8 sm:px-8">
+          <Badge variant="secondary" className="w-fit">
             {t('quiz.multipleChoice', language)}
           </Badge>
-          <h2 className="text-xl font-semibold leading-snug tracking-[-0.02em] sm:text-2xl">
+          <h2 className="text-[1.35rem] font-semibold leading-snug tracking-[-0.03em] sm:text-[1.5rem]">
             {question.question}
           </h2>
+          <p className="text-sm text-muted-foreground">
+            {language === 'it' ? 'Scegli la risposta migliore. Puoi usare A-D oppure 1-4.' : 'Choose the best answer. You can also use A-D or 1-4.'}
+          </p>
         </CardContent>
       </Card>
-      <div className="grid gap-2.5">
+      <div className="mx-auto grid max-w-[800px] gap-3">
         {question.options.map((opt, idx) => (
           <OptionButton
             key={idx}
@@ -89,14 +92,21 @@ export function McqQuestion({ question, onSubmit, disabled, language = 'it', ini
         ))}
       </div>
       {!revealed && (
-        <Button
-          onClick={handleSubmit}
-          disabled={selected === null || disabled}
-          className="w-full"
-          size="lg"
-        >
-          {t('quiz.checkAnswer', language)}
-        </Button>
+        <div className="mx-auto flex max-w-[800px] flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[color:var(--sg-border-1)] bg-[color:var(--sg-surface-2)] px-3 py-1.5 text-[12px] text-muted-foreground">
+            <span>{language === 'it' ? 'Conferma rapida' : 'Quick submit'}</span>
+            <kbd className="rounded-md border border-[color:var(--sg-border-1)] bg-[color:var(--sg-surface-1)] px-1.5 py-0.5 font-mono text-[10px] text-tertiary">Enter ↵</kbd>
+          </div>
+          <Button
+            variant="accent"
+            onClick={handleSubmit}
+            disabled={selected === null || disabled}
+            className="w-full gap-2 sm:w-auto"
+            size="lg"
+          >
+            {t('quiz.checkAnswer', language)}
+          </Button>
+        </div>
       )}
     </div>
   );

@@ -57,10 +57,15 @@ export function RetypePrompt({ correctAnswer, language, onComplete }: RetypeProm
   };
 
   return (
-    <div className="animate-fade-in-up space-y-3 rounded-xl border border-[rgba(99,102,241,0.2)] bg-[rgba(99,102,241,0.05)] p-5">
-      <p ref={headingRef} tabIndex={-1} className="text-sm font-medium text-primary outline-none">
-        {t('quiz.retypeToContinue', language)}
-      </p>
+    <div className="animate-fade-in-up space-y-4 rounded-[18px] border border-[rgba(99,102,241,0.22)] bg-[rgba(99,102,241,0.06)] p-5 shadow-[var(--sg-card-shadow)]">
+      <div className="space-y-1">
+        <p ref={headingRef} tabIndex={-1} className="text-sm font-semibold text-primary outline-none">
+          {t('quiz.retypeToContinue', language)}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          {language === 'it' ? 'Ripetere la risposta corretta aiuta a consolidarla prima del prossimo intervallo.' : 'Re-typing the correct answer helps reinforce it before the next interval.'}
+        </p>
+      </div>
       <div className="flex gap-2">
         <Input
           value={value}
@@ -70,11 +75,11 @@ export function RetypePrompt({ correctAnswer, language, onComplete }: RetypeProm
           aria-label={t('quiz.correctAnswer', language)}
           className={cn(
             'min-h-12 transition-colors duration-200',
-            matched && 'border-green-500 bg-green-50 dark:bg-green-500/12',
+            matched && 'border-[#34d399] bg-[rgba(52,211,153,0.08)]',
           )}
         />
         {matched && (
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-green-500 text-white animate-correct-pulse">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#34d399] text-white animate-correct-pulse">
             <Check className="h-5 w-5" />
           </div>
         )}

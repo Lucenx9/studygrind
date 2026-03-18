@@ -28,22 +28,22 @@ export function OptionButton({ label, index, selected, correctIndex, disabled, o
       aria-pressed={selected}
       style={{ animationDelay: `${index * 50}ms` }}
       className={cn(
-        'cursor-pointer animate-fade-in-up flex w-full items-center gap-3.5 rounded-xl border px-4 py-4 text-left transition-all duration-200 active:scale-[0.985] sm:px-5',
-        !isRevealed && !selected && 'border-border bg-[rgba(255,255,255,0.03)] hover:border-[rgba(99,102,241,0.25)] hover:bg-[rgba(99,102,241,0.03)]',
-        !isRevealed && selected && 'border-[rgba(99,102,241,0.6)] bg-[rgba(99,102,241,0.08)]',
-        isRevealed && isCorrect && 'border-[rgba(52,211,153,0.5)] bg-[rgba(52,211,153,0.08)] animate-correct-pulse',
-        isWrong && 'border-[rgba(248,113,113,0.5)] bg-[rgba(248,113,113,0.08)] animate-shake',
-        isRevealed && !isCorrect && !isWrong && 'border-border bg-[rgba(255,255,255,0.02)] opacity-50',
+        'cursor-pointer animate-fade-in-up flex w-full items-center gap-4 rounded-[16px] border px-4 py-4 text-left shadow-[var(--sg-card-shadow)] transition-all duration-200 active:scale-[0.985] sm:px-5',
+        !isRevealed && !selected && 'border-[color:var(--sg-border-1)] bg-[color:var(--sg-surface-1)] hover:-translate-y-0.5 hover:border-[rgba(99,102,241,0.28)] hover:bg-[rgba(99,102,241,0.04)]',
+        !isRevealed && selected && 'border-[rgba(99,102,241,0.55)] bg-[rgba(99,102,241,0.08)] shadow-[0_16px_28px_-24px_rgba(99,102,241,0.75)]',
+        isRevealed && isCorrect && 'border-[rgba(52,211,153,0.42)] bg-[rgba(52,211,153,0.08)] animate-correct-pulse',
+        isWrong && 'border-[rgba(248,113,113,0.42)] bg-[rgba(248,113,113,0.08)] animate-shake',
+        isRevealed && !isCorrect && !isWrong && 'border-[color:var(--sg-border-1)] bg-[color:var(--sg-surface-1)] opacity-55',
         disabled && !isRevealed && 'cursor-not-allowed opacity-50',
       )}
     >
       <span className={cn(
-        'flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold transition-all duration-200',
-        !isRevealed && !selected && 'bg-[rgba(255,255,255,0.05)] text-muted-foreground',
+        'flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-sm font-bold transition-all duration-200',
+        !isRevealed && !selected && 'bg-[color:var(--sg-surface-2)] text-muted-foreground',
         !isRevealed && selected && 'sg-btn-accent text-white',
         isRevealed && isCorrect && 'bg-[#34d399] text-white',
         isWrong && 'bg-[#f87171] text-white',
-        isRevealed && !isCorrect && !isWrong && 'bg-[rgba(255,255,255,0.05)] text-muted-foreground',
+        isRevealed && !isCorrect && !isWrong && 'bg-[color:var(--sg-surface-2)] text-muted-foreground',
       )}>
         {isRevealed && isCorrect ? <Check className="h-4 w-4" strokeWidth={3} /> :
          isWrong ? <X className="h-4 w-4" strokeWidth={3} /> :

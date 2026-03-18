@@ -46,11 +46,14 @@ export function RatingButtons({ onRate, language, intervals }: RatingButtonsProp
       ref={containerRef}
       tabIndex={0}
       onKeyDown={handleKeyDown}
-      className="animate-fade-in-up space-y-3 outline-none"
+      className="animate-fade-in-up space-y-4 outline-none"
       aria-label={t('quiz.howWellDidYouKnow', language)}
     >
-      <p className="text-sm text-muted-foreground text-center">{t('quiz.howWellDidYouKnow', language)}</p>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-2.5">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm font-medium text-foreground">{t('quiz.howWellDidYouKnow', language)}</p>
+        <p className="text-tertiary">{language === 'it' ? 'Usa 1-4' : 'Use 1-4'}</p>
+      </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {RATINGS.map(({ rating, labelKey, descKey, intervalKey, color, key, emoji }, idx) => (
           <Button
             key={rating}
@@ -58,18 +61,18 @@ export function RatingButtons({ onRate, language, intervals }: RatingButtonsProp
             onClick={() => handleClick(rating)}
             disabled={submitted}
             style={{ animationDelay: `${idx * 60}ms` }}
-            className={`animate-fade-in-up flex flex-col h-auto min-h-[90px] rounded-2xl px-3 py-3 active:scale-95 transition-all duration-200 ${color}`}
+            className={`animate-fade-in-up flex h-auto min-h-[112px] flex-col items-start rounded-[18px] px-3.5 py-3.5 text-left active:scale-95 ${color}`}
           >
             <div className="flex w-full items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <span className="text-base" aria-hidden="true">{emoji}</span>
                 <span className="text-sm font-bold">{t(labelKey, language)}</span>
               </span>
-              <kbd className="rounded bg-black/5 px-1.5 py-0.5 text-[9px] font-mono opacity-30 dark:bg-white/5">{key}</kbd>
+              <kbd className="rounded-md border border-current/10 bg-black/5 px-1.5 py-0.5 text-[9px] font-mono opacity-45 dark:bg-white/5">{key}</kbd>
             </div>
-            <span className="text-[11px] opacity-55 self-start">{t(descKey, language)}</span>
+            <span className="self-start text-[11px] opacity-60">{t(descKey, language)}</span>
             {intervals && (
-              <span className="text-xs font-semibold font-mono self-start mt-1.5 opacity-70">{intervals[intervalKey]}</span>
+              <span className="mt-2 rounded-full border border-current/10 px-2 py-1 text-xs font-semibold font-mono opacity-80">{intervals[intervalKey]}</span>
             )}
           </Button>
         ))}

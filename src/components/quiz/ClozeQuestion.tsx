@@ -85,68 +85,77 @@ export function ClozeQuestion({ question, onSubmit, disabled, language = 'it', i
 
   return (
     <div className="animate-slide-in-question space-y-5">
-      <Card className="border-border">
-        <CardContent className="space-y-4 px-6 py-8 sm:px-8">
-          <Badge variant="secondary" className="bg-[rgba(99,102,241,0.1)] text-primary border-0">
+      <Card className="mx-auto max-w-[800px]">
+        <CardContent className="space-y-5 px-6 py-8 sm:px-8">
+          <Badge variant="secondary" className="w-fit">
             {t('quiz.fillBlank', language)}
           </Badge>
-          <h2 className="text-xl font-semibold leading-snug tracking-[-0.02em] sm:text-2xl">{question.question}</h2>
+          <h2 className="text-[1.35rem] font-semibold leading-snug tracking-[-0.03em] sm:text-[1.5rem]">{question.question}</h2>
+          <p className="text-sm text-muted-foreground">
+            {language === 'it' ? 'Scrivi la risposta oppure usa il microfono per dettarla.' : 'Type the answer or use the microphone to dictate it.'}
+          </p>
+
+          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+            <Input
+              ref={inputRef}
+              value={answer}
+              onChange={e => setAnswer(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={voice.state === 'listening' ? t('quiz.listening', language) : t('quiz.typeAnswer', language)}
+              disabled={revealed || disabled}
+              className={cn(
+                'min-h-12 flex-1',
+                revealed && isCorrect && 'border-[#34d399] bg-[rgba(52,211,153,0.08)] ring-2 ring-[#34d399]/20',
+                revealed && !isCorrect && 'border-[#f87171] bg-[rgba(248,113,113,0.08)] ring-2 ring-[#f87171]/20 animate-shake',
+                voice.state === 'listening' && !revealed && 'border-[#f87171]',
+                voice.interim && !revealed && 'italic text-muted-foreground',
+              )}
+            />
+            {voice.isSupported && !revealed && (
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleMicToggle}
+                disabled={disabled}
+                aria-label={
+                  voice.state === 'listening'
+                    ? t('quiz.stopVoiceInput', language)
+                    : t('quiz.startVoiceInput', language)
+                }
+                className={cn(
+                  'shrink-0',
+                  voice.state === 'listening' && 'border-[#f87171] bg-[rgba(248,113,113,0.12)]',
+                )}
+              >
+                {voice.state === 'listening' ? (
+                  <MicOff className="h-4 w-4 text-[#f87171]" />
+                ) : (
+                  <Mic className="h-4 w-4" />
+                )}
+              </Button>
+            )}
+            {!revealed && (
+              <Button onClick={handleSubmit} disabled={!answer.trim() || disabled} variant="accent" className="shrink-0 sm:min-w-32">
+                {t('quiz.check', language)}
+              </Button>
+            )}
+          </div>
+
+          {!revealed && (
+            <div className="inline-flex items-center gap-2 rounded-full border border-[color:var(--sg-border-1)] bg-[color:var(--sg-surface-2)] px-3 py-1.5 text-[12px] text-muted-foreground">
+              <span>{t('quiz.pressEnter', language)}</span>
+              <kbd className="rounded-md border border-[color:var(--sg-border-1)] bg-[color:var(--sg-surface-1)] px-1.5 py-0.5 font-mono text-[10px] text-tertiary">Enter ↵</kbd>
+            </div>
+          )}
+
+          {revealed && !isCorrect && (
+            <div className="animate-fade-in-up inline-flex items-center gap-2 rounded-2xl border border-[rgba(52,211,153,0.25)] bg-[rgba(52,211,153,0.08)] px-4 py-3">
+              <span className="text-sm text-muted-foreground">{t('quiz.correctAnswer', language)}</span>
+              <strong className="text-base text-[#34d399]">{question.acceptableAnswers[0]}</strong>
+            </div>
+          )}
         </CardContent>
       </Card>
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <Input
-          ref={inputRef}
-          value={answer}
-          onChange={e => setAnswer(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={voice.state === 'listening' ? t('quiz.listening', language) : t('quiz.typeAnswer', language)}
-          disabled={revealed || disabled}
-          className={cn(
-            'min-h-12 flex-1',
-            revealed && isCorrect && 'border-green-500 bg-green-500/10 ring-2 ring-green-500/30',
-            revealed && !isCorrect && 'border-red-500 bg-red-500/10 ring-2 ring-red-500/30 animate-shake',
-            voice.state === 'listening' && !revealed && 'border-red-400',
-            voice.interim && !revealed && 'text-muted-foreground italic',
-          )}
-        />
-        {voice.isSupported && !revealed && (
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handleMicToggle}
-            disabled={disabled}
-            aria-label={
-              voice.state === 'listening'
-                ? t('quiz.stopVoiceInput', language)
-                : t('quiz.startVoiceInput', language)
-            }
-            className={cn(
-              'shrink-0',
-              voice.state === 'listening' && 'border-red-500 bg-red-500/10 animate-pulse',
-            )}
-          >
-            {voice.state === 'listening' ? (
-              <MicOff className="h-4 w-4 text-red-500" />
-            ) : (
-              <Mic className="h-4 w-4" />
-            )}
-          </Button>
-        )}
-        {!revealed && (
-          <Button onClick={handleSubmit} disabled={!answer.trim() || disabled} className="shrink-0 sm:min-w-32">
-            {t('quiz.check', language)}
-          </Button>
-        )}
-      </div>
-      {!revealed && (
-        <p className="text-xs text-muted-foreground">{t('quiz.pressEnter', language)}</p>
-      )}
-      {revealed && !isCorrect && (
-        <div className="animate-fade-in-up inline-flex items-center gap-2 rounded-2xl bg-green-500/10 px-4 py-3">
-          <span className="text-sm text-muted-foreground">{t('quiz.correctAnswer', language)}</span>
-          <strong className="text-base text-green-600 dark:text-green-400">{question.acceptableAnswers[0]}</strong>
-        </div>
-      )}
     </div>
   );
 }
