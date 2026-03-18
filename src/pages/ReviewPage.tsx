@@ -241,6 +241,9 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
         totalQuestions={review.summary.totalQuestions}
         correctAnswers={review.summary.correctAnswers}
         durationSeconds={review.summary.durationSeconds}
+        mcqCount={review.dueQuestions.filter((q) => q.type === 'mcq').length}
+        clozeCount={review.dueQuestions.filter((q) => q.type === 'cloze').length}
+        ratings={review.ratings}
         language={lang}
         onClose={() => review.loadDue()}
         onGoHome={() => onNavigate('dashboard')}

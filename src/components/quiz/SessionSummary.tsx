@@ -11,6 +11,9 @@ interface SessionSummaryProps {
   totalQuestions: number;
   correctAnswers: number;
   durationSeconds: number;
+  mcqCount?: number;
+  clozeCount?: number;
+  ratings?: { rating: 1 | 2 | 3 | 4 }[];
   language: Language;
   onClose: () => void;
   onGoHome?: () => void;
@@ -51,6 +54,9 @@ export function SessionSummary({
   totalQuestions,
   correctAnswers,
   durationSeconds,
+  mcqCount,
+  clozeCount,
+  ratings,
   language,
   onClose,
   onGoHome,
@@ -123,6 +129,21 @@ export function SessionSummary({
               </Badge>
             </div>
 
+            {(mcqCount != null || clozeCount != null) && (
+              <div className="grid grid-cols-2 gap-3 w-full max-w-xs mx-auto">
+                <div className="rounded-2xl border border-[color:var(--sg-border-1)] bg-[color:var(--sg-surface-2)] px-4 py-3 text-center">
+                  <p className="text-2xl font-bold tabular-nums">{mcqCount ?? 0}</p>
+                  <p className="text-tertiary mt-1">MCQ</p>
+                </div>
+                <div className="rounded-2xl border border-[color:var(--sg-border-1)] bg-[color:var(--sg-surface-2)] px-4 py-3 text-center">
+                  <p className="text-2xl font-bold tabular-nums">{clozeCount ?? 0}</p>
+                  <p className="text-tertiary mt-1">Cloze</p>
+                </div>
+              </div>
+            )}
+
+            {ratings && ratings.length > 0 && <RatingDistribution ratings={ratings} language={language} />}
+
             <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
               <Button variant="accent" onClick={onGoHome ?? onClose} size="lg" className="gap-2">
                 {language === 'it' ? 'Torna alla dashboard' : 'Back to dashboard'}
@@ -150,6 +171,43 @@ export function SessionSummary({
             </p>
           </CardContent>
         </Card>
+      </div>
+    </div>
+  );
+}
+
+const RATING_SEGMENTS = [
+  { rating: 1, labelKey: 'Again', labelKeyIt: 'Ripeti', color: 'bg-red-500' },
+  { rating: 2, labelKey: 'Hard', labelKeyIt: 'Difficile', color: 'bg-orange-500' },
+  { rating: 3, labelKey: 'Good', labelKeyIt: 'Bene', color: 'bg-blue-500' },
+  { rating: 4, labelKey: 'Easy', labelKeyIt: 'Facile', color: 'bg-green-500' },
+] as const;
+
+function RatingDistribution({ ratings, language }: { ratings: { rating: 1 | 2 | 3 | 4 }[]; language: Language }) {
+  const counts: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0 };
+  for (const r of ratings) counts[r.rating]++;
+  const total = ratings.length || 1;
+
+  return (
+    <div className="w-full max-w-md mx-auto space-y-3">
+      <div className="flex h-3 overflow-hidden rounded-full">
+        {RATING_SEGMENTS.map((s) =>
+          counts[s.rating] > 0 ? (
+            <div
+              key={s.rating}
+              className={`${s.color} transition-all duration-700`}
+              style={{ width: `${(counts[s.rating] / total) * 100}%` }}
+            />
+          ) : null,
+        )}
+      </div>
+      <div className="flex justify-between text-[11px] text-muted-foreground">
+        {RATING_SEGMENTS.map((s) => (
+          <span key={s.rating} className="flex items-center gap-1">
+            <span className={`h-2 w-2 rounded-full ${s.color}`} />
+            {language === 'it' ? s.labelKeyIt : s.labelKey}: {counts[s.rating]}
+          </span>
+        ))}
       </div>
     </div>
   );
