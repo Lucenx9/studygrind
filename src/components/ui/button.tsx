@@ -8,22 +8,22 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-[14px] border border-transparent bg-clip-padding text-sm font-semibold tracking-[-0.01em] whitespace-nowrap transition-[transform,background-color,border-color,color,box-shadow,opacity] duration-200 outline-none select-none focus-visible:border-ring focus-visible:ring-4 focus-visible:ring-ring/18 active:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-4 aria-invalid:ring-destructive/15 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/25 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "group/button inline-flex shrink-0 items-center justify-center rounded-[12px] border border-transparent bg-clip-padding text-sm font-semibold tracking-[-0.015em] whitespace-nowrap transition-[transform,background-color,border-color,color,box-shadow,opacity,filter] duration-150 outline-none select-none focus-visible:border-[color:var(--sg-accent)] focus-visible:ring-4 focus-visible:ring-[color:var(--ring)]/80 active:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-4 aria-invalid:ring-destructive/15 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/25 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground shadow-[0_12px_24px_-18px_color-mix(in_oklab,var(--color-primary)_40%,transparent)] hover:bg-primary/95 hover:shadow-[0_16px_28px_-18px_color-mix(in_oklab,var(--color-primary)_48%,transparent)]",
+          "sg-btn-accent text-primary-foreground shadow-[0_16px_36px_-22px_rgba(99,102,241,0.75)] hover:shadow-[0_18px_42px_-18px_rgba(99,102,241,0.72)]",
         outline:
-          "border-border/75 bg-background/72 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)] backdrop-blur-sm hover:border-primary/20 hover:bg-accent/60 hover:text-foreground aria-expanded:bg-accent/60 aria-expanded:text-foreground dark:border-input dark:bg-input/28 dark:hover:bg-input/48",
+          "border-[color:var(--sg-border-2)] bg-[color:var(--sg-surface-1)] text-foreground shadow-none backdrop-blur-xl hover:border-[color:var(--sg-border-3)] hover:bg-[color:var(--sg-surface-2)] hover:text-foreground aria-expanded:bg-[color:var(--sg-surface-2)] aria-expanded:text-foreground",
         secondary:
-          "bg-secondary/85 text-secondary-foreground hover:bg-secondary/95 aria-expanded:bg-secondary/95 aria-expanded:text-secondary-foreground",
+          "border-[color:var(--sg-border-1)] bg-[color:var(--sg-surface-2)] text-secondary-foreground hover:border-[color:var(--sg-border-2)] hover:bg-[color:var(--sg-surface-3)] aria-expanded:bg-[color:var(--sg-surface-3)]",
         ghost:
-          "hover:bg-accent/55 hover:text-foreground aria-expanded:bg-accent/55 aria-expanded:text-foreground dark:hover:bg-muted/42",
+          "border-transparent bg-transparent hover:border-[color:var(--sg-border-1)] hover:bg-[color:var(--sg-surface-2)] hover:text-foreground aria-expanded:border-[color:var(--sg-border-1)] aria-expanded:bg-[color:var(--sg-surface-2)] aria-expanded:text-foreground",
         destructive:
-          "bg-destructive/10 text-destructive hover:bg-destructive/16 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/18 dark:hover:bg-destructive/26 dark:focus-visible:ring-destructive/35",
+          "border-[color:var(--sg-error)] bg-[color:var(--sg-error-soft)] text-[color:var(--sg-error)] hover:bg-[rgba(248,113,113,0.16)] focus-visible:border-[color:var(--sg-error)] focus-visible:ring-[rgba(248,113,113,0.2)] dark:hover:bg-[rgba(248,113,113,0.2)]",
         accent:
-          "sg-btn-accent shadow-[0_12px_24px_-18px_oklch(0.585_0.22_264_/_0.5)] hover:shadow-[0_16px_28px_-14px_oklch(0.585_0.22_264_/_0.4)]",
+          "sg-btn-accent text-primary-foreground shadow-[0_18px_38px_-22px_rgba(99,102,241,0.85)] hover:shadow-[0_20px_44px_-20px_rgba(99,102,241,0.82)]",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {

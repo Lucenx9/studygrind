@@ -14,7 +14,7 @@ import { clearAllData } from '@/lib/storage';
 import { fetchOpenRouterModels, fetchDirectModels, type ModelInfo } from '@/lib/models';
 import { t } from '@/lib/i18n';
 import type { Settings, ProviderConfig, DirectProvider } from '@/lib/types';
-import { Settings as SettingsIcon, Key, Globe, Palette, Trash2, Check, Loader2, RefreshCw, AlertTriangle, Database, Shield, Info } from 'lucide-react';
+import { Key, Globe, Palette, Trash2, Check, Loader2, RefreshCw, AlertTriangle, Database, Shield, Info } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface SettingsPageProps {

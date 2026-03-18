@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 import { t, type Language } from '@/lib/i18n';
-import { BookOpen, Upload, BarChart3, Settings, GraduationCap } from 'lucide-react';
+import { BookOpen, Upload, BarChart3, Settings, GraduationCap, Plus } from 'lucide-react';
 
 export type Page = 'review' | 'study' | 'upload' | 'dashboard' | 'settings';
 
@@ -25,17 +25,17 @@ const ALL_NAV = [
 ];
 
 /** SVG mini ring showing daily completion % */
-function CompletionRing({ done, total, size = 40 }: { done: number; total: number; size?: number }) {
-  const r = (size - 6) / 2;
+function CompletionRing({ done, total, size = 44 }: { done: number; total: number; size?: number }) {
+  const r = (size - 8) / 2;
   const c = 2 * Math.PI * r;
   const pct = total > 0 ? Math.min(done / total, 1) : 0;
   const offset = c - pct * c;
   return (
     <svg width={size} height={size} className="-rotate-90" viewBox={`0 0 ${size} ${size}`}>
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="currentColor" strokeWidth="3" className="text-border" />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="currentColor" strokeWidth="4" className="text-[color:var(--sg-border-1)]" />
       <circle
         cx={size / 2} cy={size / 2} r={r} fill="none"
-        stroke="url(#accentGrad)" strokeWidth="3" strokeLinecap="round"
+        stroke="url(#accentGrad)" strokeWidth="4" strokeLinecap="round"
         strokeDasharray={c} strokeDashoffset={offset}
         style={{ transition: 'stroke-dashoffset 0.6s ease' }}
       />
@@ -57,30 +57,52 @@ export function Sidebar({ currentPage, onNavigate, dueCount, totalDueToday, lang
   return (
     <>
       {/* ── Desktop sidebar ── */}
-      <aside className="hidden w-[260px] shrink-0 flex-col border-r border-border bg-sidebar px-4 py-5 md:flex">
+      <aside className="sticky top-0 hidden h-dvh w-[272px] shrink-0 flex-col border-r border-[color:var(--sg-border-1)] bg-[color:var(--sg-surface-sidebar)] px-4 py-5 backdrop-blur-2xl md:flex">
         {/* Brand */}
-        <div className="mb-5 px-2">
-          <h1 className="text-lg font-bold tracking-[-0.025em]">StudyGrind</h1>
-          <p className="text-tertiary mt-0.5">{t('common.appTagline', language)}</p>
+        <div className="mb-5 flex items-start justify-between gap-3 px-2">
+          <div>
+            <h1 className="text-lg font-bold tracking-[-0.03em]">StudyGrind</h1>
+            <p className="text-tertiary mt-1">{t('common.appTagline', language)}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => onNavigate('upload')}
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-[color:var(--sg-border-2)] bg-[color:var(--sg-surface-1)] text-foreground shadow-[var(--sg-card-shadow)] hover:border-[color:var(--sg-border-3)] hover:bg-[color:var(--sg-surface-2)]"
+            aria-label={language === 'it' ? 'Crea nuovo contenuto' : 'Create new content'}
+          >
+            <Plus className="h-4 w-4" strokeWidth={1.5} />
+          </button>
         </div>
 
         {/* Queue card */}
         <button
           type="button"
           onClick={() => onNavigate('review')}
-          className="mb-5 rounded-xl border border-border bg-[rgba(255,255,255,0.03)] px-4 py-4 text-left transition-all duration-200 hover:border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.05)]"
+          className="mb-3 rounded-[22px] border border-[color:var(--sg-border-2)] bg-[linear-gradient(180deg,rgba(99,102,241,0.12),rgba(99,102,241,0.04))] px-4 py-4 text-left shadow-[var(--sg-card-shadow)] backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5 hover:border-[color:var(--sg-border-3)] hover:shadow-[var(--sg-card-shadow-hover)]"
         >
-          <p className="text-tertiary">{t('review.queueReady', language)}</p>
-          <div className="mt-3 flex items-end justify-between gap-3">
-            <div className="flex items-center gap-3">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-tertiary">{t('review.queueReady', language)}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {language === 'it'
+                  ? `${doneToday} completate oggi`
+                  : `${doneToday} completed today`}
+              </p>
+            </div>
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[rgba(255,255,255,0.06)]">
               <CompletionRing done={doneToday} total={totalToday} />
-              <div>
-                <p className="text-4xl font-bold tracking-[-0.04em] tabular-nums text-foreground">{reviewCountLabel}</p>
-                <p className="text-xs text-muted-foreground">{t('review.dueToday', language)}</p>
-              </div>
             </div>
           </div>
-          <div className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg sg-btn-accent px-3 py-2 text-sm font-semibold">
+          <div className="mt-4 flex items-end justify-between gap-3">
+            <div>
+              <p className="text-[2.5rem] font-bold leading-none tracking-[-0.05em] tabular-nums text-foreground">{reviewCountLabel}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{t('review.dueToday', language)}</p>
+            </div>
+            <div className="rounded-full border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
+              {totalToday > 0 ? `${Math.round((doneToday / totalToday) * 100)}%` : '0%'}
+            </div>
+          </div>
+          <div className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl sg-btn-accent px-3 py-2.5 text-sm font-semibold">
             <GraduationCap className="h-4 w-4" />
             {t('review.title', language)}
           </div>
@@ -95,10 +117,10 @@ export function Sidebar({ currentPage, onNavigate, dueCount, totalDueToday, lang
               onClick={() => onNavigate(page)}
               aria-current={currentPage === page ? 'page' : undefined}
               className={cn(
-                'relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                'relative flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-150',
                 currentPage === page
                   ? 'bg-[rgba(99,102,241,0.08)] text-foreground'
-                  : 'text-muted-foreground hover:bg-[rgba(255,255,255,0.04)] hover:text-foreground'
+                  : 'text-muted-foreground hover:bg-[color:var(--sg-surface-2)] hover:text-foreground'
               )}
             >
               {currentPage === page && (
@@ -118,14 +140,14 @@ export function Sidebar({ currentPage, onNavigate, dueCount, totalDueToday, lang
         {/* Footer — Settings */}
         <div className="mt-auto border-t border-border pt-3">
           <button
-            type="button"
-            onClick={() => onNavigate('settings')}
-            aria-current={currentPage === 'settings' ? 'page' : undefined}
-            className={cn(
-              'relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
+              type="button"
+              onClick={() => onNavigate('settings')}
+              aria-current={currentPage === 'settings' ? 'page' : undefined}
+              className={cn(
+              'relative flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all duration-150',
               currentPage === 'settings'
                 ? 'bg-[rgba(99,102,241,0.08)] text-foreground'
-                : 'text-muted-foreground hover:bg-[rgba(255,255,255,0.04)] hover:text-foreground'
+                : 'text-muted-foreground hover:bg-[color:var(--sg-surface-2)] hover:text-foreground'
             )}
           >
             {currentPage === 'settings' && (
@@ -138,7 +160,7 @@ export function Sidebar({ currentPage, onNavigate, dueCount, totalDueToday, lang
       </aside>
 
       {/* ── Mobile bottom nav ── */}
-      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-[rgba(10,10,15,0.92)] px-2 pt-2 backdrop-blur-xl md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-[color:var(--sg-border-1)] bg-[color:var(--sg-surface-overlay)] px-2 pt-2 shadow-[0_-8px_32px_rgba(0,0,0,0.18)] backdrop-blur-2xl md:hidden">
         <div className="grid grid-cols-5 gap-1 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
           {ALL_NAV.map(({ page, key, icon: Icon }) => (
             <button
@@ -147,9 +169,9 @@ export function Sidebar({ currentPage, onNavigate, dueCount, totalDueToday, lang
               onClick={() => onNavigate(page)}
               aria-current={currentPage === page ? 'page' : undefined}
               className={cn(
-                'flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[11px] font-medium transition-[background-color,color] duration-200',
+                'flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[11px] font-medium transition-[background-color,color,border-color] duration-150',
                 currentPage === page
-                  ? 'bg-[rgba(99,102,241,0.12)] text-primary'
+                  ? 'border border-[rgba(99,102,241,0.18)] bg-[rgba(99,102,241,0.12)] text-primary'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >

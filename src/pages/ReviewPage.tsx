@@ -12,7 +12,7 @@ import { SessionSummary } from '@/components/quiz/SessionSummary';
 import { ChatPanel } from '@/components/chat/ChatPanel';
 import { useReview } from '@/hooks/useReview';
 import { useChat } from '@/hooks/useChat';
-import { GraduationCap, PartyPopper, Undo2, Play, Upload, BookOpen } from 'lucide-react';
+import { PartyPopper, Undo2, Play, Upload, BookOpen } from 'lucide-react';
 import { getTopics } from '@/lib/storage';
 import { getIntervalPreview } from '@/lib/fsrs';
 import { t } from '@/lib/i18n';
