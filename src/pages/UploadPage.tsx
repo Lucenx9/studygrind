@@ -13,23 +13,8 @@ import { t } from '@/lib/i18n';
 import { parseQuizResponse, QuizParseError } from '@/lib/quiz-parser';
 import { getQuestionsByTopic, saveQuestions, saveTopic } from '@/lib/storage';
 import type { Question, Settings, Topic } from '@/lib/types';
-import { cn, formatRelativeDate } from '@/lib/utils';
+import { cn, formatRelativeDate, getTopicGradient } from '@/lib/utils';
 import { AlertTriangle, BookOpen, Loader2, Sparkles, Trash2, Upload } from 'lucide-react';
-
-const TOPIC_GRADIENTS = [
-  'from-indigo-500 to-violet-500',
-  'from-emerald-500 to-teal-500',
-  'from-amber-500 to-orange-500',
-  'from-rose-500 to-pink-500',
-  'from-sky-500 to-blue-500',
-  'from-lime-500 to-green-500',
-];
-
-function topicColor(name: string): string {
-  let hash = 0;
-  for (const char of name) hash = ((hash << 5) - hash + char.charCodeAt(0)) | 0;
-  return TOPIC_GRADIENTS[Math.abs(hash) % TOPIC_GRADIENTS.length];
-}
 import { toast } from 'sonner';
 
 interface UploadPageProps {
@@ -212,7 +197,7 @@ export function UploadPage({ settings }: UploadPageProps) {
               const isConfirming = confirmingDeleteId === topic.id;
               return (
                 <div key={topic.id} className="overflow-hidden rounded-[18px] border border-[color:var(--sg-border-1)] bg-[color:var(--sg-surface-2)] transition-all duration-200 hover:border-[color:var(--sg-border-3)]">
-                  <div className={`h-1.5 bg-gradient-to-r ${topicColor(topic.name)}`} />
+                  <div className={`h-1.5 bg-gradient-to-r ${getTopicGradient(topic.name)}`} />
                   <div className="flex items-center justify-between gap-4 px-4 py-4">
                     <div className="flex min-w-0 items-center gap-3">
                       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[rgba(99,102,241,0.1)]">

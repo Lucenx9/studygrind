@@ -18,7 +18,7 @@ import { getIntervalPreview } from '@/lib/fsrs';
 import type { Grade } from '@/lib/fsrs';
 import { t } from '@/lib/i18n';
 import type { Settings } from '@/lib/types';
-import { cn } from '@/lib/utils';
+import { cn, getNextReviewLabel } from '@/lib/utils';
 
 function formatTimer(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -127,7 +127,7 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
     });
 
     if (review.dueQuestions.length === 0) {
-      const nextReview = getNextScheduledReviewLabel(questions, lang);
+      const nextReview = getNextReviewLabel(questions, lang);
       return (
         <div className="flex min-h-[70vh] items-center justify-center animate-fade-in-up">
           <Card className="w-full max-w-3xl overflow-hidden text-center">
@@ -378,27 +378,4 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
       />
     </div>
   );
-}
-
-function getNextScheduledReviewLabel(
-  questions: ReturnType<typeof getQuestions>,
-  language: Settings['language'],
-): string {
-  const now = new Date();
-  const nextDue = questions
-    .map((question) => new Date(question.fsrsCard.due))
-    .filter((date) => Number.isFinite(date.getTime()) && date.getTime() > now.getTime())
-    .sort((a, b) => a.getTime() - b.getTime())[0];
-
-  if (!nextDue) {
-    return language === 'it' ? 'presto' : 'soon';
-  }
-
-  const diffHours = Math.max(1, Math.round((nextDue.getTime() - now.getTime()) / (1000 * 60 * 60)));
-  if (diffHours < 24) {
-    return language === 'it' ? `${diffHours} ore` : `${diffHours} hours`;
-  }
-
-  const diffDays = Math.round(diffHours / 24);
-  return language === 'it' ? `${diffDays} giorni` : `${diffDays} days`;
 }

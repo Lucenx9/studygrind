@@ -20,23 +20,8 @@ import type { Grade } from '@/lib/fsrs';
 import { getQuestionsByTopic, getSessions, getTopics } from '@/lib/storage';
 import { t } from '@/lib/i18n';
 import type { Settings } from '@/lib/types';
-import { cn, formatRelativeDate } from '@/lib/utils';
+import { cn, formatRelativeDate, getTopicGradient } from '@/lib/utils';
 import { BookOpen, Clock3, Search, Sparkles, Upload } from 'lucide-react';
-
-const TOPIC_GRADIENTS = [
-  'from-indigo-500 to-violet-500',
-  'from-emerald-500 to-teal-500',
-  'from-amber-500 to-orange-500',
-  'from-rose-500 to-pink-500',
-  'from-sky-500 to-blue-500',
-  'from-lime-500 to-green-500',
-];
-
-function topicColor(name: string): string {
-  let hash = 0;
-  for (const char of name) hash = ((hash << 5) - hash + char.charCodeAt(0)) | 0;
-  return TOPIC_GRADIENTS[Math.abs(hash) % TOPIC_GRADIENTS.length];
-}
 
 function MiniRing({ percent, size = 32 }: { percent: number; size?: number }) {
   const r = (size - 6) / 2;
@@ -303,7 +288,7 @@ export function StudyPage({ settings, onNavigate }: StudyPageProps) {
                   )}
                   style={{ animationDelay: `${index * 60}ms` }}
                 >
-                  <div className={`h-2 bg-gradient-to-r ${topicColor(topic.name)}`} />
+                  <div className={`h-2 bg-gradient-to-r ${getTopicGradient(topic.name)}`} />
                   <CardContent className="space-y-4 px-5 py-5">
                     <div className="flex items-start justify-between gap-3">
                       <div className="space-y-1 min-w-0">
@@ -458,4 +443,3 @@ export function StudyPage({ settings, onNavigate }: StudyPageProps) {
     </div>
   );
 }
-

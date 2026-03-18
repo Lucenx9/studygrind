@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { getQuestions } from '@/lib/storage';
 import { t, type Language } from '@/lib/i18n';
+import { getNextReviewLabel } from '@/lib/utils';
 import { ArrowRight, CheckCircle, Clock, Sparkles, Trophy } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -66,7 +67,7 @@ export function SessionSummary({
   const minutes = Math.floor(durationSeconds / 60);
   const seconds = durationSeconds % 60;
   const reducedMotion = prefersReducedMotion();
-  const nextReview = getNextReviewLabel(language);
+  const nextReview = getNextReviewLabel(getQuestions(), language);
 
   const message = accuracy >= 90
     ? t('session.outstanding', language)
@@ -216,25 +217,4 @@ function RatingDistribution({ ratings, language }: { ratings: { rating: 1 | 2 | 
 function prefersReducedMotion(): boolean {
   return typeof window !== 'undefined'
     && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-}
-
-function getNextReviewLabel(language: Language): string {
-  const now = new Date();
-  const nextDue = getQuestions()
-    .map((question) => new Date(question.fsrsCard.due))
-    .filter((date) => Number.isFinite(date.getTime()) && date.getTime() > now.getTime())
-    .sort((a, b) => a.getTime() - b.getTime())[0];
-
-  if (!nextDue) {
-    return language === 'it' ? 'presto' : 'soon';
-  }
-
-  const diffMs = nextDue.getTime() - now.getTime();
-  const diffHours = Math.max(1, Math.round(diffMs / (1000 * 60 * 60)));
-  if (diffHours < 24) {
-    return language === 'it' ? `${diffHours} ore` : `${diffHours} hours`;
-  }
-
-  const diffDays = Math.round(diffHours / 24);
-  return language === 'it' ? `${diffDays} giorni` : `${diffDays} days`;
 }

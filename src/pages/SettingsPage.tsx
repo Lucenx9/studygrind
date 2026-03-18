@@ -12,6 +12,7 @@ import { fetchDirectModels, fetchOpenRouterModels, type ModelInfo } from '@/lib/
 import { clearAllData } from '@/lib/storage';
 import { t } from '@/lib/i18n';
 import type { DirectProvider, ProviderConfig, Settings } from '@/lib/types';
+import { cn } from '@/lib/utils';
 import { AlertTriangle, Check, Database, Eye, EyeOff, Info, Key, Loader2, Palette, RefreshCw, Search, Shield, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -576,8 +577,4 @@ function SettingsRow({
       <div className="w-full lg:max-w-[420px]">{children}</div>
     </div>
   );
-}
-
-function cn(...classes: Array<string | undefined | false | null>) {
-  return classes.filter(Boolean).join(' ');
 }
