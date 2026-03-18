@@ -1,6 +1,7 @@
-import { useState, useRef } from 'react';
+import { type ChangeEvent, type ReactNode, useRef, useState } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { buildExportData, downloadAsJson, parseImportFile, type ImportPreview } from '@/lib/export';
@@ -18,7 +19,7 @@ import {
 import { useTopics } from '@/hooks/useTopics';
 import { t, type Language } from '@/lib/i18n';
 import { toDateKey } from '@/lib/utils';
-import { Download, Upload, FileJson, AlertTriangle } from 'lucide-react';
+import { Check, Download, Upload, FileJson, AlertTriangle, Info } from 'lucide-react';
 import { v4 as uuid } from 'uuid';
 import { toast } from 'sonner';
 import type { ChatHistory, ReviewSession, Topic } from '@/lib/types';
@@ -50,7 +51,7 @@ export function ExportImport({ language: lang }: ExportImportProps) {
     downloadAsJson(data, `studygrind-${safeName}.json`);
   };
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
@@ -188,43 +189,84 @@ export function ExportImport({ language: lang }: ExportImportProps) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-base flex items-center gap-2">
-          <FileJson className="h-4 w-4" /> {t('settings.dataManagement', lang)}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <Button variant="outline" className="w-full gap-2" onClick={handleExportAll}>
-          <Download className="h-4 w-4" /> {t('settings.exportAll', lang)}
-        </Button>
+      <CardContent className="space-y-5 px-6 py-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-1">
+            <p className="text-tertiary">{lang === 'it' ? 'JSON BACKUP' : 'JSON BACKUP'}</p>
+            <h2 className="flex items-center gap-2 text-xl font-bold tracking-[-0.02em]">
+              <FileJson className="h-5 w-5 text-primary" strokeWidth={1.5} />
+              {t('settings.dataManagement', lang)}
+            </h2>
+            <p className="text-sm leading-6 text-muted-foreground">
+              {lang === 'it'
+                ? 'Esporta o importa il tuo archivio locale mantenendo argomenti, domande e cronologia sincronizzati.'
+                : 'Export or import your local archive while keeping topics, questions, and history in sync.'}
+            </p>
+          </div>
+          <Badge className="gap-1.5">
+            <Info className="h-3.5 w-3.5 text-[#60a5fa]" />
+            {lang === 'it' ? 'Locale' : 'Local only'}
+          </Badge>
+        </div>
+
+        <DataRow
+          title={t('settings.exportAll', lang)}
+          description={lang === 'it'
+            ? 'Scarica un backup completo con argomenti, domande, cronologia del tutor e sessioni di ripasso.'
+            : 'Download a full backup with topics, questions, tutor history, and review sessions.'}
+        >
+          <Button variant="outline" className="w-full gap-2 sm:w-auto" onClick={handleExportAll}>
+            <Download className="h-4 w-4" />
+            {t('settings.exportAll', lang)}
+          </Button>
+        </DataRow>
 
         {topics.length > 0 && (
-          <div className="flex gap-2">
-            <Select onValueChange={(v: string | null) => setSelectedTopic(v)}>
-              <SelectTrigger className="flex-1">
-                <SelectValue placeholder={t('settings.exportTopic', lang)} />
-              </SelectTrigger>
-              <SelectContent>
-                {topics.map(t => (
-                  <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button
-              variant="outline"
-              onClick={handleExportTopic}
-              disabled={!selectedTopic}
-              aria-label={t('settings.exportSelectedTopic', lang)}
-            >
-              <Download className="h-4 w-4" />
-            </Button>
-          </div>
+          <DataRow
+            title={t('settings.exportTopic', lang)}
+            description={lang === 'it'
+              ? 'Crea un file dedicato per un singolo argomento, utile per archivio o condivisione selettiva.'
+              : 'Create a dedicated file for a single topic, useful for archiving or selective sharing.'}
+          >
+            <div className="flex w-full flex-col gap-2 sm:flex-row">
+              <Select onValueChange={(v: string | null) => setSelectedTopic(v)}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder={t('settings.exportTopic', lang)} />
+                </SelectTrigger>
+                <SelectContent>
+                  {topics.map(t => (
+                    <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                className="gap-2 sm:min-w-32"
+                onClick={handleExportTopic}
+                disabled={!selectedTopic}
+                aria-label={t('settings.exportSelectedTopic', lang)}
+              >
+                <Download className="h-4 w-4" />
+                {lang === 'it' ? 'Esporta' : 'Export'}
+              </Button>
+            </div>
+          </DataRow>
         )}
 
-        <input ref={fileInputRef} type="file" accept=".json" onChange={handleFileSelect} className="hidden" />
-        <Button variant="outline" className="w-full gap-2" onClick={() => fileInputRef.current?.click()}>
-          <Upload className="h-4 w-4" /> {t('settings.importData', lang)}
-        </Button>
+        <DataRow
+          title={t('settings.importData', lang)}
+          description={lang === 'it'
+            ? 'Carica un file JSON esistente per ripristinare o unire dati nello storage locale attuale.'
+            : 'Upload an existing JSON file to restore or merge data into the current local storage.'}
+        >
+          <>
+            <input ref={fileInputRef} type="file" accept=".json" onChange={handleFileSelect} className="hidden" />
+            <Button variant="outline" className="w-full gap-2 sm:w-auto" onClick={() => fileInputRef.current?.click()}>
+              <Upload className="h-4 w-4" />
+              {t('settings.importData', lang)}
+            </Button>
+          </>
+        </DataRow>
 
         {importError && (
           <Alert variant="destructive">
@@ -233,48 +275,101 @@ export function ExportImport({ language: lang }: ExportImportProps) {
             <AlertDescription>{importError}</AlertDescription>
           </Alert>
         )}
-        {importSuccess && <p className="text-sm text-green-600 dark:text-green-400">{t('settings.importSuccess', lang)}</p>}
+        {importSuccess && (
+          <Alert>
+            <Check className="h-4 w-4 text-[#34d399]" />
+            <AlertTitle>{lang === 'it' ? 'Import completato' : 'Import complete'}</AlertTitle>
+            <AlertDescription>{t('settings.importSuccess', lang)}</AlertDescription>
+          </Alert>
+        )}
 
         {importPreview && (
-          <div className="rounded-lg border border-border p-4 space-y-3">
-            <p className="text-sm font-medium">{t('settings.importPreview', lang)}</p>
-            <div className="text-sm text-muted-foreground space-y-1">
-              <p>{t('settings.topicCountLabel', lang).replace('{n}', String(importPreview.topicCount))}</p>
-              <p>{t('settings.questionCountLabel', lang).replace('{n}', String(importPreview.questionCount))}</p>
-              <p>{t('settings.sessionCountLabel', lang).replace('{n}', String(importPreview.sessionCount))}</p>
+          <div className="space-y-4 rounded-[24px] border border-[color:var(--sg-border-1)] bg-[color:var(--sg-surface-2)] p-5 shadow-[var(--sg-card-shadow)]">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-tertiary">{t('settings.importPreview', lang)}</p>
+                <p className="mt-1 text-base font-semibold">
+                  {lang === 'it' ? 'Controlla il contenuto prima di importare' : 'Review the file before importing'}
+                </p>
+              </div>
+              <Badge variant="outline" className="gap-1.5 self-start">
+                <FileJson className="h-3.5 w-3.5" />
+                JSON
+              </Badge>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              {[
+                t('settings.topicCountLabel', lang).replace('{n}', String(importPreview.topicCount)),
+                t('settings.questionCountLabel', lang).replace('{n}', String(importPreview.questionCount)),
+                t('settings.sessionCountLabel', lang).replace('{n}', String(importPreview.sessionCount)),
+              ].map((label) => (
+                <div key={label} className="rounded-2xl border border-[color:var(--sg-border-1)] bg-[color:var(--sg-surface-1)] px-4 py-3">
+                  <p className="text-sm font-medium text-foreground">{label}</p>
+                </div>
+              ))}
             </div>
 
             {importPreview.duplicateTopics.length > 0 && (
-              <div className="flex items-start gap-2 rounded-md bg-yellow-500/10 p-3 text-sm">
-                <AlertTriangle className="h-4 w-4 shrink-0 text-yellow-600 dark:text-yellow-400 mt-0.5" />
-                <div>
-                  <p className="text-yellow-700 dark:text-yellow-300">
-                    {t('settings.topicsExist', lang)} {importPreview.duplicateTopics.join(', ')}
-                  </p>
-                  <div className="flex gap-2 mt-2">
-                    <Button size="sm" variant="outline" onClick={() => handleConfirmImport(true)}>
-                      {t('settings.replaceExisting', lang)}
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => handleConfirmImport(false)}>
-                      {t('settings.keepBoth', lang)}
-                    </Button>
+              <div className="rounded-[18px] border border-[rgba(251,191,36,0.2)] bg-[rgba(251,191,36,0.08)] px-4 py-3 text-sm">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[#fbbf24]" />
+                  <div className="space-y-2">
+                    <p className="font-medium text-foreground">
+                      {lang === 'it' ? 'Sono stati trovati argomenti con lo stesso nome.' : 'Topics with the same name were found.'}
+                    </p>
+                    <p className="leading-6 text-muted-foreground">
+                      {t('settings.topicsExist', lang)} {importPreview.duplicateTopics.join(', ')}
+                    </p>
                   </div>
                 </div>
               </div>
             )}
 
-            {importPreview.duplicateTopics.length === 0 && (
-              <Button className="w-full" onClick={() => handleConfirmImport(false)}>
-                {t('settings.confirmImport', lang)}
+            <div className="flex flex-col gap-2 sm:flex-row">
+              {importPreview.duplicateTopics.length > 0 ? (
+                <>
+                  <Button className="w-full sm:flex-1" variant="accent" onClick={() => handleConfirmImport(true)}>
+                    {t('settings.replaceExisting', lang)}
+                  </Button>
+                  <Button className="w-full sm:flex-1" variant="outline" onClick={() => handleConfirmImport(false)}>
+                    {t('settings.keepBoth', lang)}
+                  </Button>
+                </>
+              ) : (
+                <Button className="w-full sm:flex-1" variant="accent" onClick={() => handleConfirmImport(false)}>
+                  {t('settings.confirmImport', lang)}
+                </Button>
+              )}
+              <Button variant="outline" className="w-full sm:w-auto" onClick={() => setImportPreview(null)}>
+                {t('common.cancel', lang)}
               </Button>
-            )}
-
-            <Button variant="ghost" size="sm" className="w-full" onClick={() => setImportPreview(null)}>
-              {t('common.cancel', lang)}
-            </Button>
+            </div>
           </div>
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function DataRow({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-4 border-b border-[color:var(--sg-border-1)] pb-5 last:border-b-0 last:pb-0 lg:flex-row lg:items-start lg:justify-between">
+      <div className="max-w-[360px] space-y-1">
+        <p className="font-semibold">{title}</p>
+        <p className="text-sm leading-6 text-muted-foreground">{description}</p>
+      </div>
+      <div className="w-full lg:max-w-[420px]">
+        {children}
+      </div>
+    </div>
   );
 }
