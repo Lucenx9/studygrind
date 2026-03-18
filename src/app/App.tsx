@@ -8,7 +8,8 @@ import { Loader2 } from 'lucide-react';
 import { useSettings } from '@/hooks/useSettings';
 import { getDueQuestions } from '@/lib/fsrs';
 import { t, type Language } from '@/lib/i18n';
-import { getQuestions, getTopics } from '@/lib/storage';
+import { getQuestions, getSessions, getTopics } from '@/lib/storage';
+import { toDateKey } from '@/lib/utils';
 import { toast } from 'sonner';
 import { ReloadPrompt } from '@/components/ReloadPrompt';
 
@@ -83,6 +84,7 @@ export default function App() {
   const [page, setPage] = useState<Page>('review');
   const { settings, updateSettings } = useSettings();
   const [dueCount, setDueCount] = useState(0);
+  const [totalDueToday, setTotalDueToday] = useState(0);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   // Sync <html lang> attribute when language changes (WCAG, screen readers)
@@ -107,7 +109,16 @@ export default function App() {
 
     const updateDue = () => {
       const due = getDueQuestions(getQuestions());
+      const today = toDateKey(new Date());
+      const completedToday = getSessions()
+        .filter((session) => {
+          const sessionDate = new Date(session.date);
+          return Number.isFinite(sessionDate.getTime()) && toDateKey(sessionDate) === today;
+        })
+        .reduce((sum, session) => sum + session.ratings.length, 0);
+
       setDueCount(due.length);
+      setTotalDueToday(due.length + completedToday);
     };
 
     updateDue();
@@ -140,7 +151,13 @@ export default function App() {
   };
 
   return (
-    <Layout currentPage={page} onNavigate={setPage} dueCount={dueCount} language={settings.language}>
+    <Layout
+      currentPage={page}
+      onNavigate={setPage}
+      dueCount={dueCount}
+      totalDueToday={totalDueToday}
+      language={settings.language}
+    >
       <AppErrorBoundary language={settings.language}>
         <Suspense fallback={<PageFallback language={settings.language} />}>
           {showOnboarding ? (
