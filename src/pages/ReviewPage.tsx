@@ -12,7 +12,7 @@ import { SessionSummary } from '@/components/quiz/SessionSummary';
 import { ChatPanel } from '@/components/chat/ChatPanel';
 import { useReview } from '@/hooks/useReview';
 import { useChat } from '@/hooks/useChat';
-import { BookOpen, Clock3, PartyPopper, Play, Upload, Undo2 } from 'lucide-react';
+import { BookOpen, Clock3, Flame, PartyPopper, Play, Upload, Undo2 } from 'lucide-react';
 import { getQuestions, getTopics } from '@/lib/storage';
 import { getIntervalPreview } from '@/lib/fsrs';
 import type { Grade } from '@/lib/fsrs';
@@ -66,6 +66,25 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
     }, 1000);
     return () => clearInterval(id);
   }, [phase]);
+
+  // Streak counter
+  const [consecutiveCorrect, setConsecutiveCorrect] = useState(0);
+  const prevPhaseRef = useRef(phase);
+
+  useEffect(() => {
+    // Track transitions into feedback phase to update streak
+    if (prevPhaseRef.current !== 'feedback' && phase === 'feedback') {
+      if (review.isCorrect) {
+        setConsecutiveCorrect((prev) => prev + 1);
+      } else {
+        setConsecutiveCorrect(0);
+      }
+    }
+    if (phase === 'idle' || phase === 'summary') {
+      setConsecutiveCorrect(0);
+    }
+    prevPhaseRef.current = phase;
+  }, [phase, review.isCorrect]);
 
   useEffect(() => { setRetypeComplete(false); }, [currentIndex]);
   useEffect(() => { loadDue(); }, [loadDue]);
@@ -264,6 +283,19 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
             <Badge variant="outline">
               {question.type === 'mcq' ? t('quiz.multipleChoice', lang) : t('quiz.fillBlank', lang)}
             </Badge>
+            {consecutiveCorrect >= 3 && (
+              <Badge className={cn(
+                'animate-fade-in-up gap-1 border-[rgba(251,191,36,0.3)] text-[#fbbf24]',
+                consecutiveCorrect >= 10
+                  ? 'bg-[rgba(251,191,36,0.25)]'
+                  : consecutiveCorrect >= 5
+                    ? 'bg-[rgba(251,191,36,0.2)]'
+                    : 'bg-[rgba(251,191,36,0.15)]',
+              )}>
+                <Flame className="h-3 w-3" />
+                {consecutiveCorrect}x
+              </Badge>
+            )}
             <div className="ml-auto flex items-center gap-1.5 rounded-full border border-[color:var(--sg-border-1)] bg-[color:var(--sg-surface-2)] px-2.5 py-1 text-[12px] tabular-nums text-muted-foreground">
               <Clock3 className="h-3 w-3" />
               <span>{formatTimer(elapsedSeconds)}</span>

@@ -28,12 +28,12 @@ export function OptionButton({ label, index, selected, correctIndex, disabled, o
       aria-pressed={selected}
       style={{ animationDelay: `${index * 50}ms` }}
       className={cn(
-        'cursor-pointer animate-fade-in-up flex w-full items-center gap-4 rounded-[16px] border px-4 py-4 text-left shadow-[var(--sg-card-shadow)] transition-all duration-200 active:scale-[0.985] sm:px-5',
+        'cursor-pointer animate-fade-in-up flex w-full items-center gap-4 rounded-[16px] border px-4 py-4 text-left shadow-[var(--sg-card-shadow)] transition-all duration-300 active:scale-[0.985] sm:px-5',
         !isRevealed && !selected && 'border-[color:var(--sg-border-1)] bg-[color:var(--sg-surface-1)] hover:-translate-y-0.5 hover:border-[rgba(99,102,241,0.28)] hover:bg-[rgba(99,102,241,0.04)]',
         !isRevealed && selected && 'border-[rgba(99,102,241,0.55)] bg-[rgba(99,102,241,0.08)] shadow-[0_16px_28px_-24px_rgba(99,102,241,0.75)]',
         isRevealed && isCorrect && 'border-[rgba(52,211,153,0.42)] bg-[rgba(52,211,153,0.08)] animate-correct-pulse',
         isWrong && 'border-[rgba(248,113,113,0.42)] bg-[rgba(248,113,113,0.08)] animate-shake',
-        isRevealed && !isCorrect && !isWrong && 'border-[color:var(--sg-border-1)] bg-[color:var(--sg-surface-1)] opacity-55',
+        isRevealed && !isCorrect && !isWrong && 'border-[color:var(--sg-border-1)] bg-[color:var(--sg-surface-1)] transition-opacity duration-300 opacity-40',
         disabled && !isRevealed && 'cursor-not-allowed opacity-50',
       )}
     >
