@@ -208,7 +208,7 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
           <aside className="self-start rounded-[24px] border border-[color:var(--sg-border-1)] bg-[color:var(--sg-surface-1)] p-4 xl:max-h-[calc(80vh-2rem)] xl:overflow-y-auto">
             <div className="space-y-4">
               <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   value={navSearch}
                   onChange={(event) => setNavSearch(event.target.value)}
@@ -351,7 +351,7 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
                           className={cn(
                             'flex items-center justify-between rounded-2xl border px-4 py-3 text-sm font-medium transition-all',
                             directProvider === provider.key
-                              ? 'border-[rgba(99,102,241,0.24)] bg-[rgba(99,102,241,0.08)] text-foreground'
+                              ? 'border-[rgba(99,102,241,0.24)] bg-[rgba(99,102,241,0.08)] text-foreground shadow-[0_8px_24px_-16px_rgba(99,102,241,0.4)]'
                               : 'border-[color:var(--sg-border-1)] bg-[color:var(--sg-surface-2)] text-muted-foreground hover:text-foreground',
                           )}
                         >
@@ -480,6 +480,10 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
                         <span className="text-sm font-bold tabular-nums text-primary">{localQpg}</span>
                       </div>
                       <Slider value={[localQpg]} onValueChange={handleSliderChange} min={10} max={30} step={1} />
+                      <div className="flex justify-between text-[11px] text-muted-foreground">
+                        <span>10</span>
+                        <span>30</span>
+                      </div>
                     </div>
                   </SettingsRow>
                 </CardContent>
