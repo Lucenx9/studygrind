@@ -303,6 +303,11 @@ export function StudyPage({ settings, onNavigate }: StudyPageProps) {
           ) : (
             <Card>
               <CardContent className="px-6 py-10 text-center">
+                {searchQuery.trim() && (
+                  <div className="mb-4 flex justify-center">
+                    <Search className="h-10 w-10 text-muted-foreground/20" strokeWidth={1.5} />
+                  </div>
+                )}
                 <p className="text-base font-medium">{lang === 'it' ? 'Nessun argomento trovato' : 'No topics found'}</p>
                 <p className="mt-2 text-sm text-muted-foreground">
                   {lang === 'it' ? 'Prova a cambiare ricerca o filtro.' : 'Try changing the search or filter.'}

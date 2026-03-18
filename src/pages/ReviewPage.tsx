@@ -200,7 +200,7 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
         {t('review.questionOf', lang).replace('{current}', String(review.currentIndex + 1)).replace('{total}', String(review.dueQuestions.length))}
       </div>
 
-      <div className="sticky top-3 z-20 rounded-[20px] border border-[color:var(--sg-border-1)] bg-[color:var(--sg-surface-overlay)] px-4 py-4 shadow-[var(--sg-overlay-shadow)] backdrop-blur-2xl">
+      <div className="sticky top-3 z-20 rounded-[20px] border border-b-[color:var(--sg-border-1)] border-[color:var(--sg-border-1)] bg-[color:var(--sg-surface-overlay)] px-4 py-3 shadow-[var(--sg-overlay-shadow)] backdrop-blur-2xl">
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-2">
             {review.canUndo && review.phase === 'question' && (

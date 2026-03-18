@@ -301,7 +301,7 @@ export function DashboardPage({ language: lang, onNavigate }: DashboardPageProps
                 <h2 className="text-[1.8rem] font-semibold tracking-[-0.03em]">{t('dash.startJourney', lang)}</h2>
                 <p className="max-w-2xl text-sm leading-7 text-muted-foreground">{t('dash.startJourneyDesc', lang)}</p>
               </div>
-              <Button variant="accent" size="lg" className="gap-2.5" onClick={() => onNavigate('upload')}>
+              <Button variant="accent" size="lg" className="animate-pulse-glow gap-2.5" onClick={() => onNavigate('upload')}>
                 <Upload className="h-4 w-4" />
                 {t('dash.uploadCta', lang)}
               </Button>
