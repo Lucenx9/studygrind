@@ -6,6 +6,7 @@ import { getDueQuestions } from '@/lib/fsrs';
 import { t, type Language } from '@/lib/i18n';
 import { getQuestions, getSessions } from '@/lib/storage';
 import { toDateKey } from '@/lib/utils';
+import { SimpleTooltip } from '@/components/ui/simple-tooltip';
 import {
   Activity,
   BarChart3,
@@ -65,30 +66,32 @@ function ActivityChart({
         {entries.map((entry, index) => {
           const height = entry.count > 0 ? Math.max((entry.count / max) * 100, 10) : 0;
           return (
-            <div key={entry.date} className="flex flex-1 flex-col items-center gap-3">
-              <span className="text-xs font-semibold tabular-nums text-muted-foreground">
-                {entry.count > 0 ? entry.count : ''}
-              </span>
-              <div className="relative flex h-44 w-full items-end justify-center rounded-[18px] border border-[color:var(--sg-border-1)] bg-[color:var(--sg-surface-2)]/70 px-1.5 pb-1.5 pt-4">
-                <div className="absolute inset-x-1.5 top-1/2 h-px border-t border-dashed border-[color:var(--sg-border-1)] opacity-60" />
-                <div className="absolute inset-x-1.5 top-1/4 h-px border-t border-dashed border-[color:var(--sg-border-1)] opacity-35" />
-                {height > 0 ? (
-                  <div
-                    className={`w-full rounded-[14px] bg-[linear-gradient(180deg,#8b5cf6_0%,#6366f1_100%)] shadow-[0_14px_30px_-18px_rgba(99,102,241,0.72)] transition-[height,filter,transform] duration-700 ease-out ${
-                      entry.isToday ? 'animate-pulse-glow' : ''
-                    }`}
-                    style={{ height: `${height}%`, animationDelay: `${index * 50}ms` }}
-                  />
-                ) : (
-                  <div className="absolute left-1/2 top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[color:var(--sg-border-2)]" />
-                )}
+            <SimpleTooltip key={entry.date} content={`${entry.label}: ${entry.count} cards`}>
+              <div className="flex flex-1 flex-col items-center gap-3">
+                <span className="text-xs font-semibold tabular-nums text-muted-foreground">
+                  {entry.count > 0 ? entry.count : ''}
+                </span>
+                <div className="relative flex h-44 w-full items-end justify-center rounded-[18px] border border-[color:var(--sg-border-1)] bg-[color:var(--sg-surface-2)]/70 px-1.5 pb-1.5 pt-4">
+                  <div className="absolute inset-x-1.5 top-1/2 h-px border-t border-dashed border-[color:var(--sg-border-1)] opacity-60" />
+                  <div className="absolute inset-x-1.5 top-1/4 h-px border-t border-dashed border-[color:var(--sg-border-1)] opacity-35" />
+                  {height > 0 ? (
+                    <div
+                      className={`w-full rounded-[14px] bg-[linear-gradient(180deg,#8b5cf6_0%,#6366f1_100%)] shadow-[0_14px_30px_-18px_rgba(99,102,241,0.72)] transition-[height,filter,transform] duration-700 ease-out ${
+                        entry.isToday ? 'animate-pulse-glow' : ''
+                      }`}
+                      style={{ height: `${height}%`, animationDelay: `${index * 50}ms` }}
+                    />
+                  ) : (
+                    <div className="absolute left-1/2 top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[color:var(--sg-border-2)]" />
+                  )}
+                </div>
+                <div className="text-center">
+                  <p className={`text-[11px] font-semibold uppercase tracking-[0.05em] ${entry.isToday ? 'text-primary' : 'text-muted-foreground'}`}>
+                    {entry.label}
+                  </p>
+                </div>
               </div>
-              <div className="text-center">
-                <p className={`text-[11px] font-semibold uppercase tracking-[0.05em] ${entry.isToday ? 'text-primary' : 'text-muted-foreground'}`}>
-                  {entry.label}
-                </p>
-              </div>
-            </div>
+            </SimpleTooltip>
           );
         })}
       </div>
@@ -148,11 +151,11 @@ function Heatmap({
               {week.map((cell) => {
                 const intensity = cell.count > 0 ? Math.ceil((cell.count / maxCount) * 4) : 0;
                 return (
-                  <div
-                    key={cell.date}
-                    className={`h-4 w-4 rounded-[4px] border border-[color:var(--sg-border-1)] ${intensityClasses[intensity]}`}
-                    title={`${cell.date}: ${cell.count} ${t('dash.questionsWord', language)}`}
-                  />
+                  <SimpleTooltip key={cell.date} content={`${cell.date}: ${cell.count} ${t('dash.questionsWord', language)}`}>
+                    <div
+                      className={`h-4 w-4 rounded-[4px] border border-[color:var(--sg-border-1)] ${intensityClasses[intensity]}`}
+                    />
+                  </SimpleTooltip>
                 );
               })}
             </div>
@@ -206,6 +209,25 @@ export function DashboardPage({ language: lang, onNavigate }: DashboardPageProps
   const heatmapData = getHeatmapData(dash.activities);
   const totalUpcoming = Array.from(dash.forecast.values()).reduce((sum, count) => sum + count, 0);
 
+  // Yesterday's stats for trend indicators
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayKey = toDateKey(yesterday);
+  const yesterdaySessions = sessions.filter((s) => {
+    const d = new Date(s.date);
+    return Number.isFinite(d.getTime()) && toDateKey(d) === yesterdayKey;
+  });
+  const yesterdayReviewed = yesterdaySessions.reduce((sum, s) => sum + s.totalQuestions, 0);
+  const yesterdayCorrect = yesterdaySessions.reduce((sum, s) => sum + s.correctAnswers, 0);
+  const yesterdayAccuracy = yesterdayReviewed > 0 ? yesterdayCorrect / yesterdayReviewed : 0;
+  const yesterdayDuration = yesterdaySessions.reduce((sum, s) => sum + s.durationSeconds, 0);
+  const hasYesterday = yesterdaySessions.length > 0;
+
+  const getTrend = (today: number, yest: number): 'up' | 'down' | 'neutral' => {
+    if (!hasYesterday || today === yest) return 'neutral';
+    return today > yest ? 'up' : 'down';
+  };
+
   const statItems = [
     {
       key: 'reviewed',
@@ -215,6 +237,7 @@ export function DashboardPage({ language: lang, onNavigate }: DashboardPageProps
       iconClass: 'bg-[rgba(99,102,241,0.12)] text-[#818cf8]',
       valueClass: 'text-[#818cf8]',
       borderClass: 'border-l-[3px] border-l-[#818cf8]',
+      trend: getTrend(dash.todayReviewed, yesterdayReviewed),
     },
     {
       key: 'accuracy',
@@ -224,6 +247,7 @@ export function DashboardPage({ language: lang, onNavigate }: DashboardPageProps
       iconClass: 'bg-[rgba(52,211,153,0.12)] text-[#34d399]',
       valueClass: 'text-[#34d399]',
       borderClass: 'border-l-[3px] border-l-[#34d399]',
+      trend: getTrend(Math.round(dash.todayAccuracy * 100), Math.round(yesterdayAccuracy * 100)),
     },
     {
       key: 'time',
@@ -233,6 +257,7 @@ export function DashboardPage({ language: lang, onNavigate }: DashboardPageProps
       iconClass: 'bg-[rgba(139,92,246,0.12)] text-[#c084fc]',
       valueClass: 'text-[#c084fc]',
       borderClass: 'border-l-[3px] border-l-[#c084fc]',
+      trend: getTrend(dash.todayDuration, yesterdayDuration),
     },
     {
       key: 'streak',
@@ -242,6 +267,7 @@ export function DashboardPage({ language: lang, onNavigate }: DashboardPageProps
       iconClass: 'bg-[rgba(251,191,36,0.12)] text-[#fbbf24]',
       valueClass: 'text-[#fbbf24]',
       borderClass: 'border-l-[3px] border-l-[#fbbf24]',
+      trend: 'neutral' as const,
     },
   ];
 
@@ -271,7 +297,7 @@ export function DashboardPage({ language: lang, onNavigate }: DashboardPageProps
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {statItems.map(({ key, label, value, icon: Icon, iconClass, valueClass, borderClass }, index) => (
+        {statItems.map(({ key, label, value, icon: Icon, iconClass, valueClass, borderClass, trend }, index) => (
           <Card
             key={key}
             className={`sg-hover-card animate-stagger-in overflow-hidden ${borderClass}`}
@@ -282,7 +308,11 @@ export function DashboardPage({ language: lang, onNavigate }: DashboardPageProps
                 <Icon className="h-5 w-5" strokeWidth={1.5} />
               </div>
               <div className="min-w-0">
-                <p className={`text-[1.9rem] font-bold tracking-[-0.04em] tabular-nums ${valueClass}`}>{value}</p>
+                <p className={`text-[1.9rem] font-bold tracking-[-0.04em] tabular-nums ${valueClass}`}>
+                  {value}
+                  {trend === 'up' && <span className="ml-1 text-[11px] text-[#34d399]">{'\u2191'}</span>}
+                  {trend === 'down' && <span className="ml-1 text-[11px] text-[#f87171]">{'\u2193'}</span>}
+                </p>
                 <p className="mt-1 text-tertiary">{label}</p>
               </div>
             </CardContent>
@@ -391,27 +421,28 @@ export function DashboardPage({ language: lang, onNavigate }: DashboardPageProps
                     const day = parseDateKey(date);
                     const isToday = date === toDateKey(new Date());
                     return (
-                      <div
-                        key={date}
-                        className={`rounded-2xl border px-3 py-4 text-center transition-all duration-200 ${
-                          isToday
-                            ? 'border-[rgba(99,102,241,0.18)] ring-1 ring-primary/30 bg-[linear-gradient(180deg,rgba(99,102,241,0.18),rgba(139,92,246,0.08))] animate-pulse-glow'
-                            : 'border-[color:var(--sg-border-1)] bg-[color:var(--sg-surface-2)]'
-                        }`}
-                      >
-                        <p className={`text-[11px] font-semibold uppercase tracking-[0.05em] ${isToday ? 'text-primary-foreground/70' : 'text-tertiary'}`}>
-                          {isToday ? t('dash.today', lang) : formatWeekday(day, lang)}
-                        </p>
-                        <p className={`mt-2 text-2xl font-semibold tracking-[-0.04em] tabular-nums ${isToday ? 'text-primary-foreground' : 'text-foreground'}`}>
-                          {count}
-                        </p>
-                        <div className="mt-2 flex items-center justify-center gap-1">
-                          <span className={`h-1.5 w-1.5 rounded-full ${count > 0 ? (isToday ? 'bg-primary-foreground/80' : 'bg-primary') : 'bg-transparent'}`} />
-                          <span className={`text-[11px] ${isToday ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
-                            {lang === 'it' ? 'domande' : 'cards'}
-                          </span>
+                      <SimpleTooltip key={date} content={`${date} — ${count} ${lang === 'it' ? 'carte da ripassare' : 'cards to review'}`}>
+                        <div
+                          className={`rounded-2xl border px-3 py-4 text-center transition-all duration-200 ${
+                            isToday
+                              ? 'border-[rgba(99,102,241,0.18)] ring-1 ring-primary/30 bg-[linear-gradient(180deg,rgba(99,102,241,0.18),rgba(139,92,246,0.08))] animate-pulse-glow'
+                              : 'border-[color:var(--sg-border-1)] bg-[color:var(--sg-surface-2)]'
+                          }`}
+                        >
+                          <p className={`text-[11px] font-semibold uppercase tracking-[0.05em] ${isToday ? 'text-primary-foreground/70' : 'text-tertiary'}`}>
+                            {isToday ? t('dash.today', lang) : formatWeekday(day, lang)}
+                          </p>
+                          <p className={`mt-2 text-2xl font-semibold tracking-[-0.04em] tabular-nums ${isToday ? 'text-primary-foreground' : 'text-foreground'}`}>
+                            {count}
+                          </p>
+                          <div className="mt-2 flex items-center justify-center gap-1">
+                            <span className={`h-1.5 w-1.5 rounded-full ${count > 0 ? (isToday ? 'bg-primary-foreground/80' : 'bg-primary') : 'bg-transparent'}`} />
+                            <span className={`text-[11px] ${isToday ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                              {lang === 'it' ? 'domande' : 'cards'}
+                            </span>
+                          </div>
                         </div>
-                      </div>
+                      </SimpleTooltip>
                     );
                   })}
                 </div>

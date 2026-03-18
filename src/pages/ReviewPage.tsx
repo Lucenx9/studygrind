@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -15,6 +15,7 @@ import { useChat } from '@/hooks/useChat';
 import { BookOpen, PartyPopper, Play, Upload, Undo2 } from 'lucide-react';
 import { getQuestions, getTopics } from '@/lib/storage';
 import { getIntervalPreview } from '@/lib/fsrs';
+import type { Grade } from '@/lib/fsrs';
 import { t } from '@/lib/i18n';
 import type { Settings } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -29,6 +30,7 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
   const chat = useChat(settings);
   const lang = settings.language;
   const [retypeComplete, setRetypeComplete] = useState(false);
+  const [transitioning, setTransitioning] = useState(false);
   const loadDue = review.loadDue;
   const canUndo = review.canUndo;
   const phase = review.phase;
@@ -48,6 +50,14 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [canUndo, phase, undo]);
+
+  const handleRate = useCallback((rating: Grade) => {
+    setTransitioning(true);
+    setTimeout(() => {
+      review.rate(rating);
+      setTransitioning(false);
+    }, 200);
+  }, [review]);
 
   const handleOpenChat = () => {
     const question = review.currentQuestion;
@@ -231,7 +241,13 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
         </div>
       </div>
 
-      <div className="space-y-5">
+      <div
+        key={review.currentIndex}
+        className={cn(
+          'space-y-5',
+          transitioning ? 'animate-question-exit' : 'animate-question-enter',
+        )}
+      >
         {question.type === 'mcq' ? (
           <McqQuestion
             key={question.id}
@@ -270,7 +286,7 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
               />
             )}
             {(review.isCorrect || retypeComplete) && (
-              <RatingButtons onRate={review.rate} language={lang} intervals={question ? getIntervalPreview(question.fsrsCard) : undefined} />
+              <RatingButtons onRate={handleRate} language={lang} intervals={question ? getIntervalPreview(question.fsrsCard) : undefined} />
             )}
           </div>
         )}

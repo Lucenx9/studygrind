@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { GraduationCap, Upload, Brain, Sparkles, ArrowRight, Check } from 'lucide-react';
+import { Upload, Brain, Sparkles, ArrowRight, Check } from 'lucide-react';
 import { t, type Language } from '@/lib/i18n';
 
 interface WelcomeWizardProps {
@@ -82,7 +82,7 @@ export function WelcomeWizard({ language: lang, hasProvider, onGoToSettings, onG
       <div className="w-full max-w-4xl space-y-8 text-center">
         <div className="space-y-3">
           <div className="inline-flex items-center gap-3 rounded-full border border-border/70 bg-background/60 px-5 py-3 shadow-[0_18px_44px_-36px_rgba(15,23,42,0.7)]">
-            <GraduationCap className="h-8 w-8 text-primary" />
+            <img src="/study/logo.svg" alt="" className="h-8 w-8" aria-hidden="true" />
             <span className="text-2xl font-semibold tracking-[-0.03em]">StudyGrind</span>
           </div>
           <p className="mx-auto max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">{t('onboarding.subtitle', lang)}</p>

@@ -62,9 +62,12 @@ export function Sidebar({ currentPage, onNavigate, dueCount, totalDueToday, lang
       <aside className="sticky top-0 hidden h-dvh w-[272px] shrink-0 flex-col border-r border-[color:var(--sg-border-1)] bg-[color:var(--sg-surface-sidebar)] px-4 py-5 backdrop-blur-2xl md:flex">
         {/* Brand */}
         <div className="mb-5 flex items-start justify-between gap-3 px-2">
-          <div>
-            <h1 className="text-lg font-bold tracking-[-0.03em]">StudyGrind</h1>
-            <p className="text-tertiary mt-1">{t('common.appTagline', language)}</p>
+          <div className="flex items-center gap-2.5">
+            <img src="/study/logo.svg" alt="" className="h-8 w-8" aria-hidden="true" />
+            <div>
+              <h1 className="text-lg font-bold tracking-[-0.03em]">StudyGrind</h1>
+              <p className="text-tertiary mt-0.5">{t('common.appTagline', language)}</p>
+            </div>
           </div>
           <button
             type="button"

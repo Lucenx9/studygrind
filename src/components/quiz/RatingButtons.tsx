@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Rating } from '@/lib/fsrs';
 import type { Grade } from '@/lib/fsrs';
 import { t, type Language } from '@/lib/i18n';
+import { cn } from '@/lib/utils';
 
 interface RatingButtonsProps {
   onRate: (rating: Grade) => void;
@@ -18,7 +19,7 @@ const RATINGS: { rating: Grade; labelKey: 'rating.again' | 'rating.hard' | 'rati
 ];
 
 export function RatingButtons({ onRate, language, intervals }: RatingButtonsProps) {
-  const [submitted, setSubmitted] = useState(false);
+  const [selectedRating, setSelectedRating] = useState<Grade | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Auto-focus container so keyboard shortcuts work immediately
@@ -26,19 +27,19 @@ export function RatingButtons({ onRate, language, intervals }: RatingButtonsProp
 
   // WCAG 2.1.4: shortcuts scoped to focused container, not global
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (submitted) return;
+    if (selectedRating !== null) return;
     const idx = ['1', '2', '3', '4'].indexOf(e.key);
     if (idx >= 0) {
       e.preventDefault();
-      setSubmitted(true);
-      onRate(RATINGS[idx].rating);
+      setSelectedRating(RATINGS[idx].rating);
+      setTimeout(() => onRate(RATINGS[idx].rating), 120);
     }
   };
 
   const handleClick = (rating: Grade) => {
-    if (submitted) return;
-    setSubmitted(true);
-    onRate(rating);
+    if (selectedRating !== null) return;
+    setSelectedRating(rating);
+    setTimeout(() => onRate(rating), 120);
   };
 
   return (
@@ -53,15 +54,19 @@ export function RatingButtons({ onRate, language, intervals }: RatingButtonsProp
         <p className="text-sm font-medium text-foreground">{t('quiz.howWellDidYouKnow', language)}</p>
         <p className="text-tertiary">{language === 'it' ? 'Usa 1-4' : 'Use 1-4'}</p>
       </div>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className={cn('grid grid-cols-2 gap-3 sm:grid-cols-4', selectedRating !== null && 'pointer-events-none')}>
         {RATINGS.map(({ rating, labelKey, descKey, intervalKey, color, key, emoji }, idx) => (
           <Button
             key={rating}
             variant="outline"
             onClick={() => handleClick(rating)}
-            disabled={submitted}
+            disabled={selectedRating !== null}
             style={{ animationDelay: `${idx * 60}ms` }}
-            className={`animate-fade-in-up flex h-auto min-h-[112px] flex-col items-start rounded-[18px] px-3.5 py-3.5 text-left active:scale-95 ${color}`}
+            className={cn(
+              'animate-fade-in-up flex h-auto min-h-[112px] flex-col items-start rounded-[18px] px-3.5 py-3.5 text-left active:scale-95',
+              color,
+              selectedRating === rating && 'ring-2 ring-current scale-95',
+            )}
           >
             <div className="flex w-full items-center justify-between">
               <span className="flex items-center gap-1.5">

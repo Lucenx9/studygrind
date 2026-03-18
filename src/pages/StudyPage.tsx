@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,6 +16,7 @@ import { useStudy } from '@/hooks/useStudy';
 import { useTopics } from '@/hooks/useTopics';
 import { useChat } from '@/hooks/useChat';
 import { getDueQuestions, getIntervalPreview } from '@/lib/fsrs';
+import type { Grade } from '@/lib/fsrs';
 import { getQuestionsByTopic, getSessions, getTopics } from '@/lib/storage';
 import { t } from '@/lib/i18n';
 import type { Settings } from '@/lib/types';
@@ -35,6 +36,7 @@ export function StudyPage({ settings, onNavigate }: StudyPageProps) {
   const chat = useChat(settings);
   const lang = settings.language;
   const [retypeComplete, setRetypeComplete] = useState(false);
+  const [transitioning, setTransitioning] = useState(false);
   const [selectedTopicId, setSelectedTopicId] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<TopicFilter>('all');
@@ -101,6 +103,14 @@ export function StudyPage({ settings, onNavigate }: StudyPageProps) {
   });
 
   const selectedTopic = topicCards.find((topic) => topic.id === selectedTopicId) ?? null;
+
+  const handleRate = useCallback((rating: Grade) => {
+    setTransitioning(true);
+    setTimeout(() => {
+      study.rate(rating);
+      setTransitioning(false);
+    }, 200);
+  }, [study]);
 
   const handleOpenChat = () => {
     const question = study.currentQuestion;
@@ -339,7 +349,13 @@ export function StudyPage({ settings, onNavigate }: StudyPageProps) {
             </div>
           </div>
 
-          <div className="space-y-5">
+          <div
+            key={study.currentIndex}
+            className={cn(
+              'space-y-5',
+              transitioning ? 'animate-question-exit' : 'animate-question-enter',
+            )}
+          >
             {study.currentQuestion.type === 'mcq' ? (
               <McqQuestion
                 key={study.currentQuestion.id}
@@ -375,7 +391,7 @@ export function StudyPage({ settings, onNavigate }: StudyPageProps) {
                   />
                 )}
                 {(study.isCorrect || retypeComplete) && (
-                  <RatingButtons onRate={study.rate} language={lang} intervals={study.currentQuestion ? getIntervalPreview(study.currentQuestion.fsrsCard) : undefined} />
+                  <RatingButtons onRate={handleRate} language={lang} intervals={study.currentQuestion ? getIntervalPreview(study.currentQuestion.fsrsCard) : undefined} />
                 )}
               </div>
             )}

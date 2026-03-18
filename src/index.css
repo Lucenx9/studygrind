@@ -498,6 +498,21 @@
   box-shadow: var(--sg-card-shadow);
 }
 
+/* Question transition animations */
+@keyframes questionExit {
+  to { opacity: 0; transform: translateX(-20px) scale(0.98); }
+}
+@keyframes questionEnter {
+  from { opacity: 0; transform: translateX(20px) scale(0.98); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+.animate-question-exit {
+  animation: questionExit 0.18s ease-in forwards;
+}
+.animate-question-enter {
+  animation: questionEnter 0.25s ease-out both;
+}
+
 /* Accessibility: respect reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-in-up,
@@ -509,7 +524,9 @@
   .animate-shimmer,
   .animate-slide-down,
   .animate-stagger-in,
-  .animate-progress-fill {
+  .animate-progress-fill,
+  .animate-question-exit,
+  .animate-question-enter {
     animation: none !important;
   }
 }
