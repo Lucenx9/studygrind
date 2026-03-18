@@ -87,13 +87,21 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
   }, [directModels, directSearch]);
   const activeMethod = settings.provider?.method ?? null;
 
+  // Track last-fetched keys to detect changes (force refresh on new key)
+  const lastOpenRouterKeyRef = useRef('');
+  const lastDirectKeyRef = useRef('');
+  const lastDirectProviderRef = useRef<DirectProvider>(directProvider);
+
   // Fetch OpenRouter models
   const handleFetchOpenRouterModels = async () => {
     if (!openRouterKey.trim()) return;
+    const cleaned = cleanKey(openRouterKey);
+    const forceRefresh = cleaned !== lastOpenRouterKeyRef.current;
+    lastOpenRouterKeyRef.current = cleaned;
     setOpenRouterLoading(true);
     setOpenRouterError(null);
     try {
-      const models = await fetchOpenRouterModels(cleanKey(openRouterKey));
+      const models = await fetchOpenRouterModels(cleaned, forceRefresh);
       if (!isMountedRef.current) return;
       setOpenRouterModels(models);
       if (models.length > 0 && !openRouterModel) setOpenRouterModel(models[0].id);
@@ -110,10 +118,14 @@ export function SettingsPage({ settings, onUpdate }: SettingsPageProps) {
   // Fetch direct provider models
   const handleFetchDirectModels = async () => {
     if (!directKey.trim()) return;
+    const cleaned = cleanKey(directKey);
+    const forceRefresh = cleaned !== lastDirectKeyRef.current || directProvider !== lastDirectProviderRef.current;
+    lastDirectKeyRef.current = cleaned;
+    lastDirectProviderRef.current = directProvider;
     setDirectLoading(true);
     setDirectError(null);
     try {
-      const models = await fetchDirectModels(directProvider, cleanKey(directKey));
+      const models = await fetchDirectModels(directProvider, cleaned, forceRefresh);
       if (!isMountedRef.current) return;
       setDirectModels(models);
       if (models.length > 0 && !directModel) setDirectModel(models[0].id);

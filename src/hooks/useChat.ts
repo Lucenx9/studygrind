@@ -4,7 +4,8 @@ import { t } from '@/lib/i18n';
 import { getChatHistory, saveChatHistory } from '@/lib/storage';
 import { chatCompletion } from '@/lib/ai';
 
-const MAX_MESSAGES = 20;
+export const MAX_MESSAGES = 20;
+export const WARN_THRESHOLD = 4;
 
 interface ChatContext {
   question: Question;
@@ -191,6 +192,8 @@ export function useChat(settings: Settings) {
     }
   }, [history, settings]);
 
+  const messageCount = history?.messages.length ?? 0;
+
   return {
     history,
     isOpen,
@@ -199,6 +202,7 @@ export function useChat(settings: Settings) {
     closeChat,
     sendMessage,
     hasHistory,
-    canSendMore: (history?.messages.length ?? 0) < MAX_MESSAGES,
+    canSendMore: messageCount < MAX_MESSAGES,
+    messagesRemaining: MAX_MESSAGES - messageCount,
   };
 }

@@ -8,6 +8,7 @@ import { toDateKey } from '@/lib/utils';
 import { v4 as uuid } from 'uuid';
 
 const SESSION_KEY = 'studygrind_active_session';
+const MAX_UNDO_STACK = 50;
 
 interface SavedSession {
   questionIds: string[];
@@ -163,26 +164,60 @@ export function useReview() {
     // Check for an in-progress session to resume
     const saved = loadActiveSession();
     if (saved && saved.currentIndex < saved.questionIds.length) {
-      // Rebuild due questions from saved IDs (in original order)
       const questionMap = new Map(allQuestions.map(q => [q.id, q]));
-      const savedQuestions = saved.questionIds
-        .map(id => questionMap.get(id))
-        .filter((q): q is Question => q !== undefined);
+      const validSet = new Set(
+        saved.questionIds.filter(id => questionMap.has(id)),
+      );
 
-      if (savedQuestions.length === saved.questionIds.length) {
-        startTime.current = saved.startTime;
-        setSummary(null);
-        setState({
-          phase: saved.phase,
-          dueQuestions: savedQuestions,
-          currentIndex: saved.currentIndex,
-          correctCount: saved.correctCount,
-          ratings: saved.ratings,
-          results: saved.results,
-          userAnswer: saved.userAnswer,
-          isCorrect: saved.isCorrect,
-        });
-        return savedQuestions;
+      if (validSet.size > 0) {
+        const savedQuestions = saved.questionIds
+          .filter(id => validSet.has(id))
+          .map(id => questionMap.get(id)!);
+
+        let newIndex = saved.currentIndex;
+        let newResults = saved.results;
+        let newCorrectCount = saved.correctCount;
+        let newRatings = saved.ratings;
+        let newPhase = saved.phase;
+        let newUserAnswer = saved.userAnswer;
+        let newIsCorrect = saved.isCorrect;
+
+        if (validSet.size < saved.questionIds.length) {
+          const indexMap: number[] = [];
+          saved.questionIds.forEach((id, i) => {
+            if (validSet.has(id)) indexMap.push(i);
+          });
+          newResults = indexMap.map(i => saved.results[i] ?? null);
+          newRatings = saved.ratings.filter(r => validSet.has(r.questionId));
+          newCorrectCount = newResults.filter(r => r === 'correct').length;
+
+          const oldCurrentId = saved.questionIds[saved.currentIndex];
+          if (oldCurrentId && validSet.has(oldCurrentId)) {
+            newIndex = indexMap.indexOf(saved.currentIndex);
+          } else {
+            const nextValid = indexMap.find(i => i >= saved.currentIndex);
+            newIndex = nextValid !== undefined ? indexMap.indexOf(nextValid) : savedQuestions.length;
+            newPhase = 'question';
+            newUserAnswer = null;
+            newIsCorrect = null;
+          }
+        }
+
+        if (newIndex < savedQuestions.length) {
+          startTime.current = saved.startTime;
+          setSummary(null);
+          setState({
+            phase: newPhase,
+            dueQuestions: savedQuestions,
+            currentIndex: newIndex,
+            correctCount: newCorrectCount,
+            ratings: newRatings,
+            results: newResults,
+            userAnswer: newUserAnswer,
+            isCorrect: newIsCorrect,
+          });
+          return savedQuestions;
+        }
       }
     }
 
@@ -267,11 +302,14 @@ export function useReview() {
       if (!current) return prev;
 
       // Save undo entry before modifying
-      undoStack.current.push({
-        previousCardState: { ...current.fsrsCard },
-        questionId: current.id,
-        previousState: { ...prev },
-      });
+      undoStack.current = [
+        ...undoStack.current.slice(-MAX_UNDO_STACK + 1),
+        {
+          previousCardState: { ...current.fsrsCard },
+          questionId: current.id,
+          previousState: { ...prev },
+        },
+      ];
       setCanUndo(true);
 
       // Update FSRS card

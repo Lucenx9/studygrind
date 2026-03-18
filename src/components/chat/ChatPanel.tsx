@@ -6,18 +6,20 @@ import type { ChatHistory } from '@/lib/types';
 import { X, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { t, type Language } from '@/lib/i18n';
+import { WARN_THRESHOLD } from '@/hooks/useChat';
 
 interface ChatPanelProps {
   isOpen: boolean;
   history: ChatHistory | null;
   loading: boolean;
   canSendMore: boolean;
+  messagesRemaining: number;
   language: Language;
   onSend: (message: string) => void;
   onClose: () => void;
 }
 
-export function ChatPanel({ isOpen, history, loading, canSendMore, language, onSend, onClose }: ChatPanelProps) {
+export function ChatPanel({ isOpen, history, loading, canSendMore, messagesRemaining, language, onSend, onClose }: ChatPanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -87,13 +89,20 @@ export function ChatPanel({ isOpen, history, loading, canSendMore, language, onS
         </div>
 
         {canSendMore ? (
-          <ChatInput
-            onSend={onSend}
-            disabled={loading}
-            placeholder={t('chat.whatConfused', language)}
-            inputLabel={t('chat.whatConfused', language)}
-            sendLabel={t('chat.send', language)}
-          />
+          <div>
+            {messagesRemaining <= WARN_THRESHOLD && (
+              <div className="px-4 pt-2 text-center text-xs text-muted-foreground/80">
+                {t('chat.messagesRemaining', language).replace('{n}', String(messagesRemaining))}
+              </div>
+            )}
+            <ChatInput
+              onSend={onSend}
+              disabled={loading}
+              placeholder={t('chat.whatConfused', language)}
+              inputLabel={t('chat.whatConfused', language)}
+              sendLabel={t('chat.send', language)}
+            />
+          </div>
         ) : (
           <div className="border-t border-border/70 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] text-center text-xs text-muted-foreground">
             {t('chat.limitReached', language)}

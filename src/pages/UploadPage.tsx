@@ -30,6 +30,8 @@ export function UploadPage({ settings }: UploadPageProps) {
   const [generatedQuestions, setGeneratedQuestions] = useState<Question[] | null>(null);
   const [pendingTopicId, setPendingTopicId] = useState<string | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [currentAttempt, setCurrentAttempt] = useState(0);
+  const MAX_ATTEMPTS = 2;
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isMountedRef = useRef(true);
   const lang = settings.language;
@@ -69,7 +71,7 @@ export function UploadPage({ settings }: UploadPageProps) {
     if (!settings.provider) { setError(t('upload.configureProvider', lang)); return; }
     if (!notes.trim() || !topicName.trim()) { setError(t('upload.missingFields', lang)); return; }
 
-    setGenerating(true); setError(null); setGeneratedQuestions(null);
+    setGenerating(true); setError(null); setGeneratedQuestions(null); setCurrentAttempt(1);
 
     try {
       const tempTopicId = crypto.randomUUID();
@@ -81,7 +83,8 @@ export function UploadPage({ settings }: UploadPageProps) {
       let lastError: Error | null = null;
       let retryCount = settings.questionsPerGeneration;
 
-      for (let attempt = 0; attempt < 2; attempt++) {
+      for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+        setCurrentAttempt(attempt + 1);
         // On truncation retry, halve the question count
         const currentMessages = attempt === 0
           ? baseMessages
@@ -221,7 +224,7 @@ export function UploadPage({ settings }: UploadPageProps) {
                     <p className="text-xs leading-5 text-muted-foreground">{t('upload.generationHelp', lang)}</p>
                   </div>
                   <Button onClick={handleGenerate} disabled={generating || !notes.trim() || !topicName.trim() || !settings.provider} className="w-full sm:w-auto" size="lg">
-                    {generating ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('upload.generating', lang)} {elapsedSeconds}s</>) : t('upload.generateQuestions', lang)}
+                    {generating ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('upload.generating', lang)} {elapsedSeconds}s{currentAttempt > 1 && <span className="ml-1 text-xs opacity-75">({t('upload.attempt', lang).replace('{current}', String(currentAttempt)).replace('{max}', String(MAX_ATTEMPTS))})</span>}</>) : t('upload.generateQuestions', lang)}
                   </Button>
                 </div>
               </div>

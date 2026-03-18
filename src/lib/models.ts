@@ -16,8 +16,32 @@ export interface ModelInfo {
   name: string;
 }
 
-export async function fetchOpenRouterModels(apiKey: string): Promise<ModelInfo[]> {
+// Simple in-memory cache for model lists
+const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+const modelCache = new Map<string, { data: ModelInfo[]; timestamp: number }>();
+
+function getCached(key: string): ModelInfo[] | null {
+  const entry = modelCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.timestamp >= CACHE_TTL_MS) {
+    modelCache.delete(key);
+    return null;
+  }
+  return entry.data;
+}
+
+function setCache(key: string, data: ModelInfo[]) {
+  modelCache.set(key, { data, timestamp: Date.now() });
+}
+
+export async function fetchOpenRouterModels(apiKey: string, forceRefresh = false): Promise<ModelInfo[]> {
   const normalizedKey = normalizeCredential(apiKey);
+  const cacheKey = `openrouter:${normalizedKey}`;
+  if (!forceRefresh) {
+    const cached = getCached(cacheKey);
+    if (cached) return cached;
+  }
+
   const res = await fetch('https://openrouter.ai/api/v1/models', {
     headers: {
       'Authorization': `Bearer ${normalizedKey}`,
@@ -28,24 +52,32 @@ export async function fetchOpenRouterModels(apiKey: string): Promise<ModelInfo[]
   if (!res.ok) throw new Error(`Failed to fetch models: ${res.status}`);
 
   const data = await res.json();
-  return (data.data as { id: string; name: string }[])
+  const models = (data.data as { id: string; name: string }[])
     .map(m => ({ id: m.id, name: m.name || m.id }))
     .sort((a, b) => a.name.localeCompare(b.name));
+  setCache(cacheKey, models);
+  return models;
 }
 
-export async function fetchDirectModels(provider: DirectProvider, apiKey: string): Promise<ModelInfo[]> {
+export async function fetchDirectModels(provider: DirectProvider, apiKey: string, forceRefresh = false): Promise<ModelInfo[]> {
   switch (provider) {
     case 'openai':
-      return fetchOpenAIModels(apiKey);
+      return fetchOpenAIModels(apiKey, forceRefresh);
     case 'anthropic':
-      return fetchAnthropicModels(apiKey);
+      return fetchAnthropicModels(apiKey, forceRefresh);
     case 'google':
-      return fetchGoogleModels(apiKey);
+      return fetchGoogleModels(apiKey, forceRefresh);
   }
 }
 
-async function fetchOpenAIModels(apiKey: string): Promise<ModelInfo[]> {
+async function fetchOpenAIModels(apiKey: string, forceRefresh = false): Promise<ModelInfo[]> {
   const normalizedKey = normalizeCredential(apiKey);
+  const cacheKey = `openai:${normalizedKey}`;
+  if (!forceRefresh) {
+    const cached = getCached(cacheKey);
+    if (cached) return cached;
+  }
+
   const res = await fetch('https://api.openai.com/v1/models', {
     headers: { 'Authorization': `Bearer ${normalizedKey}` },
   });
@@ -53,15 +85,23 @@ async function fetchOpenAIModels(apiKey: string): Promise<ModelInfo[]> {
   if (!res.ok) throw new Error(`Failed to fetch models: ${res.status}`);
 
   const data = await res.json();
-  return (data.data as { id: string; owned_by: string }[])
+  const models = (data.data as { id: string; owned_by: string }[])
     .filter(m => m.id.startsWith('gpt-') || m.id.startsWith('o') || m.id.startsWith('chatgpt-'))
     .filter(m => !m.id.includes('instruct') && !m.id.includes('realtime') && !m.id.includes('audio') && !m.id.includes('search'))
     .map(m => ({ id: m.id, name: m.id }))
     .sort((a, b) => a.name.localeCompare(b.name));
+  setCache(cacheKey, models);
+  return models;
 }
 
-async function fetchAnthropicModels(apiKey: string): Promise<ModelInfo[]> {
+async function fetchAnthropicModels(apiKey: string, forceRefresh = false): Promise<ModelInfo[]> {
   const normalizedKey = normalizeCredential(apiKey);
+  const cacheKey = `anthropic:${normalizedKey}`;
+  if (!forceRefresh) {
+    const cached = getCached(cacheKey);
+    if (cached) return cached;
+  }
+
   // OAuth tokens use Bearer + beta header; regular keys use x-api-key
   const headers: Record<string, string> = isAnthropicOAuthToken(normalizedKey)
     ? {
@@ -82,15 +122,19 @@ async function fetchAnthropicModels(apiKey: string): Promise<ModelInfo[]> {
     // If model listing fails with OAuth token, return hardcoded list
     // (the /v1/models endpoint may not support OAuth tokens yet)
     if (isAnthropicOAuthToken(normalizedKey)) {
-      return getAnthropicFallbackModels();
+      const fallback = getAnthropicFallbackModels();
+      setCache(cacheKey, fallback);
+      return fallback;
     }
     throw new Error(`Failed to fetch models: ${res.status}`);
   }
 
   const data = await res.json();
-  return (data.data as { id: string; display_name: string }[])
+  const models = (data.data as { id: string; display_name: string }[])
     .map(m => ({ id: m.id, name: m.display_name || m.id }))
     .sort((a, b) => a.name.localeCompare(b.name));
+  setCache(cacheKey, models);
+  return models;
 }
 
 function getAnthropicFallbackModels(): ModelInfo[] {
@@ -102,8 +146,14 @@ function getAnthropicFallbackModels(): ModelInfo[] {
 }
 
 // Google: API key in header, NOT in URL query param (security)
-async function fetchGoogleModels(apiKey: string): Promise<ModelInfo[]> {
+async function fetchGoogleModels(apiKey: string, forceRefresh = false): Promise<ModelInfo[]> {
   const normalizedKey = normalizeCredential(apiKey);
+  const cacheKey = `google:${normalizedKey}`;
+  if (!forceRefresh) {
+    const cached = getCached(cacheKey);
+    if (cached) return cached;
+  }
+
   const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models', {
     headers: { 'x-goog-api-key': normalizedKey },
   });
@@ -111,11 +161,13 @@ async function fetchGoogleModels(apiKey: string): Promise<ModelInfo[]> {
   if (!res.ok) throw new Error(`Failed to fetch models: ${res.status}`);
 
   const data = await res.json();
-  return (data.models as { name: string; displayName: string; supportedGenerationMethods: string[] }[])
+  const models = (data.models as { name: string; displayName: string; supportedGenerationMethods: string[] }[])
     .filter(m => m.supportedGenerationMethods?.includes('generateContent'))
     .map(m => ({
       id: m.name.replace('models/', ''),
       name: m.displayName || m.name,
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
+  setCache(cacheKey, models);
+  return models;
 }

@@ -232,7 +232,7 @@ export function ReviewPage({ onNavigate, settings }: ReviewPageProps) {
           </div>
         )}
       </div>
-      <ChatPanel isOpen={chat.isOpen} history={chat.history} loading={chat.loading} canSendMore={chat.canSendMore} language={lang} onSend={chat.sendMessage} onClose={chat.closeChat} />
+      <ChatPanel isOpen={chat.isOpen} history={chat.history} loading={chat.loading} canSendMore={chat.canSendMore} messagesRemaining={chat.messagesRemaining} language={lang} onSend={chat.sendMessage} onClose={chat.closeChat} />
     </div>
   );
 }

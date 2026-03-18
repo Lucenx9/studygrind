@@ -33,8 +33,13 @@ export function getDueQuestions(questions: Question[]): Question[] {
 export function safeCard(card: CardInput | Card): Card {
   try {
     const converted = TypeConvert.card(card);
-    return isValidCard(converted) ? converted : createNewCard();
-  } catch {
+    if (!isValidCard(converted)) {
+      console.warn('[FSRS] Invalid card detected, resetting to new card:', card);
+      return createNewCard();
+    }
+    return converted;
+  } catch (e) {
+    console.warn('[FSRS] Corrupt card could not be converted, resetting to new card:', card, e);
     return createNewCard();
   }
 }
